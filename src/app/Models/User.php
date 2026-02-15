@@ -2,14 +2,21 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-class User extends Model
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory;
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true; // Allow all users in this demo
+    }
 
     /**
      * The attributes that are mass assignable.

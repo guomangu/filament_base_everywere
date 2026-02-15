@@ -43,4 +43,9 @@ class Reaction extends Model
     {
         return $this->morphTo();
     }
+
+    public function type()
+    {
+        return $this->belongsTo(ReactionType::class, 'type', 'slug');
+    }
 }

@@ -25,15 +25,45 @@ else
     echo "FrankenPHP already installed."
 fi
 
+# 1.1 Install Node.js (Portable) for MCP/Frontend
+if [ ! -d "$BIN_DIR/node" ]; then
+    echo "Downloading Node.js (Portable)..."
+    curl -L https://nodejs.org/dist/v20.11.1/node-v20.11.1-linux-x64.tar.xz -o node.tar.xz
+    tar -xJf node.tar.xz -C "$BIN_DIR"
+    mv "$BIN_DIR/node-v20.11.1-linux-x64" "$BIN_DIR/node"
+    rm node.tar.xz
+    echo "Node.js installed."
+else
+    echo "Node.js already installed."
+fi
+
 # 2. Install Composer
-if [ ! -f "$BIN_DIR/composer" ]; then
+if [ ! -f "$BIN_DIR/composer.phar" ]; then
     echo "Installing Composer..."
-    curl -sS https://getcomposer.org/installer | php -- --install-dir="$BIN_DIR" --filename=composer
-    chmod +x "$BIN_DIR/composer"
+    curl -sS https://getcomposer.org/installer | php -- --install-dir="$BIN_DIR" --filename=composer.phar
+    chmod +x "$BIN_DIR/composer.phar"
     echo "Composer installed."
 else
     echo "Composer already installed."
 fi
+
+# Create bin/composer wrapper
+cat <<EOF > "$BIN_DIR/composer"
+#!/bin/bash
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "\$PROJECT_ROOT/src"
+exec "\$PROJECT_ROOT/bin/php" "\$PROJECT_ROOT/bin/composer.phar" "\$@"
+EOF
+chmod +x "$BIN_DIR/composer"
+
+# Create bin/artisan wrapper
+cat <<EOF > "$BIN_DIR/artisan"
+#!/bin/bash
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "\$PROJECT_ROOT/src"
+exec "\$PROJECT_ROOT/bin/php" artisan "\$@"
+EOF
+chmod +x "$BIN_DIR/artisan"
 
 # 3. Download/Extract MariaDB
 if [ ! -d "$BIN_DIR/mariadb" ]; then
@@ -120,7 +150,7 @@ EOF
         "$PHP_BINARY" artisan key:generate
     fi
     
-    "$PHP_BINARY" "$BIN_DIR/composer" install
+    "$BIN_DIR/composer" install
     
     echo -e "${GREEN}Dependencies installed.${NC}"
 fi

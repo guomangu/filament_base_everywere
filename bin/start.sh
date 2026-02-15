@@ -17,6 +17,19 @@ if [ ! -f "$MARIADB_DIR/bin/mariadbd" ] || [ ! -f "$BIN_DIR/frankenphp" ]; then
     "$BIN_DIR/install.sh"
 fi
 
+# Cleanup previous instances
+if [ -f "$MYSQL_PID" ]; then
+    PID=$(cat "$MYSQL_PID")
+    if ps -p $PID > /dev/null; then
+        echo "Stopping previous MariaDB instance (PID: $PID)..."
+        kill $PID
+        sleep 2
+    fi
+    rm -f "$MYSQL_PID"
+fi
+
+# Kill any stray processes from this specific project
+pkill -f "$PROJECT_ROOT/bin/frankenphp" || true
 # Ensure directories exist
 mkdir -p "$MYSQL_DATA"
 
@@ -55,9 +68,9 @@ echo "MariaDB started."
 echo "Ensuring database exists..."
 "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"
 
-# Run Migrations (Optional, can be done manually)
-# echo "Running migrations..."
-# cd "$SRC_DIR" && "$BIN_DIR/php" "$BIN_DIR/composer" run artisan migrate --force
+# Run Migrations automatically if needed
+echo "Running migrations..."
+cd "$SRC_DIR" && "$BIN_DIR/php" "$BIN_DIR/composer" run artisan migrate --force
 
 # Start Reverb (Background) - Disabled until configured
 # echo "Starting Reverb..."

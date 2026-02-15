@@ -109,3 +109,36 @@ L'Agent doit maintenir un script bash qui lance les services en parallèle :
    * Comment (Hierarchique).  
    * Reaction (Type Sushi pour les emojis, relation polymorphe).  
 3. Prépare le script start.sh pour orchestrer MariaDB et FrankenPHP."
+
+## **7\. Commandes Utiles (Memo)**
+
+### **Gestion du Projet**
+* **Démarrer le projet :** `./bin/start.sh` (Lance MariaDB, FrankenPHP, Reverb)
+* **Installer le projet (après git clone) :** `./bin/install.sh`
+* **Arrêter proprement :** `Ctrl+C` dans le terminal du start.sh
+
+### **Commandes Laravel (Simplifiées)**
+*Grâce aux wrappers `bin/artisan` et `bin/composer`, plus besoin de `cd src`.*
+
+* **Artisan :** `./bin/artisan <commande>`
+  * *Ex: `./bin/artisan make:model Post -m`*
+  * *Ex: `./bin/artisan migrate`*
+* **Composer :** `./bin/composer <commande>`
+  * *Ex: `./bin/composer require creating/filament`*
+* **Tinker :** `./bin/artisan tinker`
+
+### **Base de Données**
+* **Accès SQL (CLI) :** `./bin/mariadb/bin/mariadb -u root --socket=data/mysql/mysql.sock laravel`
+* **Reset Database :** `./bin/artisan migrate:fresh --seed`
+
+### **Admin & Users**
+* **Créer un utilisateur Filament :** `./bin/artisan make:filament-user`
+* **URL Admin :** `http://localhost:8000/admin`
+
+## **8\. Extensions MCP (Agent Enhanced)**
+
+Ce projet inclut ses propres serveurs MCP pour augmenter les capacités de l'Agent IA :
+
+*   **mariadb-portable** : Permet à l'Agent d'interroger la base de données directement via SQL sans passer par le terminal.
+    *   *Source :* `bin/mcp/mariadb.php`
+    *   *Usage :* Automatiquement configuré dans votre client MCP.
