@@ -1,0 +1,38 @@
+models:
+  User:
+    name: string
+    email: string unique
+    password: string
+    avatar: string nullable
+    bio: text nullable
+    relationships:
+      hasMany: Post, Comment
+      morphMany: Reactable
+
+  Post:
+    user_id: id
+    content: text
+    relationships:
+      belongsTo: User
+      morphMany: Comment, Reaction
+
+  Comment:
+    user_id: id
+    content: text
+    relationships:
+      belongsTo: User
+      morphTo: Commentable
+      morphMany: Reaction
+
+  Reaction:
+    user_id: id
+    type: string
+    relationships:
+      belongsTo: User
+      morphTo: Reactable
+
+controllers:
+  Post:
+    resource: true
+  Comment:
+    resource: true

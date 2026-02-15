@@ -1,0 +1,27 @@
+#!/bin/bash
+# Wrapper to use FrankenPHP as standard PHP CLI
+echo "DEBUG: Params received: $@" >> /tmp/php_debug.log
+
+params=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -d)
+      shift # skip -d
+      if [[ $# -gt 0 ]]; then
+         # Check if next arg is a value or another flag
+         # Usually php -d param value
+         shift
+      fi
+      ;;
+    -d*)
+      shift # skip -dkey=val
+      ;;
+    *)
+      params+=("$1")
+      shift
+      ;;
+  esac
+done
+
+echo "DEBUG: Params to FrankenPHP: ${params[@]}" >> /tmp/php_debug.log
+exec "$(dirname "$0")/frankenphp" php-cli "${params[@]}"

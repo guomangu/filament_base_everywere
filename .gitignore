@@ -1,0 +1,15 @@
+# Ignore binaries
+/bin/mariadb
+/bin/frankenphp
+/bin/composer
+
+# Ignore data
+/data/mysql
+/data/storage
+
+# Ignore local config (optional, keep example)
+/src/.env
+
+# Ignore temp files
+*.log
+*.tar.gz

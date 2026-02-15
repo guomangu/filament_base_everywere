@@ -1,0 +1,24 @@
+created:
+    - app/Http/Controllers/PostController.php
+    - app/Http/Controllers/CommentController.php
+    - database/factories/UserFactory.php
+    - database/factories/PostFactory.php
+    - database/factories/CommentFactory.php
+    - database/factories/ReactionFactory.php
+    - database/migrations/2026_02_15_210013_create_users_table.php
+    - database/migrations/2026_02_15_210014_create_posts_table.php
+    - database/migrations/2026_02_15_210015_create_comments_table.php
+    - database/migrations/2026_02_15_210016_create_reactions_table.php
+    - app/Models/User.php
+    - app/Models/Post.php
+    - app/Models/Comment.php
+    - app/Models/Reaction.php
+    - tests/Feature/Http/Controllers/PostControllerTest.php
+    - tests/Feature/Http/Controllers/CommentControllerTest.php
+updated:
+    - routes/web.php
+models:
+    User: { name: string, email: 'string unique', password: string, avatar: 'string nullable', bio: 'text nullable', relationships: { hasMany: 'Post, Comment', morphMany: Reactable } }
+    Post: { user_id: id, content: text, relationships: { belongsTo: User, morphMany: 'Comment, Reaction' } }
+    Comment: { user_id: id, content: text, relationships: { belongsTo: User, morphTo: Commentable, morphMany: Reaction } }
+    Reaction: { user_id: id, type: string, relationships: { belongsTo: User, morphTo: Reactable } }
