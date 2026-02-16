@@ -9,6 +9,12 @@ class Home extends Component
     public $search = '';
     public $lat;
     public $lng;
+    public $locationName;
+
+    public function resetLocation()
+    {
+        $this->reset(['lat', 'lng', 'locationName']);
+    }
 
     public function render()
     {

@@ -17,26 +17,26 @@
                         <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6 border border-blue-100">
                             Profil Vérifié
                         </div>
-                        <h1 class="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-6">{{ $user->name }}</h1>
-                        <p class="text-slate-500 font-medium text-xl max-w-2xl leading-relaxed italic">
+                        <h1 class="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-6">{{ $user->name }}</h1>
+                        <p class="text-slate-500 font-medium text-lg md:text-xl max-w-2xl leading-relaxed italic">
                             "{{ $user->bio ?? 'Ce bâtisseur de confiance n\'a pas encore rédigé sa bio.' }}"
                         </p>
                         
-                        <div class="flex flex-wrap justify-center md:justify-start gap-4 mt-10">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10">
                             @auth
                                 @if(auth()->id() !== $user->id)
-                                    <button class="px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10">
+                                    <button class="px-6 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10">
                                         Se Porter Garant
                                     </button>
-                                    <button class="px-10 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-blue-600 hover:text-blue-600 transition-all">
+                                    <button class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-blue-600 hover:text-blue-600 transition-all">
                                         Message
                                     </button>
                                 @else
-                                    <button wire:click="openCreateModal" class="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center gap-3">
+                                    <button wire:click="openCreateModal" class="px-6 py-4 bg-blue-600 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                        Ajouter un Succès
+                                        Ajouter Succès
                                     </button>
-                                    <a href="{{ route('profile.edit') }}" class="px-10 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-slate-900 transition-all">
+                                    <a href="{{ route('profile.edit') }}" class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-slate-900 transition-all text-center">
                                         Éditer Profil
                                     </a>
                                 @endif
