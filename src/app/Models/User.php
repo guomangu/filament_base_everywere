@@ -14,6 +14,11 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
 
+    public function getAvatarAttribute()
+    {
+        return $this->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random&color=fff';
+    }
+
     protected $fillable = [
         'name',
         'email',

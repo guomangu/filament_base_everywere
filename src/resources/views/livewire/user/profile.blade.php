@@ -6,7 +6,7 @@
                 <div class="flex flex-col md:flex-row items-center gap-12">
                     <div class="relative flex-shrink-0">
                         <div class="absolute inset-0 bg-blue-600/20 rounded-[3.5rem] blur-2xl group-hover:blur-3xl transition-all duration-700"></div>
-                        <img src="{{ $user->avatar_url ?? 'https://ui-avatars.com/api/?name='.$user->name }}" class="relative w-48 h-48 md:w-64 md:h-64 rounded-[3.5rem] object-cover border-4 border-white shadow-2xl transition-transform duration-700 group-hover:scale-[1.02]">
+                        <img src="{{ $user->avatar }}" class="relative w-48 h-48 md:w-64 md:h-64 rounded-[3.5rem] object-cover border-4 border-white shadow-2xl transition-transform duration-700 group-hover:scale-[1.02]">
                         <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-slate-900 rounded-3xl flex flex-col items-center justify-center shadow-2xl border-4 border-white">
                             <span class="text-xs font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Score</span>
                             <span class="text-3xl font-black text-white leading-none">{{ $user->trust_score }}</span>

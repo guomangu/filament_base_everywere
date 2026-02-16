@@ -73,7 +73,7 @@
                     <div class="lg:w-72 space-y-4">
                         <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white">
                             <a href="{{ route('users.show', $circle->owner) }}" class="flex items-center gap-4 mb-6 group/owner transition-all">
-                                <img src="{{ $circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name='.$circle->owner->name }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10 group-hover/owner:ring-blue-500 transition-all">
+                                <img src="{{ $circle->owner->avatar }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10 group-hover/owner:ring-blue-500 transition-all">
                                 <div>
                                     <div class="text-xs font-black text-blue-400 uppercase tracking-widest">Fondateur</div>
                                     <div class="font-bold group-hover/owner:text-blue-400 transition-colors">{{ $circle->owner->name }}</div>
@@ -155,7 +155,7 @@
                                     </div>
 
                                     <a href="{{ route('users.show', $latestAch->user) }}" class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 flex-shrink-0 hover:bg-white hover:border-blue-200 transition-all group/u">
-                                        <img src="{{ $latestAch->user->avatar_url ?? 'https://ui-avatars.com/api/?name='.$latestAch->user->name }}" class="w-6 h-6 rounded-lg object-cover shadow-sm group-hover/u:scale-110 transition-transform">
+                                        <img src="{{ $latestAch->user->avatar }}" class="w-6 h-6 rounded-lg object-cover shadow-sm group-hover/u:scale-110 transition-transform">
                                         <span class="text-[10px] font-black text-slate-600 uppercase tracking-tight group-hover/u:text-blue-600 transition-colors">{{ $latestAch->user->name }}</span>
                                     </a>
                                 </div>
@@ -182,7 +182,7 @@
                 <div class="flex flex-wrap gap-4">
                     @foreach($circle->members as $member)
                         <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-3 bg-white/60 p-2 pr-4 rounded-2xl border border-white/60 hover:border-blue-200 hover:bg-white transition-colors group">
-                            <img src="{{ $member->user->avatar_url ?? 'https://ui-avatars.com/api/?name='.$member->user->name }}" class="w-8 h-8 rounded-xl object-cover shadow-sm group-hover:scale-110 transition-transform">
+                            <img src="{{ $member->user->avatar }}" class="w-8 h-8 rounded-xl object-cover shadow-sm group-hover:scale-110 transition-transform">
                             <div class="min-w-0">
                                 <div class="text-[10px] font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors">{{ $member->user->name }}</div>
                                 <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{{ $member->role }}</div>
@@ -208,7 +208,7 @@
                     @forelse($circle->messages as $msg)
                         <div class="flex flex-col gap-2">
                             <a href="{{ route('users.show', $msg->sender) }}" class="flex items-center gap-3 group/msg hover:opacity-80 transition-all">
-                                <img src="{{ $msg->sender->avatar_url ?? 'https://ui-avatars.com/api/?name='.$msg->sender->name }}" class="w-6 h-6 rounded-lg ring-1 ring-white/20 group-hover/msg:ring-blue-500 transition-all">
+                                <img src="{{ $msg->sender->avatar }}" class="w-6 h-6 rounded-lg ring-1 ring-white/20 group-hover/msg:ring-blue-500 transition-all">
                                 <span class="text-xs font-black uppercase tracking-widest text-slate-400 group-hover/msg:text-blue-400 transition-colors">{{ $msg->sender->name }}</span>
                                 <span class="text-[9px] font-black text-slate-600 uppercase">{{ $msg->created_at->diffForHumans() }}</span>
                             </a>
