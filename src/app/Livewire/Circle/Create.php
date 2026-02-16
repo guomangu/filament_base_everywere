@@ -28,31 +28,25 @@ class Create extends Component implements HasForms
     {
         return $form
             ->schema([
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(255)
-                    ->placeholder('The Creative Forge...'),
-                Select::make('type')
-                    ->options([
-                        'business' => 'Business / Coworking',
-                        'place' => 'Place / Location',
-                        'event' => 'Event / Meetup',
-                        'project' => 'Project / Squad',
+                \Filament\Forms\Components\Grid::make(1)
+                    ->schema([
+                        TextInput::make('name')
+                            ->label('Circle Name')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('The Creative Forge...'),
+                        TextInput::make('address')
+                            ->label('Location / City')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('123 Alpha Street, Tech City...'),
+                        Textarea::make('description')
+                            ->label('Mission & Description')
+                            ->required()
+                            ->minLength(10)
+                            ->rows(4)
+                            ->placeholder('What are we building here?'),
                     ])
-                    ->required()
-                    ->native(false),
-                TextInput::make('address')
-                    ->required()
-                    ->maxLength(255)
-                    ->placeholder('123 Alpha Street, Tech City...'),
-                Textarea::make('description')
-                    ->required()
-                    ->minLength(10)
-                    ->rows(5)
-                    ->placeholder('What are we building here?'),
-                Toggle::make('is_public')
-                    ->label('Public (Visible to all)')
-                    ->default(true),
             ])
             ->statePath('data');
     }
@@ -63,6 +57,8 @@ class Create extends Component implements HasForms
 
         $circle = Circle::create([
             ...$data,
+            'type' => 'project', // Default type
+            'is_public' => true, // Hidden default
             'owner_id' => auth()->id(),
             'coordinates' => ['lat' => 0, 'lng' => 0], // Placeholder
         ]);

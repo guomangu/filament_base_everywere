@@ -10,7 +10,7 @@ class Profile extends Component
 
     public function mount(\App\Models\User $user)
     {
-        $this->user = $user->load(['joinedCircles.circle', 'achievements.skill', 'achievements.circle']);
+        $this->user = $user->load(['joinedCircles', 'achievements.skill', 'achievements.circle']);
     }
 
     public function render()

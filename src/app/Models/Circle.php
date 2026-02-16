@@ -23,6 +23,7 @@ class Circle extends Model
         'address',
         'coordinates',
         'owner_id',
+        'is_public',
     ];
 
     /**

@@ -5,11 +5,11 @@
             <p class="text-slate-500 font-medium">Create a space for community, work, or local collaboration.</p>
         </div>
 
-        <form wire:submit.prevent="store">
+        <form wire:submit.prevent="store" class="space-y-6">
             {{ $this->form }}
 
-            <div class="pt-12">
-                <button type="submit" class="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+            <div class="pt-8">
+                <button type="submit" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all shadow-xl shadow-blue-500/10">
                     Establish Circle
                 </button>
             </div>

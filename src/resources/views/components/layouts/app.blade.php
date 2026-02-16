@@ -11,9 +11,8 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-        <!-- Tailwind & Alpine -->
+        <!-- Tailwind -->
         <script src="https://cdn.tailwindcss.com"></script>
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         <style>
             body { font-family: 'Outfit', sans-serif; }
             .bg-gradient-mesh {
@@ -22,6 +21,23 @@
                     radial-gradient(at 0% 0%, hsla(217,100%,94%,1) 0, transparent 50%), 
                     radial-gradient(at 50% 0%, hsla(225,100%,94%,1) 0, transparent 50%), 
                     radial-gradient(at 100% 0%, hsla(217,100%,94%,1) 0, transparent 50%);
+            }
+            /* Over-aggressive Visibility Patch */
+            .fi-input-wrp, .fi-input, textarea, input, select {
+                background-color: white !important;
+                color: #0f172a !important;
+                border-color: #cbd5e1 !important;
+            }
+            .fi-input-wrp:focus-within {
+                ring-color: #3b82f6 !important;
+            }
+            .fi-fo-field-wrp-label, .fi-fo-field-wrp-label * {
+                color: #1e293b !important;
+                font-weight: 800 !important;
+                opacity: 1 !important;
+            }
+            .fi-btn {
+                background-color: #0f172a !important;
             }
         </style>
         
