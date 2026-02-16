@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\UserResource\Pages;
-use App\Filament\Resources\UserResource\RelationManagers;
-use App\Models\User;
+use App\Filament\Resources\SkillResource\Pages;
+use App\Filament\Resources\SkillResource\RelationManagers;
+use App\Models\Skill;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,9 +13,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class UserResource extends Resource
+class SkillResource extends Resource
 {
-    protected static ?string $model = User::class;
+    protected static ?string $model = Skill::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -26,23 +26,12 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
+                Forms\Components\TextInput::make('slug')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\FileUpload::make('avatar_url')
-                    ->avatar()
-                    ->directory('avatars'),
-                Forms\Components\TextInput::make('trust_score')
-                    ->numeric()
-                    ->readOnly(),
-                Forms\Components\Textarea::make('bio')
-                    ->columnSpanFull(),
+                Forms\Components\TextInput::make('category')
+                    ->maxLength(255)
+                    ->default(null),
             ]);
     }
 
@@ -52,13 +41,10 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email')
+                Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
-                Tables\Columns\ImageColumn::make('avatar_url')
-                    ->circular(),
-                Tables\Columns\TextColumn::make('trust_score')
-                    ->numeric()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('category')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -91,9 +77,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'index' => Pages\ListSkills::route('/'),
+            'create' => Pages\CreateSkill::route('/create'),
+            'edit' => Pages\EditSkill::route('/{record}/edit'),
         ];
     }
 }

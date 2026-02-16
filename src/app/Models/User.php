@@ -2,68 +2,80 @@
 
 namespace App\Models;
 
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
 class User extends Authenticatable implements FilamentUser
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return true; // Allow all users in this demo
-    }
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'avatar',
+        'avatar_url',
         'bio',
+        'location',
+        'coordinates',
+        'trust_score',
+        'is_admin',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array
-     */
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'id' => 'integer',
+            'coordinates' => 'array',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 
-    public function posts(): HasMany
+    public function canAccessPanel(Panel $panel): bool
     {
-        return $this->hasMany(Post::class);
+        return $this->is_admin;
     }
 
-    public function comments(): HasMany
+    public function ownedCircles(): HasMany
     {
-        return $this->hasMany(Comment::class);
+        return $this->hasMany(Circle::class, 'owner_id');
     }
 
-    public function reactables(): MorphMany
+    public function achievements(): HasMany
     {
-        return $this->morphMany(Reactable::class, 'reactableable');
+        return $this->hasMany(Achievement::class);
+    }
+
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    public function receivedMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'receiver_id');
+    }
+
+    public function joinedCircles()
+    {
+        return $this->belongsToMany(Circle::class, 'circle_members')
+            ->withPivot(['role', 'status', 'vouched_by_id', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    public function circleMembers(): HasMany
+    {
+        return $this->hasMany(CircleMember::class);
     }
 }

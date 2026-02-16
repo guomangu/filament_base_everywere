@@ -1,24 +1,44 @@
 created:
-    - app/Http/Controllers/PostController.php
-    - app/Http/Controllers/CommentController.php
+    - app/Http/Controllers/CircleController.php
+    - app/Http/Controllers/AchievementController.php
     - database/factories/UserFactory.php
-    - database/factories/PostFactory.php
-    - database/factories/CommentFactory.php
-    - database/factories/ReactionFactory.php
-    - database/migrations/2026_02_15_210013_create_users_table.php
-    - database/migrations/2026_02_15_210014_create_posts_table.php
-    - database/migrations/2026_02_15_210015_create_comments_table.php
-    - database/migrations/2026_02_15_210016_create_reactions_table.php
+    - database/factories/CircleFactory.php
+    - database/factories/CircleMemberFactory.php
+    - database/factories/SkillFactory.php
+    - database/factories/AchievementFactory.php
+    - database/factories/MessageFactory.php
+    - database/migrations/2026_02_16_031013_create_users_table.php
+    - database/migrations/2026_02_16_031014_create_circles_table.php
+    - database/migrations/2026_02_16_031015_create_circle_members_table.php
+    - database/migrations/2026_02_16_031016_create_skills_table.php
+    - database/migrations/2026_02_16_031017_create_achievements_table.php
+    - database/migrations/2026_02_16_031018_create_messages_table.php
     - app/Models/User.php
-    - app/Models/Post.php
-    - app/Models/Comment.php
-    - app/Models/Reaction.php
-    - tests/Feature/Http/Controllers/PostControllerTest.php
-    - tests/Feature/Http/Controllers/CommentControllerTest.php
+    - app/Models/Circle.php
+    - app/Models/CircleMember.php
+    - app/Models/Skill.php
+    - app/Models/Achievement.php
+    - app/Models/Message.php
+    - tests/Feature/Http/Controllers/CircleControllerTest.php
+    - tests/Feature/Http/Controllers/AchievementControllerTest.php
 updated:
     - routes/web.php
+skipped:
+    - resources/views/circle/index.blade.php
+    - resources/views/circle/create.blade.php
+    - resources/views/circle/show.blade.php
+    - resources/views/circle/edit.blade.php
+    - resources/views/achievement/index.blade.php
+    - resources/views/achievement/create.blade.php
+    - resources/views/achievement/show.blade.php
+    - resources/views/achievement/edit.blade.php
 models:
-    User: { name: string, email: 'string unique', password: string, avatar: 'string nullable', bio: 'text nullable', relationships: { hasMany: 'Post, Comment', morphMany: Reactable } }
+    User: { name: string, email: 'string unique', avatar_url: 'string nullable', bio: 'text nullable', location: 'string nullable comment:Ville principale (ex: Colmar)', coordinates: 'json nullable comment:{lat: ..., lng: ...}', trust_score: 'integer default:0', relationships: { hasMany: 'OwnedCircles:Circle, Achievement, SentMessages:Message, ReceivedMessages:Message, JoinedCircles:CircleMember' } }
     Post: { user_id: id, content: text, relationships: { belongsTo: User, morphMany: 'Comment, Reaction' } }
     Comment: { user_id: id, content: text, relationships: { belongsTo: User, morphTo: Commentable, morphMany: Reaction } }
     Reaction: { user_id: id, type: string, relationships: { belongsTo: User, morphTo: Reactable } }
+    Circle: { name: string, description: 'text nullable', type: 'enum:business,event,place,project', address: string, coordinates: 'json nullable', owner_id: 'id foreign:users', relationships: { belongsTo: 'Owner:User', hasMany: 'Members:CircleMember, Messages:Message' } }
+    CircleMember: { circle_id: 'id foreign:circles', user_id: 'id foreign:users', role: 'enum:admin,member,guest', status: 'enum:pending,active,rejected', vouched_by_id: 'id foreign:users nullable', joined_at: timestamp, relationships: { belongsTo: 'Circle, User, Voucher:User:vouched_by_id' } }
+    Skill: { name: 'string index', slug: 'string unique', category: 'string nullable', relationships: { hasMany: Achievements } }
+    Achievement: { user_id: 'id foreign:users', skill_id: 'id foreign:skills', circle_id: 'id foreign:circles nullable comment:Le lieu où la compétence a été prouvée', title: string, description: 'text nullable', media_url: 'string nullable', metadata: 'json nullable comment:Prix, Durée, Détails techniques', is_verified: 'boolean default:false', relationships: { belongsTo: 'User, Skill, Circle' } }
+    Message: { circle_id: 'id foreign:circles nullable comment:Contexte de la discussion', sender_id: 'id foreign:users', title: 'string nullable', content: text, type: 'enum:chat,logistics', metadata: "json nullable comment:{link_trajet: 'GoogleMaps', dispo: '5h'}", relationships: { belongsTo: 'Circle, Sender:User' } }

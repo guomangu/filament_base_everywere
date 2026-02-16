@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class AchievementUpdateRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     */
+    public function rules(): array
+    {
+        return [
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'skill_id' => ['required', 'integer', 'exists:skills,id'],
+            'circle_id' => ['nullable', 'integer', 'exists:circles,id'],
+            'title' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+            'media_url' => ['nullable', 'string'],
+            'metadata' => ['nullable', 'json'],
+            'is_verified' => ['required'],
+        ];
+    }
+}

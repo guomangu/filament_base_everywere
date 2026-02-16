@@ -14,11 +14,10 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
+        if (class_exists(\App\Models\CircleMember::class)) {
+            \App\Models\CircleMember::observe(\App\Observers\CircleMemberObserver::class);
+        }
     }
 }
