@@ -128,9 +128,11 @@
                         </div>
 
                         <!-- Footer -->
-                        <div class="pt-8 border-t border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex -space-x-3">
-                                <img src="{{ $circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name='.$circle->owner->name }}" class="w-12 h-12 rounded-full border-4 border-white shadow-lg ring-1 ring-slate-100 group-hover:ring-blue-500 transition-all">
+                                <a href="{{ route('users.show', $circle->owner) }}" class="block hover:scale-110 transition-transform">
+                                    <img src="{{ $circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name='.$circle->owner->name }}" class="w-12 h-12 rounded-full border-4 border-white shadow-lg ring-1 ring-slate-100 group-hover/card:ring-blue-500 transition-all">
+                                </a>
                                 <div class="w-12 h-12 rounded-full border-4 border-white bg-slate-100 flex items-center justify-center text-xs font-black text-slate-400 ring-1 ring-slate-100">
                                     +{{ $circle->members->count() }}
                                 </div>

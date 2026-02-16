@@ -41,6 +41,14 @@ class Profile extends Component
 
     public function render()
     {
-        return view('livewire.circle.profile');
+        $memberIds = $this->circle->members()->pluck('user_id')->push($this->circle->owner_id);
+
+        return view('livewire.circle.profile', [
+            'circleSkills' => \App\Models\Achievement::whereIn('user_id', $memberIds)
+                ->with(['skill', 'user'])
+                ->latest()
+                ->get()
+                ->groupBy('skill_id')
+        ]);
     }
 }

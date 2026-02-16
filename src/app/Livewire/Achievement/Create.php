@@ -37,11 +37,6 @@ class Create extends Component implements HasForms
                     ->required()
                     ->searchable()
                     ->native(false),
-                Select::make('circle_id')
-                    ->label('Associate with Circle (Optional)')
-                    ->options(auth()->user()->joinedCircles()->pluck('name', 'circles.id'))
-                    ->searchable()
-                    ->native(false),
                 Textarea::make('description')
                     ->label('Proof Details & Context')
                     ->required()

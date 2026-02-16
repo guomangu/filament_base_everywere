@@ -72,13 +72,13 @@
                     <!-- Actions -->
                     <div class="lg:w-72 space-y-4">
                         <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white">
-                            <div class="flex items-center gap-4 mb-6">
-                                <img src="{{ $circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name='.$circle->owner->name }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10">
+                            <a href="{{ route('users.show', $circle->owner) }}" class="flex items-center gap-4 mb-6 group/owner transition-all">
+                                <img src="{{ $circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name='.$circle->owner->name }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10 group-hover/owner:ring-blue-500 transition-all">
                                 <div>
                                     <div class="text-xs font-black text-blue-400 uppercase tracking-widest">Fondateur</div>
-                                    <div class="font-bold">{{ $circle->owner->name }}</div>
+                                    <div class="font-bold group-hover/owner:text-blue-400 transition-colors">{{ $circle->owner->name }}</div>
                                 </div>
-                            </div>
+                            </a>
                             
                             @auth
                                 @php 
@@ -121,74 +121,74 @@
     <!-- Content Grid -->
     <div class="max-w-7xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
         
-        <!-- Tab: Talents & Skills -->
+        <!-- Main Content: Skill Directory -->
         <div class="lg:col-span-2 space-y-12">
             <div>
                 <div class="flex items-center justify-between mb-8">
                     <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        Les Talents
-                        <span class="text-xs font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full">{{ $circle->members->count() }}</span>
+                        Répertoire des Compétences
+                        <span class="text-xs font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full">{{ $circleSkills->count() }}</span>
                     </h2>
                 </div>
 
-                <div class="grid grid-cols-1 gap-8">
-                    @forelse($circle->members as $member)
-                        <div class="group relative">
-                            <div class="absolute -top-4 -left-4 w-20 h-20 bg-blue-600/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            
-                            <div class="relative bg-white/60 backdrop-blur-2xl border border-white/60 p-8 rounded-[3rem] hover:bg-white hover:shadow-[0_40px_80px_-15px_rgba(59,130,246,0.08)] transition-all duration-500">
-                                <div class="flex flex-col md:flex-row gap-8">
-                                    <!-- User Identity -->
-                                    <div class="md:w-48 text-center md:text-left flex-shrink-0">
-                                        <div class="relative inline-block mb-4">
-                                            <img src="{{ $member->user->avatar_url ?? 'https://ui-avatars.com/api/?name='.$member->user->name }}" class="w-24 h-24 rounded-[2rem] object-cover ring-4 ring-white shadow-xl transition-transform group-hover:scale-105 duration-500">
-                                            <div class="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-xl shadow-lg border-2 border-white">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                            </div>
-                                        </div>
-                                        <h3 class="text-xl font-black text-slate-900 mb-1 truncate">{{ $member->user->name }}</h3>
-                                        <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-4">{{ $member->role }}</span>
-                                        
-                                        <div class="flex flex-col gap-2 pt-4 border-t border-slate-100">
-                                            <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Garanti par</span>
-                                            <div class="flex items-center gap-2">
-                                                <img src="https://ui-avatars.com/api/?name={{ $member->voucher?->name ?? 'Admin' }}" class="w-5 h-5 rounded-full opacity-60">
-                                                <span class="text-[10px] font-bold text-slate-500 truncate">{{ $member->voucher?->name ?? 'Founder' }}</span>
-                                            </div>
-                                        </div>
+                <div class="grid grid-cols-1 gap-6">
+                    @forelse($circleSkills as $skillId => $achievements)
+                        @php $latestAch = $achievements->first(); @endphp
+                        <div class="group relative bg-white/60 backdrop-blur-2xl border border-white/60 p-6 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all duration-500">
+                            <div class="flex flex-col md:flex-row items-center gap-6">
+                                <!-- Skill Icon & Info -->
+                                <div class="flex items-center gap-4 flex-shrink-0 min-w-[200px]">
+                                    <div class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-xs font-black shadow-lg uppercase">
+                                        {{ substr($latestAch->skill->name, 0, 2) }}
+                                    </div>
+                                    <div>
+                                        <h3 class="font-black text-slate-900 uppercase tracking-tight">{{ $latestAch->skill->name }}</h3>
+                                        <span class="text-[9px] font-black text-blue-500 uppercase tracking-widest">{{ $achievements->count() }} expert(s)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Latest Proof & User -->
+                                <div class="flex-grow flex flex-col md:flex-row items-center gap-6 border-l border-slate-100 pl-6 w-full">
+                                    <div class="flex-grow">
+                                        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Dernière réussite :</div>
+                                        <h4 class="font-black text-slate-900 text-sm italic group-hover:text-blue-600 transition-colors">"{{ $latestAch->title }}"</h4>
                                     </div>
 
-                                    <!-- User Content (Realizations) -->
-                                    <div class="flex-grow">
-                                        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 px-4">Preuves dans ce cercle</h4>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            @forelse($member->user->achievements->where('circle_id', $circle->id) as $achievement)
-                                                <div class="bg-white/40 p-5 rounded-[2rem] border border-white/60 hover:border-blue-200 transition-colors group/skill">
-                                                    <span class="text-[9px] font-black uppercase text-blue-600 mb-2 block tracking-widest">{{ $achievement->skill->name }}</span>
-                                                    <h5 class="font-black text-slate-900 text-base mb-2 italic">"{{ $achievement->title }}"</h5>
-                                                    <p class="text-slate-500 text-sm leading-relaxed line-clamp-2 italic">{{ $achievement->description }}</p>
-                                                    
-                                                    <div class="mt-4 flex items-center justify-between text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                                        <span>Vérifié</span>
-                                                        <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                                        <span>Il y a 2 mois</span>
-                                                    </div>
-                                                </div>
-                                            @empty
-                                                <div class="col-span-full py-8 text-center bg-slate-100/50 rounded-[2rem] border-2 border-dashed border-slate-200/50">
-                                                    <p class="text-slate-400 text-xs font-black uppercase tracking-widest italic">Attente de validation...</p>
-                                                </div>
-                                            @endforelse
-                                        </div>
-                                    </div>
+                                    <a href="{{ route('users.show', $latestAch->user) }}" class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 flex-shrink-0 hover:bg-white hover:border-blue-200 transition-all group/u">
+                                        <img src="{{ $latestAch->user->avatar_url ?? 'https://ui-avatars.com/api/?name='.$latestAch->user->name }}" class="w-6 h-6 rounded-lg object-cover shadow-sm group-hover/u:scale-110 transition-transform">
+                                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-tight group-hover/u:text-blue-600 transition-colors">{{ $latestAch->user->name }}</span>
+                                    </a>
+                                </div>
+
+                                <!-- Detail Action -->
+                                <div class="flex-shrink-0">
+                                    <button class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     @empty
                         <div class="py-20 text-center bg-white/40 border border-white/60 rounded-[3rem]">
-                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm">Le cercle est encore discret...</p>
+                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm italic">Aucune compétence encore indexée.</p>
                         </div>
                     @endforelse
+                </div>
+            </div>
+
+            <!-- Compact Members Section at Bottom -->
+            <div class="pt-12 border-t border-slate-100">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Membres du Cercle</h3>
+                <div class="flex flex-wrap gap-4">
+                    @foreach($circle->members as $member)
+                        <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-3 bg-white/60 p-2 pr-4 rounded-2xl border border-white/60 hover:border-blue-200 hover:bg-white transition-colors group">
+                            <img src="{{ $member->user->avatar_url ?? 'https://ui-avatars.com/api/?name='.$member->user->name }}" class="w-8 h-8 rounded-xl object-cover shadow-sm group-hover:scale-110 transition-transform">
+                            <div class="min-w-0">
+                                <div class="text-[10px] font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors">{{ $member->user->name }}</div>
+                                <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{{ $member->role }}</div>
+                            </div>
+                        </a>
+                    @endforeach
                 </div>
             </div>
         </div>
@@ -207,11 +207,11 @@
                 <div class="space-y-6 max-h-[600px] overflow-y-auto pr-4 mb-10 custom-scrollbar relative z-10">
                     @forelse($circle->messages as $msg)
                         <div class="flex flex-col gap-2">
-                            <div class="flex items-center gap-3">
-                                <img src="{{ $msg->sender->avatar_url ?? 'https://ui-avatars.com/api/?name='.$msg->sender->name }}" class="w-6 h-6 rounded-lg ring-1 ring-white/20">
-                                <span class="text-xs font-black uppercase tracking-widest text-slate-400">{{ $msg->sender->name }}</span>
+                            <a href="{{ route('users.show', $msg->sender) }}" class="flex items-center gap-3 group/msg hover:opacity-80 transition-all">
+                                <img src="{{ $msg->sender->avatar_url ?? 'https://ui-avatars.com/api/?name='.$msg->sender->name }}" class="w-6 h-6 rounded-lg ring-1 ring-white/20 group-hover/msg:ring-blue-500 transition-all">
+                                <span class="text-xs font-black uppercase tracking-widest text-slate-400 group-hover/msg:text-blue-400 transition-colors">{{ $msg->sender->name }}</span>
                                 <span class="text-[9px] font-black text-slate-600 uppercase">{{ $msg->created_at->diffForHumans() }}</span>
-                            </div>
+                            </a>
                             <div class="bg-white/5 border border-white/10 p-5 rounded-2xl rounded-tl-none text-slate-300 text-sm leading-relaxed italic">
                                 {{ $msg->content }}
                             </div>
