@@ -1,15 +1,30 @@
 <div x-data="{ 
-    updateLocation() {
+    async updateLocation() {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(position => {
-                $wire.set('lat', position.coords.latitude);
-                $wire.set('lng', position.coords.longitude);
+            navigator.geolocation.getCurrentPosition(async position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`);
+                    const data = await response.json();
+                    const city = data.address.city || data.address.town || data.address.village || data.address.municipality || 'Localisation inconnue';
+                    const country = data.address.country;
+                    const locationName = `${city}, ${country}`;
+                    
+                    $wire.call('setLocation', lat, lng, locationName);
+                } catch (error) {
+                    console.error('Reverse geocoding error:', error);
+                    $wire.call('setLocation', lat, lng, 'Localisation détectée');
+                }
             }, (error) => {
                 console.error('Geolocation error:', error);
             }, { enableHighAccuracy: true });
         }
     }
-}" class="min-h-screen bg-slate-50/50">
+}" 
+x-init="if (!$wire.lat) updateLocation()"
+class="min-h-screen bg-slate-50/50">
     <!-- Hero Section / Search -->
     <div class="relative pt-32 pb-20 px-6 overflow-hidden">
         <!-- Floating Circles Background -->
@@ -61,21 +76,28 @@
                 </p>
             </div>
             
-            @if($lat)
+            @if($locationName)
                 <div class="flex items-center gap-3">
                     <div class="flex flex-col items-end hidden sm:flex">
                         <span class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Position actuelle</span>
-                        <code class="text-[10px] text-blue-500 font-bold bg-blue-50/50 px-2 py-0.5 rounded-lg">{{ round($lat, 4) }}, {{ round($lng, 4) }}</code>
+                        <div class="flex items-center gap-1.5">
+                            <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span class="text-[10px] text-blue-600 font-black uppercase tracking-widest">{{ $locationName }}</span>
+                        </div>
                     </div>
                     <button @click="updateLocation()" class="group bg-blue-50 text-blue-600 p-2 md:px-4 md:py-2 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all">
                         <span class="w-2 h-2 bg-blue-600 rounded-full animate-ping group-hover:bg-white"></span>
-                        <span class="hidden md:inline">Actualiser Position</span>
-                        <svg class="w-4 h-4 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span class="hidden md:inline">Actualiser</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
+                    <button wire:click="resetLocation" class="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
             @else
-                <button @click="updateLocation()" class="bg-slate-100 text-slate-400 px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all">
-                    Activer Localisation
+                <button @click="updateLocation()" class="bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Autour de moi
                 </button>
             @endif
         </div>
@@ -119,9 +141,30 @@
                             </div>
 
                             @if($circle->matching_context)
-                                <div class="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest mb-6 border border-green-100">
-                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                    {{ $circle->matching_context }}
+                                <div class="relative z-10 p-4 bg-slate-50 border border-slate-100 rounded-3xl mb-6 group/highlight hover:border-blue-200 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        @if($circle->matched_object && isset($circle->matched_object['image']))
+                                            <img src="{{ $circle->matched_object['image'] }}" class="w-8 h-8 rounded-full border-2 border-white shadow-sm">
+                                        @else
+                                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            </div>
+                                        @endif
+                                        
+                                        <div class="flex-grow min-w-0">
+                                            <div class="text-[8px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">{{ $circle->matching_context }}</div>
+                                            <div class="text-xs font-black text-slate-900 truncate tracking-tight">
+                                                @if($circle->matched_object)
+                                                    {{ $circle->matched_object['name'] }}
+                                                    @if(isset($circle->matched_object['detail']))
+                                                        <span class="text-blue-600 font-bold ml-1">• {{ $circle->matched_object['detail'] }}</span>
+                                                    @endif
+                                                @else
+                                                    Trouvé par correspondance
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             @endif
 

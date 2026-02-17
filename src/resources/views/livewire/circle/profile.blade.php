@@ -1,4 +1,34 @@
-<div class="min-h-screen bg-slate-50/50 pb-20">
+<div 
+    x-data="{ 
+        showIndicator: false,
+        playNotify() {
+            let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audio.volume = 0.2;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        }
+    }" 
+    x-on:circle-updated.window="showIndicator = true; playNotify(); setTimeout(() => showIndicator = false, 3000)"
+    wire:poll.5s.visible="refresh" 
+    class="min-h-screen bg-slate-50/50 pb-20"
+>
+    <!-- Top-right Loading Indicator (Only on change detection) -->
+    <div x-show="showIndicator" 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-[-20px]"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-[-20px]"
+        class="fixed top-6 right-6 z-[100]"
+    >
+        <div class="flex items-center gap-3 bg-white border border-blue-100 px-5 py-3 rounded-2xl shadow-2xl shadow-blue-500/10 transition-all border-b-4 border-b-blue-500">
+            <div class="relative">
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-ping absolute -top-1 -right-1"></div>
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <span class="text-[11px] font-black text-slate-900 uppercase tracking-widest">Nouveau contenu !</span>
+        </div>
+    </div>
     <!-- Circle Hero Header -->
     <div class="relative pt-32 pb-16 overflow-hidden">
         <!-- Background Accents -->
@@ -85,20 +115,59 @@
                                 @endphp
 
                                 @if($isOwner)
-                                    <a href="{{ route('circles.edit', $circle) }}" class="block text-center py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-black text-sm tracking-widest uppercase transition-all mb-3 text-white border border-white/5">
-                                        Éditer
-                                    </a>
-                                    <button class="w-full text-center py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20">
-                                        Inviter
-                                    </button>
-                                @elseif($isMember)
-                                    <div class="w-full text-center py-4 bg-green-500/10 rounded-2xl font-black text-sm tracking-widest uppercase text-green-400 border border-green-500/20">
-                                        Membre Actif
+                                    <div class="space-y-3">
+                                        <a href="{{ route('circles.edit', $circle) }}" class="block text-center py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-black text-sm tracking-widest uppercase transition-all text-white border border-white/5">
+                                            Configuration
+                                        </a>
+                                        
+                                        @php $pendingRequests = $circle->members()->where('status', 'pending')->with('user')->get(); @endphp
+                                        @if($pendingRequests->count() > 0)
+                                            <div class="pt-4 border-t border-white/10">
+                                                <div class="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-4">Demandes d'accès ({{ $pendingRequests->count() }})</div>
+                                                <div class="space-y-3">
+                                                    @foreach($pendingRequests as $req)
+                                                        <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                                                            <div class="flex items-center gap-2">
+                                                                <img src="{{ $req->user->avatar }}" class="w-6 h-6 rounded-lg">
+                                                                <span class="text-[10px] font-bold truncate max-w-[80px]">{{ $req->user->name }}</span>
+                                                            </div>
+                                                            <div class="flex gap-1">
+                                                                <button wire:click="toggleApprove({{ $req->id }}, 'active')" class="p-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500 transition-colors">
+                                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                                                </button>
+                                                                <button wire:click="toggleApprove({{ $req->id }}, 'rejected')" class="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500 transition-colors">
+                                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 @else
-                                    <button class="w-full text-center py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20">
-                                        Rejoindre
-                                    </button>
+                                    @php 
+                                        $membership = $circle->members()->where('user_id', auth()->id())->first();
+                                    @endphp
+
+                                    @if($membership && $membership->status === 'active')
+                                        <div class="space-y-3">
+                                            <div class="w-full text-center py-4 bg-green-500/10 rounded-2xl font-black text-sm tracking-widest uppercase text-green-400 border border-green-500/20">
+                                                Membre Actif
+                                            </div>
+                                            <button wire:click="leaveCircle" class="w-full text-center py-2 text-slate-500 hover:text-red-400 font-bold text-[10px] uppercase tracking-widest transition-colors">
+                                                Quitter le cercle
+                                            </button>
+                                        </div>
+                                    @elseif($membership && $membership->status === 'pending')
+                                        <div class="w-full text-center py-4 bg-amber-500/10 rounded-2xl font-black text-sm tracking-widest uppercase text-amber-400 border border-amber-500/20">
+                                            Demande en attente
+                                        </div>
+                                    @else
+                                        <button wire:click="joinCircle" class="w-full text-center py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20">
+                                            Demander à rejoindre
+                                        </button>
+                                    @endif
                                 @endif
                             @else
                                 <a href="/admin/login" class="block text-center py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20">
@@ -201,8 +270,27 @@
                     <span class="px-3 py-1 bg-white/10 text-xs rounded-full border border-white/10 font-black">{{ $circle->messages->count() }}</span>
                 </h2>
 
+                <!-- Input area if member (Moved to Top) -->
+                @auth
+                    <div class="relative z-10 p-4 bg-white/5 border border-white/10 rounded-[2.5rem] mb-10">
+                        <textarea wire:model="message" 
+                            placeholder="{{ $circle->members->contains('user_id', auth()->id()) || $circle->owner_id === auth()->id() ? 'Partagez une info logistique...' : 'Posez une question en tant qu\'invité...' }}" 
+                            class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
+                            rows="3"></textarea>
+                        
+                        <button wire:click="sendMessage" 
+                            class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-white/5">
+                            Envoyer
+                        </button>
+                    </div>
+                @else
+                    <div class="relative z-10 text-center p-8 bg-white/5 border border-dashed border-white/10 rounded-3xl mb-10">
+                        <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Connectez-vous pour participer</p>
+                    </div>
+                @endauth
+
                 <!-- Messages Feed -->
-                <div class="space-y-6 max-h-[600px] overflow-y-auto pr-4 mb-10 custom-scrollbar relative z-10">
+                <div class="space-y-6 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar relative z-10">
                     @forelse($circle->messages as $msg)
                         @php
                             $isOwner = $msg->sender_id === $circle->owner_id;
@@ -228,25 +316,6 @@
                         <div class="py-12 text-center text-slate-600 font-black uppercase tracking-[0.3em] text-[10px]">Silence radio...</div>
                     @endforelse
                 </div>
-
-                <!-- Input area if member -->
-                @auth
-                    <div class="relative z-10 p-4 bg-white/5 border border-white/10 rounded-[2.5rem]">
-                        <textarea wire:model="message" 
-                            placeholder="{{ $circle->members->contains('user_id', auth()->id()) || $circle->owner_id === auth()->id() ? 'Partagez une info logistique...' : 'Posez une question en tant qu\'invité...' }}" 
-                            class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
-                            rows="3"></textarea>
-                        
-                        <button wire:click="sendMessage" 
-                            class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-white/5">
-                            Envoyer
-                        </button>
-                    </div>
-                @else
-                    <div class="relative z-10 text-center p-8 bg-white/5 border border-dashed border-white/10 rounded-3xl">
-                        <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Connectez-vous pour participer</p>
-                    </div>
-                @endauth
             </div>
             
             <!-- Information Grid -->
