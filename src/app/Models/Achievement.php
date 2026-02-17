@@ -24,6 +24,7 @@ class Achievement extends Model
         'media_url',
         'metadata',
         'is_verified',
+        'proche_id',
     ];
 
     /**
@@ -38,6 +39,7 @@ class Achievement extends Model
             'user_id' => 'integer',
             'skill_id' => 'integer',
             'circle_id' => 'integer',
+            'proche_id' => 'integer',
             'metadata' => 'array',
             'is_verified' => 'boolean',
         ];
@@ -56,6 +58,11 @@ class Achievement extends Model
     public function circle(): BelongsTo
     {
         return $this->belongsTo(Circle::class);
+    }
+
+    public function proche(): BelongsTo
+    {
+        return $this->belongsTo(Proche::class);
     }
 
     public function informations()

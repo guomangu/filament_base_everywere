@@ -24,6 +24,9 @@ class Manager extends Component
 
     public function mount($model)
     {
+        if (!$model) {
+            return;
+        }
         $this->model = $model;
         $this->modelId = $model->id;
         $this->modelType = get_class($model);

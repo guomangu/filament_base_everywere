@@ -35,6 +35,11 @@ class Skill extends Model
 
     public function achievements(): HasMany
     {
-        return $this->hasMany(Achievements::class);
+        return $this->hasMany(Achievement::class);
+    }
+
+    public function informations()
+    {
+        return $this->morphMany(Information::class, 'informable');
     }
 }

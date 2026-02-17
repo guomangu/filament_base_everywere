@@ -11,11 +11,6 @@ class Circle extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'name',
         'description',
@@ -23,14 +18,8 @@ class Circle extends Model
         'address',
         'coordinates',
         'owner_id',
-        'is_public',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -60,13 +49,13 @@ class Circle extends Model
         return $this->hasMany(Message::class);
     }
 
-    public function achievements(): HasMany
-    {
-        return $this->hasMany(Achievement::class);
-    }
-
     public function informations()
     {
         return $this->morphMany(Information::class, 'informable');
+    }
+
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(Achievement::class);
     }
 }

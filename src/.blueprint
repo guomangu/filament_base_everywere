@@ -7,12 +7,12 @@ created:
     - database/factories/SkillFactory.php
     - database/factories/AchievementFactory.php
     - database/factories/MessageFactory.php
-    - database/migrations/2026_02_16_031013_create_users_table.php
-    - database/migrations/2026_02_16_031014_create_circles_table.php
-    - database/migrations/2026_02_16_031015_create_circle_members_table.php
-    - database/migrations/2026_02_16_031016_create_skills_table.php
-    - database/migrations/2026_02_16_031017_create_achievements_table.php
-    - database/migrations/2026_02_16_031018_create_messages_table.php
+    - database/migrations/2026_02_17_114856_create_users_table.php
+    - database/migrations/2026_02_17_114857_create_circles_table.php
+    - database/migrations/2026_02_17_114858_create_circle_members_table.php
+    - database/migrations/2026_02_17_114859_create_skills_table.php
+    - database/migrations/2026_02_17_114900_create_achievements_table.php
+    - database/migrations/2026_02_17_114901_create_messages_table.php
     - app/Models/User.php
     - app/Models/Circle.php
     - app/Models/CircleMember.php
@@ -33,7 +33,7 @@ skipped:
     - resources/views/achievement/show.blade.php
     - resources/views/achievement/edit.blade.php
 models:
-    User: { name: string, email: 'string unique', avatar_url: 'string nullable', bio: 'text nullable', location: 'string nullable comment:Ville principale (ex: Colmar)', coordinates: 'json nullable comment:{lat: ..., lng: ...}', trust_score: 'integer default:0', relationships: { hasMany: 'OwnedCircles:Circle, Achievement, SentMessages:Message, ReceivedMessages:Message, JoinedCircles:CircleMember' } }
+    User: { name: string, email: 'string unique', avatar_url: 'string nullable', bio: 'text nullable', location: 'string nullable comment:Ville principale (ex: Colmar)', coordinates: 'json nullable comment:{lat: ..., lng: ...}', trust_score: 'integer default:0', parent_id: 'id foreign:users nullable', is_managed: 'boolean default:false', transfer_token: 'string nullable unique', transfer_code: 'string nullable', relationships: { belongsTo: 'Parent:User:parent_id', hasMany: 'OwnedCircles:Circle, Achievement, SentMessages:Message, ReceivedMessages:Message, JoinedCircles:CircleMember, ManagedUsers:User:parent_id' } }
     Post: { user_id: id, content: text, relationships: { belongsTo: User, morphMany: 'Comment, Reaction' } }
     Comment: { user_id: id, content: text, relationships: { belongsTo: User, morphTo: Commentable, morphMany: Reaction } }
     Reaction: { user_id: id, type: string, relationships: { belongsTo: User, morphTo: Reactable } }

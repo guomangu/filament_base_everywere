@@ -97,11 +97,14 @@ class Profile extends Component
         // 1. Get Immediate Active Members (including owner)
         $memberIds = $this->circle->activeMembers()->pluck('user_id')->push($this->circle->owner_id)->unique();
 
-        // 2. Immediate Experts & Skills
+        // 2. Immediate Experts & Skills (including Proches)
         $memberExperts = \App\Models\User::whereIn('id', $memberIds)
-            ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
+            ->with([
+                'achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill'),
+                'proches.achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')
+            ])
             ->get()
-            ->filter(fn($u) => $u->achievements->count() > 0);
+            ->filter(fn($u) => $u->achievements->count() > 0 || $u->proches->flatMap->achievements->count() > 0);
 
         // 3. Extended Network Experts (Proximity 2)
         $secondaryCircleIds = \App\Models\CircleMember::whereIn('user_id', $memberIds)

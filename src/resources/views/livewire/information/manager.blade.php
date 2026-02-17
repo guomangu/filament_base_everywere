@@ -4,7 +4,7 @@
 }">
     <!-- Display Existing Information -->
     <div class="flex flex-wrap gap-2 mb-4">
-        @foreach($model->informations as $info)
+        @foreach(($model->informations ?? []) as $info)
             <div class="group relative bg-white/60 backdrop-blur-md border border-slate-100 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm hover:shadow-md transition-all cursor-pointer"
                 wire:click="viewInfo({{ $info->id }})">
                 @if($info->images && count($info->images) > 0)

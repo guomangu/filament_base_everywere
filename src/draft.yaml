@@ -7,8 +7,13 @@ models:
     location: "string nullable comment:Ville principale (ex: Colmar)"
     coordinates: "json nullable comment:{lat: ..., lng: ...}"
     trust_score: integer default:0
+    parent_id: id foreign:users nullable
+    is_managed: boolean default:false
+    transfer_token: string nullable unique
+    transfer_code: string nullable
     relationships:
-      hasMany: OwnedCircles:Circle, Achievement, SentMessages:Message, ReceivedMessages:Message, JoinedCircles:CircleMember
+      belongsTo: Parent:User:parent_id
+      hasMany: OwnedCircles:Circle, Achievement, SentMessages:Message, ReceivedMessages:Message, JoinedCircles:CircleMember, ManagedUsers:User:parent_id
 
   Circle:
     name: string

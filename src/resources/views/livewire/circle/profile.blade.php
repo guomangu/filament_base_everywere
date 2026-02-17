@@ -215,10 +215,21 @@
                             </div>
                             
                             <div class="flex flex-wrap gap-2">
+                                {{-- Direct Achievements --}}
                                 @foreach($expert->achievements->unique('skill_id') as $ach)
                                     <span class="px-3 py-1.5 bg-slate-900/5 border border-slate-900/5 rounded-xl text-[9px] font-black text-slate-600 uppercase tracking-tight group-hover:bg-white group-hover:border-slate-100 transition-all">
                                         {{ $ach->skill->name }}
                                     </span>
+                                @endforeach
+
+                                {{-- Proche Achievements --}}
+                                @foreach($expert->proches as $proche)
+                                    @foreach($proche->achievements->unique('skill_id') as $ach)
+                                        <span class="px-3 py-1.5 bg-blue-50 border border-blue-100/50 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-tight group-hover:bg-white transition-all flex flex-col items-center gap-0.5">
+                                            <span>{{ $ach->skill->name }}</span>
+                                            <span class="text-[7px] opacity-40 leading-none">Proche: {{ $proche->name }}</span>
+                                        </span>
+                                    @endforeach
                                 @endforeach
                             </div>
                         </div>

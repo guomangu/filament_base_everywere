@@ -43,7 +43,9 @@ class Home extends Component
     {
         $circles = \App\Models\Circle::with([
             'owner.achievements.skill', 
+            'owner.proches.achievements.skill',
             'members.user.achievements.skill', 
+            'members.user.proches.achievements.skill',
             'achievements.skill'
         ]);
 
@@ -99,7 +101,28 @@ class Home extends Component
                             $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
                         });
                   })
-                  // 4. Search in Board Messages
+                  // 4. Search in Proches of Owner/Members
+                  ->orWhereHas('owner.proches', function($pq) use ($searchTerm) {
+                      $pq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                        ->orWhereHas('achievements', function($aq) use ($searchTerm) {
+                            $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
+                              ->orWhereHas('skill', function($sq) use ($searchTerm) {
+                                  $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
+                              });
+                        });
+                  })
+                  ->orWhereHas('members.user.proches', function($pq) use ($searchTerm) {
+                      $pq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                        ->orWhereHas('achievements', function($aq) use ($searchTerm) {
+                            $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
+                              ->orWhereHas('skill', function($sq) use ($searchTerm) {
+                                  $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
+                              });
+                        });
+                  })
+                  // 5. Search in Board Messages
                   ->orWhereHas('messages', function($mq) use ($searchTerm) {
                       $mq->whereRaw('LOWER(content) LIKE ?', [$searchTerm]);
                   });
@@ -185,6 +208,7 @@ class Home extends Component
 
             // Priority 4: Member Expertise
             foreach($circle->members as $member) {
+                // Member Direct Match
                 $memberMatch = $member->user->achievements->filter(fn($a) => 
                     stripos(mb_strtolower($a->title), $search) !== false || 
                     stripos(mb_strtolower($a->description), $search) !== false || 
@@ -198,6 +222,44 @@ class Home extends Component
                                       'name' => $member->user->name,
                                       'image' => $member->user->avatar,
                                       'detail' => $memberMatch ? ($memberMatch->skill->name ?? $memberMatch->title) : 'Profil vérifié'
+                                  ]);
+                }
+
+                // Member Proche Match
+                foreach($member->user->proches as $proche) {
+                    $procheMatch = $proche->achievements->filter(fn($a) => 
+                        stripos(mb_strtolower($a->title), $search) !== false || 
+                        stripos(mb_strtolower($a->description), $search) !== false || 
+                        stripos(mb_strtolower($a->skill->name), $search) !== false
+                    )->first();
+
+                    if ($procheMatch || stripos(mb_strtolower($proche->name), $search) !== false) {
+                        return $circle->setAttribute('matching_context', "Expertise Proche de Membre")
+                                      ->setAttribute('matched_object', [
+                                          'type' => 'user',
+                                          'name' => $proche->name,
+                                          'image' => null,
+                                          'detail' => "(Géré par {$member->user->name})"
+                                      ]);
+                    }
+                }
+            }
+
+            // Priority 5: Owner Proche Match
+            foreach($circle->owner->proches as $proche) {
+                $procheMatch = $proche->achievements->filter(fn($a) => 
+                    stripos(mb_strtolower($a->title), $search) !== false || 
+                    stripos(mb_strtolower($a->description), $search) !== false || 
+                    stripos(mb_strtolower($a->skill->name), $search) !== false
+                )->first();
+
+                if ($procheMatch || stripos(mb_strtolower($proche->name), $search) !== false) {
+                    return $circle->setAttribute('matching_context', "Expertise Proche de Fondateur")
+                                  ->setAttribute('matched_object', [
+                                      'type' => 'user',
+                                      'name' => $proche->name,
+                                      'image' => null,
+                                      'detail' => "(Géré par {$circle->owner->name})"
                                   ]);
                 }
             }

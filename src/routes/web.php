@@ -18,6 +18,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/edit', UserEdit::class)->name('profile.edit');
 });
 
+Route::get('/proches/claim/{token}', \App\Livewire\User\Claim::class)->name('proches.claim');
+
 Route::get('/circles/{circle}', CircleProfile::class)->name('circles.show');
 Route::get('/users/{user}', UserProfile::class)->name('users.show');
 
@@ -27,3 +29,8 @@ Route::post('/logout', function () {
     request()->session()->regenerateToken();
     return redirect('/');
 })->name('logout');
+
+
+Route::resource('circles', App\Http\Controllers\CircleController::class)->except(['create', 'show', 'edit']);
+
+Route::resource('achievements', App\Http\Controllers\AchievementController::class)->except(['create', 'show', 'edit']);
