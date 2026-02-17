@@ -25,29 +25,43 @@
                             "{{ $user->bio ?? 'Ce bâtisseur de confiance n\'a pas encore rédigé sa bio.' }}"
                         </p>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10">
+                        <div class="mt-10">
                             @auth
                                 @if(auth()->id() !== $user->id)
-                                    @php $hasVouched = $user->vouchesReceived->contains('voucher_id', auth()->id()); @endphp
-                                    <button wire:click="vouch" @class([
-                                        'px-6 py-4 rounded-[2rem] font-black text-sm tracking-widest uppercase transition-all shadow-xl flex items-center justify-center gap-3',
-                                        'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20' => !$hasVouched,
-                                        'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/10' => $hasVouched,
-                                    ])>
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                                        {{ $hasVouched ? 'Retirer Garantie' : 'Se Porter Garant' }}
-                                    </button>
-                                    <button class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-blue-600 hover:text-blue-600 transition-all">
-                                        Message
-                                    </button>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        @php $hasVouched = $user->vouchesReceived->contains('voucher_id', auth()->id()); @endphp
+                                        <button wire:click="vouch" @class([
+                                            'px-6 py-4 rounded-[2rem] font-black text-sm tracking-widest uppercase transition-all shadow-xl flex items-center justify-center gap-3',
+                                            'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20' => !$hasVouched,
+                                            'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/10' => $hasVouched,
+                                        ])>
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                            {{ $hasVouched ? 'Retirer Garantie' : 'Se Porter Garant' }}
+                                        </button>
+                                        <button class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-blue-600 hover:text-blue-600 transition-all">
+                                            Message
+                                        </button>
+                                    </div>
                                 @else
-                                    <button wire:click="openCreateModal" class="px-6 py-4 bg-blue-600 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                        Ajouter Compétence
-                                    </button>
-                                    <a href="{{ route('profile.edit') }}" class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-slate-900 transition-all text-center">
-                                        Éditer Profil
-                                    </a>
+                                    <div class="space-y-4">
+                                        <!-- Primary Platform Action -->
+                                        <a href="{{ route('circles.create') }}" class="block px-6 py-5 bg-slate-900 border-2 border-slate-900 text-white rounded-[2.5rem] font-black text-base tracking-[0.2em] uppercase hover:bg-blue-600 hover:border-blue-600 transition-all flex items-center justify-center gap-4 shadow-2xl shadow-blue-500/30 group/circle">
+                                            <svg class="w-6 h-6 group-hover/circle:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 20a10.003 10.003 0 006.235-2.197m-2.322-9.047a7.334 7.334 0 011.129 3.125m-1.282-3.125a10 10 0 11-14.703 0m14.703 0c-1.347-1.625-3.323-2.651-5.547-2.651-2.224 0-4.2 1.026-5.547 2.651"/></svg>
+                                            Lancer un nouveau Cercle
+                                        </a>
+
+                                        <!-- Secondary Profile Actions -->
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <button wire:click="openCreateModal" class="px-6 py-4 bg-blue-600 text-white rounded-[2rem] font-black text-xs tracking-widest uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                                Ajouter Compétence
+                                            </button>
+                                            <a href="{{ route('profile.edit') }}" class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-400 rounded-[2rem] font-black text-[10px] tracking-widest uppercase hover:border-slate-300 hover:text-slate-900 transition-all flex items-center justify-center gap-3">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                Paramètres
+                                            </a>
+                                        </div>
+                                    </div>
                                 @endif
                             @endauth
                         </div>

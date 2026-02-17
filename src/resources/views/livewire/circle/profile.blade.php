@@ -30,7 +30,7 @@
         </div>
     </div>
     <!-- Circle Hero Header -->
-    <div class="relative pt-32 pb-16 overflow-hidden">
+    <div class="relative pt-10 pb-16 overflow-hidden">
         <!-- Background Accents -->
         <div class="absolute inset-0 -z-10">
             <div class="absolute top-[-20%] right-[-10%] w-[50%] aspect-square bg-blue-500/5 rounded-full blur-[140px]"></div>
