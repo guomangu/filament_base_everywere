@@ -90,7 +90,7 @@
                                 <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres</div>
                             </div>
                             <div class="text-center md:text-left">
-                                <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->achievements->count() }}</div>
+                                <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->getValidatedAchievementsCount() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Preuves</div>
                             </div>
                             <div class="text-center md:text-left">

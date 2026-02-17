@@ -145,4 +145,16 @@ class Circle extends Model
         // Combine and return unique
         return $circleInfo->merge($ownerInfo)->merge($memberInfo)->unique('id');
     }
+
+    /**
+     * Count validated achievements (with at least one positive validation) from all members
+     */
+    public function getValidatedAchievementsCount(): int
+    {
+        return $this->getAllMemberAchievements()
+            ->filter(function($achievement) {
+                return $achievement->validations->where('type', 'validate')->count() > 0;
+            })
+            ->count();
+    }
 }
