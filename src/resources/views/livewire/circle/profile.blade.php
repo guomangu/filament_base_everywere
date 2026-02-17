@@ -86,7 +86,7 @@
                         <!-- Stats Bar -->
                         <div class="grid grid-cols-3 gap-4 md:gap-8 py-8 border-t border-slate-100">
                             <div class="text-center md:text-left">
-                                <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->members->count() }}</div>
+                                <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->activeMembers->count() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres</div>
                             </div>
                             <div class="text-center md:text-left">
@@ -197,48 +197,31 @@
                 <div class="flex items-center justify-between mb-8">
                     <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                         Répertoire des Compétences
-                        <span class="text-xs font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full">{{ $circleSkills->count() }}</span>
+                        <span class="text-xs font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full">{{ $allSkills->count() }}</span>
                     </h2>
                 </div>
 
-                <div class="grid grid-cols-1 gap-6">
-                    @forelse($circleSkills as $skillId => $achievements)
-                        @php $latestAch = $achievements->first(); @endphp
-                        <div class="group relative bg-white/60 backdrop-blur-2xl border border-white/60 p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all duration-500">
-                            <div class="flex flex-col sm:flex-row items-center gap-4 md:gap-6">
-                                <!-- Skill Icon & Info -->
-                                <div class="flex items-center gap-4 flex-shrink-0 w-full sm:w-auto">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-[10px] md:text-xs font-black shadow-lg uppercase">
-                                        {{ substr($latestAch->skill->name, 0, 2) }}
-                                    </div>
-                                    <div class="min-w-0">
-                                        <h3 class="font-black text-slate-900 uppercase tracking-tight text-sm md:text-base truncate">{{ $latestAch->skill->name }}</h3>
-                                        <span class="text-[8px] md:text-[9px] font-black text-blue-500 uppercase tracking-widest">{{ $achievements->count() }} expert(s)</span>
-                                    </div>
-                                </div>
-                                <div class="hidden sm:block h-8 w-px bg-slate-100 flex-shrink-0"></div>
-                                <!-- Latest Proof & User -->
-                                <div class="flex-grow flex flex-col md:flex-row items-center gap-4 md:gap-6 w-full">
-                                    <div class="flex-grow text-center sm:text-left w-full">
-                                        <div class="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Dernière réussite :</div>
-                                        <h4 class="font-black text-slate-900 text-xs md:text-sm italic group-hover:text-blue-600 transition-colors line-clamp-1">"{{ $latestAch->title }}"</h4>
-                                    </div>
-                                    <a href="{{ route('users.show', $latestAch->user) }}" class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl border border-slate-100 flex-shrink-0 hover:bg-white hover:border-blue-200 transition-all group/u w-full sm:w-auto justify-center sm:justify-start">
-                                        <img src="{{ $latestAch->user->avatar }}" class="w-5 h-5 md:w-6 md:h-6 rounded-lg object-cover shadow-sm group-hover/u:scale-110 transition-transform">
-                                        <span class="text-[8px] md:text-[10px] font-black text-slate-600 uppercase tracking-tight group-hover/u:text-blue-600 transition-colors truncate max-w-[100px]">{{ $latestAch->user->name }}</span>
-                                    </a>
-                                </div>
-                                <!-- Detail Action -->
-                                <div class="flex-shrink-0 hidden sm:block">
-                                    <button class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                                        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <div class="flex flex-wrap gap-3">
+                    @forelse($allSkills as $item)
+                        <a href="{{ route('users.show', $item['expert_id']) }}" @class([
+                            'group/tag flex items-center gap-2 px-4 py-2 rounded-2xl border transition-all shadow-sm',
+                            'bg-white border-slate-100 hover:border-blue-500 hover:shadow-md' => !$item['is_extended'],
+                            'bg-slate-50 border-dashed border-slate-200 hover:bg-white hover:border-blue-300' => $item['is_extended'],
+                        ])>
+                            <div @class([
+                                'w-2 h-2 rounded-full',
+                                'bg-blue-500' => !$item['is_extended'],
+                                'bg-slate-300 group-hover/tag:bg-blue-300' => $item['is_extended'],
+                            ])></div>
+                            <span class="text-xs font-black uppercase tracking-tight text-slate-900">{{ $item['skill'] }}</span>
+                            <span class="text-[9px] font-bold text-slate-400 group-hover/tag:text-blue-500 transition-colors italic">· {{ $item['expert'] }}</span>
+                            @if($item['is_extended'])
+                                <svg class="w-3 h-3 text-slate-300 group-hover/tag:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                            @endif
+                        </a>
                     @empty
-                        <div class="py-20 text-center bg-white/40 border border-white/60 rounded-[3rem]">
-                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm italic">Aucune compétence encore indexée.</p>
+                        <div class="w-full py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
+                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm italic">Aucune expertise encore indexée.</p>
                         </div>
                     @endforelse
                 </div>
@@ -246,9 +229,9 @@
 
             <!-- Compact Members Section at Bottom -->
             <div class="pt-12 border-t border-slate-100">
-                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Membres du Cercle</h3>
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Membres Actifs</h3>
                 <div class="flex flex-wrap gap-3">
-                    @foreach($circle->members as $member)
+                    @foreach($circle->activeMembers as $member)
                         <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-2 md:gap-3 bg-white/60 p-1.5 md:p-2 pr-3 md:pr-4 rounded-xl md:rounded-2xl border border-white/60 hover:border-blue-200 hover:bg-white transition-colors group">
                             <img src="{{ $member->user->avatar }}" class="w-6 h-6 md:w-8 md:h-8 rounded-lg md:rounded-xl object-cover shadow-sm group-hover:scale-110 transition-transform">
                             <div class="min-w-0">
@@ -271,18 +254,30 @@
                     <span class="px-3 py-1 bg-white/10 text-xs rounded-full border border-white/10 font-black">{{ $circle->messages->count() }}</span>
                 </h2>
 
-                <!-- Input area if member (Moved to Top) -->
+                <!-- Input area if active member or owner -->
                 @auth
+                    @php 
+                        $isActiveMember = $circle->activeMembers->contains('user_id', auth()->id());
+                        $isOwner = $circle->owner_id === auth()->id();
+                    @endphp
+
                     <div class="relative z-10 p-4 bg-white/5 border border-white/10 rounded-[2.5rem] mb-10">
-                        <textarea wire:model="message" 
-                            placeholder="{{ $circle->members->contains('user_id', auth()->id()) || $circle->owner_id === auth()->id() ? 'Partagez une info logistique...' : 'Posez une question en tant qu\'invité...' }}" 
-                            class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
-                            rows="3"></textarea>
-                        
-                        <button wire:click="sendMessage" 
-                            class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-white/5">
-                            Envoyer
-                        </button>
+                        @if($isActiveMember || $isOwner)
+                            <textarea wire:model="message" 
+                                placeholder="Partagez une info logistique..." 
+                                class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
+                                rows="3"></textarea>
+                            
+                            <button wire:click="sendMessage" 
+                                class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-white/5">
+                                Envoyer
+                            </button>
+                        @else
+                            <div class="py-12 text-center">
+                                <svg class="w-6 h-6 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                <p class="text-[10px] font-black uppercase text-slate-600 tracking-widest leading-relaxed">Le Board est réservé<br>aux membres actifs.</p>
+                            </div>
+                        @endif
                     </div>
                 @else
                     <div class="relative z-10 text-center p-8 bg-white/5 border border-dashed border-white/10 rounded-3xl mb-10">

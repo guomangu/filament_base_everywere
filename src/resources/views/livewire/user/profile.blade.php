@@ -43,7 +43,7 @@
                                 @else
                                     <button wire:click="openCreateModal" class="px-6 py-4 bg-blue-600 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                        Ajouter Succès
+                                        Ajouter Compétence
                                     </button>
                                     <a href="{{ route('profile.edit') }}" class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-slate-900 transition-all text-center">
                                         Éditer Profil
@@ -105,25 +105,52 @@
                 </div>
             </div>
  
-            <!-- Circles Joined -->
+            <!-- Répertoire des Compétences (Extended Network) -->
             <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
-                <h3 class="text-2xl font-black mb-8 tracking-tight relative z-10">Cercles de Confiance</h3>
-                <div class="space-y-3 relative z-10">
-                    @forelse($user->joinedCircles as $circle)
-                        <a href="{{ route('circles.show', $circle) }}" class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 rounded-2xl transition-all group">
-                            <div class="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                            </div>
-                            <div class="min-w-0 flex-grow">
-                                <h4 class="font-bold text-slate-200 truncate text-sm">{{ $circle->name }}</h4>
-                                <span class="text-[9px] font-black uppercase tracking-widest text-slate-500 italic">{{ $circle->type }}</span>
-                            </div>
+                <div class="flex items-center justify-between mb-8 relative z-10">
+                    <h3 class="text-2xl font-black tracking-tight">Répertoire Réseau</h3>
+                    <span class="text-[9px] font-black uppercase text-blue-400 border border-blue-400/30 px-2 py-0.5 rounded-full">Proximité 2</span>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 relative z-10">
+                    @forelse($extendedSkills as $item)
+                        <a href="{{ route('users.show', $item['expert_id']) }}" class="group/tag flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/5 hover:bg-white hover:border-slate-700 rounded-xl transition-all">
+                            <span class="text-[10px] font-black uppercase tracking-tight text-slate-300 group-hover/tag:text-slate-900">{{ $item['skill'] }}</span>
+                            <span class="w-1 h-1 bg-white/20 rounded-full group-hover/tag:bg-slate-200"></span>
+                            <span class="text-[8px] font-black text-slate-500 group-hover/tag:text-slate-600 italic">{{ $item['expert'] }}</span>
                         </a>
                     @empty
-                        <div class="py-8 text-center text-slate-600 text-[10px] font-black uppercase tracking-widest">Aucun cercle rejoint...</div>
+                        <div class="w-full py-8 text-center text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                            Rejoignez des cercles pour voir les talents de vos pairs...
+                        </div>
                     @endforelse
                 </div>
+
+                @if($user->activeJoinedCircles->count() > 0)
+                    <div class="mt-10 pt-8 border-t border-white/5 relative z-10">
+                        <h4 class="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Vos Points d'Ancrage</h4>
+                        <div class="space-y-3">
+                             @foreach($user->activeJoinedCircles as $circle)
+                                <a href="{{ route('circles.show', $circle) }}" class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 rounded-2xl transition-all group/c">
+                                    <div class="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 group-hover/c:scale-110 transition-transform">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            @if($circle->type === 'business')
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            @else
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            @endif
+                                        </svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[10px] font-black text-slate-200 group-hover/c:text-blue-400 transition-colors uppercase tracking-widest truncate">{{ $circle->name }}</div>
+                                        <div class="text-[8px] font-bold text-slate-500 uppercase">{{ $circle->activeMembers->count() }} expert(s) actifs</div>
+                                    </div>
+                                </a>
+                             @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -154,7 +181,7 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ $achievements->count() }} Preuve(s) certifiée(s)</span>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ $achievements->reject(fn($a) => $a->title === '__SKELETON__')->count() }} Preuve(s) certifiée(s)</span>
                                 </div>
                             </div>
                         </div>
@@ -164,7 +191,7 @@
                             <!-- Timeline Connector -->
                             <div class="absolute left-8 md:left-[4.5rem] top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-100 to-transparent"></div>
                             
-                            @foreach($achievements as $achievement)
+                            @foreach($achievements->reject(fn($a) => $a->title === '__SKELETON__') as $achievement)
                                 <div class="group relative">
                                     <!-- Point -->
                                     <div class="absolute -left-[4.5rem] md:-left-[5rem] top-8 w-4 h-4 rounded-full bg-white border-4 border-slate-900 shadow-lg z-10 group-hover:bg-blue-600 group-hover:border-blue-200 transition-all duration-500"></div>
@@ -219,10 +246,10 @@
                             <span class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-xl font-black">{{ $step }}</span>
                             <div>
                                 <h3 class="text-2xl font-black tracking-tight leading-none uppercase">
-                                    {{ $step === 1 ? 'Quelle est votre expertise ?' : 'Partagez une réalisation' }}
+                                    {{ $step === 1 ? 'Quelle est votre expertise ?' : 'Certifier cette expertise' }}
                                 </h3>
                                 <p class="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">
-                                    {{ $step === 1 ? 'Étape 1 sur 2 : La compétence' : 'Étape 2 sur 2 : La preuve factuelle' }}
+                                    {{ $step === 1 ? 'Ajout d\'une nouvelle compétence' : 'Dépôt de preuve factuelle' }}
                                 </p>
                             </div>
                         </div>
@@ -244,8 +271,8 @@
                                 @error('skillName') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
                             </div>
 
-                            <button wire:click="goToStep2" class="w-full py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm tracking-[0.3em] uppercase hover:bg-blue-600 transition-all shadow-2xl shadow-slate-900/20">
-                                Continuer vers la preuve
+                            <button wire:click="submitSkillOnly" class="w-full py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm tracking-[0.3em] uppercase hover:bg-blue-600 transition-all shadow-2xl shadow-slate-900/20">
+                                Ajouter cette compétence
                             </button>
                         </div>
                     @else
@@ -254,7 +281,7 @@
                             <div class="flex items-center gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-4">
                                 <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Compétence :</span>
                                 <span class="text-sm font-black text-slate-900 italic">"{{ $skillName }}"</span>
-                                <button wire:click="$set('step', 1)" class="ml-auto text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Modifier</button>
+                                {{-- No back button here as we are adding proof to an existing skill context --}}
                             </div>
 
                             <div>

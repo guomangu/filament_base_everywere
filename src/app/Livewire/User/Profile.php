@@ -26,7 +26,7 @@ class Profile extends Component
 
     public function mount(\App\Models\User $user)
     {
-        $this->user = $user->load(['joinedCircles', 'achievements.skill', 'achievements.circle', 'vouchesReceived.voucher']);
+        $this->user = $user->load(['activeJoinedCircles.members.user.achievements.skill', 'achievements.skill', 'achievements.circle', 'vouchesReceived.voucher']);
     }
 
     public function vouch()
@@ -67,49 +67,58 @@ class Profile extends Component
         $this->reset(['step', 'skillName', 'selectedSkillId', 'proofTitle', 'proofDescription']);
         $this->skillName = $skillName;
         
-        $skill = \App\Models\Skill::where('name', 'like', $this->skillName)->first();
-        if ($skill) {
-            $this->selectedSkillId = $skill->id;
+        $skill = \App\Models\Skill::where('name', $this->skillName)->first();
+        if (!$skill) {
+             $skill = \App\Models\Skill::create([
+                'name' => $this->skillName,
+                'slug' => \Illuminate\Support\Str::slug($this->skillName),
+            ]);
         }
-
-        $this->step = 2;
+        
+        $this->selectedSkillId = $skill->id;
+        $this->step = 2; // Direct to Proof step
         $this->showCreateModal = true;
     }
 
-    public function goToStep2()
+    public function submitSkillOnly()
     {
         $this->validateOnly('skillName');
 
-        // Try to find if skill exists
-        $skill = \App\Models\Skill::where('name', 'like', $this->skillName)->first();
-        if ($skill) {
-            $this->selectedSkillId = $skill->id;
-        }
+        $skill = \App\Models\Skill::firstOrCreate([
+            'name' => $this->skillName,
+        ], [
+            'slug' => \Illuminate\Support\Str::slug($this->skillName),
+        ]);
 
-        $this->step = 2;
+        \App\Models\Achievement::create([
+            'user_id' => auth()->id(),
+            'skill_id' => $skill->id,
+            'title' => '__SKELETON__',
+            'description' => 'Détails et preuves à venir...',
+            'is_verified' => false,
+        ]);
+
+        $this->showCreateModal = false;
+        $this->user->load('achievements.skill', 'achievements.circle');
+        
+        $this->dispatch('notify', [
+            'message' => 'Compétence ajoutée à votre profil !',
+            'type' => 'success'
+        ]);
     }
 
     public function submitProof()
     {
         $this->validate();
 
-        // Ensure skill exists
-        if (!$this->selectedSkillId) {
-            $skill = \App\Models\Skill::create([
-                'name' => $this->skillName,
-                'slug' => \Illuminate\Support\Str::slug($this->skillName),
-            ]);
-            $this->selectedSkillId = $skill->id;
-        }
-
         // Create Achievement
         \App\Models\Achievement::create([
             'user_id' => auth()->id(),
             'skill_id' => $this->selectedSkillId,
-            'circle_id' => null, // No longer selected manually
+            'circle_id' => null, 
             'title' => $this->proofTitle,
             'description' => $this->proofDescription,
-            'is_verified' => false, // Default to false
+            'is_verified' => false, 
         ]);
 
         $this->showCreateModal = false;
@@ -123,9 +132,35 @@ class Profile extends Component
 
     public function render()
     {
+        // 1. Members of my ACTIVE circles (excluding myself)
+        $circleMemberIds = \App\Models\CircleMember::whereIn('circle_id', $this->user->activeJoinedCircles->pluck('id'))
+            ->where('status', 'active')
+            ->where('user_id', '!=', $this->user->id)
+            ->pluck('user_id')
+            ->unique();
+
+        // 2. Experts from these circles
+        $experts = \App\Models\User::whereIn('id', $circleMemberIds)
+            ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
+            ->get();
+
+        // 3. Map to unique skills with expert attribution
+        $extendedSkills = $experts->flatMap(function($expert) {
+            return $expert->achievements->map(fn($a) => [
+                'skill' => $a->skill->name,
+                'expert' => $expert->name,
+                'trust' => $expert->trust_score,
+                'expert_id' => $expert->id
+            ]);
+        })
+        ->unique('skill')
+        ->sortByDesc('trust')
+        ->take(50);
+
         return view('livewire.user.profile', [
             'totalVouchs' => $this->user->vouchesReceived->count(),
-            'groupedAchievements' => $this->user->achievements->groupBy(fn($ach) => $ach->skill->name)
+            'groupedAchievements' => $this->user->achievements->groupBy(fn($ach) => $ach->skill->name),
+            'extendedSkills' => $extendedSkills
         ]);
     }
 }

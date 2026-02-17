@@ -106,6 +106,14 @@ class User extends Authenticatable implements FilamentUser
             ->withTimestamps();
     }
 
+    public function activeJoinedCircles()
+    {
+        return $this->belongsToMany(Circle::class, 'circle_members')
+            ->wherePivot('status', 'active')
+            ->withPivot(['role', 'status', 'vouched_by_id', 'joined_at'])
+            ->withTimestamps();
+    }
+
     public function circleMembers(): HasMany
     {
         return $this->hasMany(CircleMember::class);

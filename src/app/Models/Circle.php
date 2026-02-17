@@ -50,6 +50,11 @@ class Circle extends Model
         return $this->hasMany(CircleMember::class);
     }
 
+    public function activeMembers(): HasMany
+    {
+        return $this->hasMany(CircleMember::class)->where('status', 'active');
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
