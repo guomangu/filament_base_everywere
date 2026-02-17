@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use App\Models\Circle;
+use App\Models\CircleMember;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -30,21 +32,31 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Vouch::class, 'voucher_id');
     }
 
+    public function validationsReceived(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(AchievementValidation::class, Achievement::class);
+    }
+
     public function recalculateTrustScore()
     {
         // Base score is 10 (neutral)
         $score = 10;
         
         // Impact from vouches: sum of (guarantor_trust_score / 10)
-        // This means a guarantor with 90% trust adds 9 points.
         $vouchImpact = $this->vouchesReceived()->with('voucher')->get()->sum(function($vouch) {
             return round($vouch->voucher->trust_score / 10);
         });
 
-        $score += $vouchImpact;
+        // Impact from Achievement Validations:
+        // Each validation adds points, each rejection removes points
+        $validationImpact = $this->validationsReceived()->get()->sum(function($v) {
+            return $v->type === 'validate' ? 2 : -5;
+        });
 
-        // Cap at 100
-        $this->update(['trust_score' => min(100, $score)]);
+        $score += $vouchImpact + $validationImpact;
+
+        // Cap between 0 and 100
+        $this->update(['trust_score' => max(0, min(100, $score))]);
     }
 
     protected $fillable = [
@@ -140,5 +152,56 @@ class User extends Authenticatable implements FilamentUser
     public function proches(): HasMany
     {
         return $this->hasMany(Proche::class, 'parent_id');
+    }
+
+    public function getTrustPathTo(User $other): array
+    {
+        if ($this->id === $other->id) {
+            return [['type' => 'user', 'name' => 'Vous', 'avatar' => $this->avatar]];
+        }
+
+        // 1st Degree: Common Circles
+        $myCircleIds = $this->activeJoinedCircles->pluck('id');
+        $otherCircleIds = $other->activeJoinedCircles->pluck('id');
+        $commonCircles = $myCircleIds->intersect($otherCircleIds);
+
+        if ($commonCircles->isNotEmpty()) {
+            $circle = Circle::find($commonCircles->first());
+            return [
+                ['type' => 'user', 'name' => 'Vous', 'avatar' => $this->avatar],
+                ['type' => 'circle', 'name' => $circle->name],
+                ['type' => 'user', 'name' => $other->name, 'avatar' => $other->avatar]
+            ];
+        }
+
+        // 2nd Degree: Intermediaries
+        // Get all members of my circles
+        $intermediaries = CircleMember::whereIn('circle_id', $myCircleIds)
+            ->where('status', 'active')
+            ->where('user_id', '!=', $this->id)
+            ->with(['user', 'circle'])
+            ->get();
+
+        foreach ($intermediaries as $member) {
+            $intermediary = $member->user;
+            $sharedWithMe = $member->circle;
+            
+            // Check if this intermediary shares a circle with $other
+            $interCircleIds = $intermediary->activeJoinedCircles->pluck('id');
+            $commonWithOther = $interCircleIds->intersect($otherCircleIds);
+            
+            if ($commonWithOther->isNotEmpty()) {
+                $sharedWithOther = Circle::find($commonWithOther->first());
+                return [
+                    ['type' => 'user', 'name' => 'Vous', 'avatar' => $this->avatar],
+                    ['type' => 'circle', 'name' => $sharedWithMe->name],
+                    ['type' => 'user', 'name' => $intermediary->name, 'avatar' => $intermediary->avatar],
+                    ['type' => 'circle', 'name' => $sharedWithOther->name],
+                    ['type' => 'user', 'name' => $other->name, 'avatar' => $other->avatar]
+                ];
+            }
+        }
+
+        return [];
     }
 }

@@ -24,6 +24,14 @@
                         <p class="text-slate-500 font-medium text-base md:text-xl max-w-2xl leading-relaxed italic px-4 md:px-0">
                             "{{ $user->bio ?? 'Ce bâtisseur de confiance n\'a pas encore rédigé sa bio.' }}"
                         </p>
+                        @auth
+                            @php $trustPath = auth()->user()->getTrustPathTo($user); @endphp
+                            @if(count($trustPath) > 0)
+                                <div class="mt-4 mb-2">
+                                    <x-user-trust-chain :path="$trustPath" />
+                                </div>
+                            @endif
+                        @endauth
                         
                         <div class="mt-10">
                             @auth
@@ -129,69 +137,114 @@
                 </div>
             </div>
  
-            <!-- Répertoire des Compétences (Extended Network) -->
-            <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
-                <div class="flex items-center justify-between mb-8 relative z-10">
-                    <h3 class="text-2xl font-black tracking-tight">Répertoire Réseau</h3>
-                    <span class="text-[9px] font-black uppercase text-blue-400 border border-blue-400/30 px-2 py-0.5 rounded-full">Proximité 2</span>
-                </div>
-                
-                <div class="space-y-4 relative z-10">
-                    @forelse($networkExperts as $expert)
-                        <div class="group/exp p-4 bg-white/5 border border-white/5 rounded-3xl hover:bg-white/10 hover:border-white/10 transition-all duration-500">
-                            <div class="flex items-center gap-4 mb-4">
-                                <a href="{{ route('users.show', $expert) }}" class="relative flex-shrink-0">
-                                    <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover ring-1 ring-white/10 group-hover/exp:ring-blue-500 transition-all">
-                                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-slate-900 group-hover/exp:scale-125 transition-transform"></div>
-                                </a>
-                                <div class="min-w-0">
-                                    <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{{ $expert->trust_score }}% Trust</div>
-                                    <a href="{{ route('users.show', $expert) }}" class="text-[11px] font-black text-white uppercase tracking-tight hover:text-blue-400 transition-colors truncate block">
-                                        {{ $expert->name }}
-                                    </a>
+            <!-- Répertoire Réseau (Dynamic & Searchable) -->
+            @if(auth()->check() && auth()->id() === $user->id)
+                <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 class="text-2xl font-black tracking-tight uppercase italic">Répertoire Réseau</h3>
+                                <p class="text-blue-400 text-[8px] font-black uppercase tracking-[0.3em] mt-1">Découverte 1er & 2ème Cercles</p>
+                            </div>
+                            <svg class="w-8 h-8 text-blue-500 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </div>
+
+                        <!-- Mini Search Bar -->
+                        <div class="mb-10 relative group">
+                            <input wire:model.live.debounce.250ms="search" type="text" 
+                                placeholder="Rechercher une expertise..." 
+                                class="w-full bg-white/5 border-white/10 focus:border-blue-500 focus:ring-0 rounded-2xl p-4 text-xs font-black uppercase tracking-widest placeholder:text-slate-600 transition-all">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-500 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            @if($search === '')
+                                @forelse($networkExperts as $expert)
+                                    <div class="group/exp p-4 bg-white/5 border border-white/5 rounded-3xl hover:bg-white/10 hover:border-white/10 transition-all duration-500">
+                                        <div class="flex items-center gap-4">
+                                            <a href="{{ route('users.show', $expert) }}" class="relative flex-shrink-0">
+                                                <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover ring-1 ring-white/10 group-hover/exp:ring-blue-500 transition-all">
+                                            </a>
+                                            <div class="min-w-0">
+                                                <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{{ $expert->trust_score }}% Trust</div>
+                                                <a href="{{ route('users.show', $expert) }}" class="text-[11px] font-black text-white uppercase tracking-tight hover:text-blue-400 transition-colors truncate block">
+                                                    {{ $expert->name }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-[9px] font-black text-slate-600 uppercase text-center py-4">Aucun expert suggéré.</p>
+                                @endforelse
+                            @else
+                                <!-- Search Results -->
+                                <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                    @forelse($searchResults as $result)
+                                        <div class="p-4 bg-white rounded-3xl group/res transition-all hover:ring-4 hover:ring-blue-500/10">
+                                            <div class="flex items-center gap-4 mb-4">
+                                                <img src="{{ $result->avatar }}" class="w-12 h-12 rounded-2xl object-cover">
+                                                <div class="min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <span @class([
+                                                            'text-[7px] font-black uppercase px-2 py-0.5 rounded-lg shadow-sm',
+                                                            'bg-blue-600 text-white' => $result->degree === 1,
+                                                            'bg-slate-900 text-white' => $result->degree === 2,
+                                                        ])>Cercle {{ $result->degree }}</span>
+                                                        <span class="text-[8px] font-black text-blue-600 uppercase italic">{{ $result->matchReason }}</span>
+                                                    </div>
+                                                    <a href="{{ route('users.show', $result) }}" class="text-xs font-black text-slate-900 uppercase hover:text-blue-600 transition-colors truncate block mt-1">{{ $result->name }}</a>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($result->achievements->pluck('skill')->unique('id')->take(3) as $skill)
+                                                    <span @class([
+                                                        'px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-tighter',
+                                                        'bg-blue-600 text-white' => str_contains(strtolower($skill->name), strtolower($search)),
+                                                        'bg-slate-50 text-slate-400' => !str_contains(strtolower($skill->name), strtolower($search)),
+                                                    ])>{{ $skill->name }}</span>
+                                                @endforeach
+                                            </div>
+
+                                            <a href="{{ route('users.show', $result) }}" class="mt-4 w-full py-2 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2">
+                                                Voir Profil
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                            </a>
+                                        </div>
+                                    @empty
+                                        <div class="py-12 text-center">
+                                            <p class="text-[9px] font-black text-slate-600 uppercase italic">Aucun résultat trouvé pour "{{ $search }}"</p>
+                                        </div>
+                                    @endforelse
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Anchor Points -->
+                        @if($user->activeJoinedCircles->count() > 0)
+                            <div class="mt-8 pt-8 border-t border-white/5">
+                                <h4 class="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 italic">Points d'Ancrage</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                     @foreach($user->activeJoinedCircles as $circle)
+                                        <a href="{{ route('circles.show', $circle) }}" class="flex items-center gap-2 p-2 bg-white/5 border border-white/5 hover:bg-white/10 rounded-xl transition-all group/ca">
+                                            <div class="w-6 h-6 bg-blue-600/20 rounded-lg flex items-center justify-center text-blue-400 text-[10px] font-black group-hover/ca:scale-110 transition-transform">
+                                                {{ substr($circle->name, 0, 1) }}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-[8px] font-black text-slate-300 truncate uppercase">{{ $circle->name }}</div>
+                                            </div>
+                                        </a>
+                                     @endforeach
                                 </div>
                             </div>
-                            
-                            <div class="flex flex-wrap gap-1.5 pl-1.5 border-l border-white/5">
-                                @foreach($expert->achievements->unique('skill_id')->take(4) as $ach)
-                                    <span class="px-2 py-0.5 bg-white/5 text-[8px] font-black text-slate-400 uppercase tracking-tighter rounded-md group-hover/exp:bg-slate-800 group-hover/exp:text-slate-300 transition-colors">
-                                        {{ $ach->skill->name }}
-                                    </span>
-                                @endforeach
-                            </div>
-                        </div>
-                    @empty
-                        <div class="w-full py-12 text-center text-slate-600 text-[10px] font-black uppercase tracking-widest bg-white/5 rounded-3xl border border-dashed border-white/5">
-                            Élargissez votre cercle pour voir les talents de vos pairs...
-                        </div>
-                    @endforelse
-                </div>
-
-                @if($user->activeJoinedCircles->count() > 0)
-                    <div class="mt-10 pt-8 border-t border-white/5 relative z-10">
-                        <h4 class="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Vos Points d'Ancrage</h4>
-                        <div class="space-y-3">
-                             @foreach($user->activeJoinedCircles as $circle)
-                                <a href="{{ route('circles.show', $circle) }}" class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 rounded-2xl transition-all group/c">
-                                    <div class="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 group-hover/c:scale-110 transition-transform">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            @if($circle->type === 'business')
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                            @else
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            @endif
-                                        </svg>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="text-[10px] font-black text-slate-200 group-hover/c:text-blue-400 transition-colors uppercase tracking-widest truncate">{{ $circle->name }}</div>
-                                        <div class="text-[8px] font-bold text-slate-500 uppercase">{{ $circle->activeMembers->count() }} expert(s) actifs</div>
-                                    </div>
-                                </a>
-                             @endforeach
-                        </div>
+                        @endif
                     </div>
-                @endif
+                </div>
+            @endif
             <!-- Mes Proches (Managed Proches) -->
             @if($user->id === auth()->id() && $user->proches->count() > 0)
                 <div class="bg-blue-600 rounded-[3.5rem] p-10 text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden mt-10">
@@ -276,11 +329,30 @@
                                         @endif
                                     @endauth
                                 </div>
+                                @php
+                                    $realizedDates = $achievements->reject(fn($a) => $a->title === '__SKELETON__')->pluck('realized_at')->filter();
+                                    $minYear = $realizedDates->count() ? $realizedDates->min()->format('Y') : null;
+                                    $maxYear = $realizedDates->count() ? $realizedDates->max()->format('Y') : null;
+                                @endphp
                                 <div class="flex items-center gap-2">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ $achievements->reject(fn($a) => $a->title === '__SKELETON__')->count() }} Preuve(s) certifiée(s)</span>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        {{ $achievements->reject(fn($a) => $a->title === '__SKELETON__')->count() }} Preuve(s) certifiée(s)
+                                        @if($minYear && $maxYear)
+                                            • {{ $minYear === $maxYear ? $minYear : "{$minYear} - {$maxYear}" }}
+                                        @endif
+                                    </span>
                                 </div>
                             </div>
+                            
+                            @auth
+                                @php $trustPath = auth()->user()->getTrustPathTo($user); @endphp
+                                @if(count($trustPath) > 0)
+                                    <div class="mt-4 lg:mt-6 w-full max-w-[280px]">
+                                        <x-user-trust-chain :path="$trustPath" />
+                                    </div>
+                                @endif
+                            @endauth
                         </div>
 
                         <!-- Proofs under this skill -->
@@ -296,16 +368,58 @@
                                     <div class="relative bg-white/60 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] hover:bg-white transition-all duration-500 group-hover:shadow-[0_40px_80px_-15px_rgba(59,130,246,0.08)]">
                                         <div class="flex items-start justify-between mb-6">
                                             <div class="flex flex-col gap-1">
-                                                <span class="text-[9px] font-black uppercase text-slate-300 tracking-widest">{{ $achievement->created_at->format('M Y') }}</span>
+                                                <span class="text-[9px] font-black uppercase text-slate-300 tracking-widest">
+                                                    {{ $achievement->realized_at ? $achievement->realized_at->format('M Y') : $achievement->created_at->format('M Y') }}
+                                                </span>
                                                 @if($achievement->proche_id)
                                                     <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-tighter">Proche : {{ $achievement->proche->name }}</span>
                                                 @endif
                                             </div>
-                                            @if($achievement->is_verified)
-                                                <div class="w-6 h-6 bg-green-50 text-green-500 rounded-lg flex items-center justify-center border border-green-100">
-                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                                                </div>
-                                            @endif
+                                            
+                                            <div class="flex items-center gap-2">
+                                                @auth
+                                                    @if(auth()->id() !== $user->id)
+                                                        @php 
+                                                            $myValidation = $achievement->validations->where('user_id', auth()->id())->first();
+                                                        @endphp
+                                                        <div class="flex bg-slate-100 rounded-xl p-1 gap-1">
+                                                            <button wire:click="initiateValidation({{ $achievement->id }}, 'validate')" @class([
+                                                                'p-1.5 rounded-lg transition-all',
+                                                                'bg-white text-green-600 shadow-sm' => $myValidation && $myValidation->type === 'validate',
+                                                                'text-slate-400 hover:text-green-600' => !$myValidation || $myValidation->type !== 'validate'
+                                                            ]) title="Valider">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                            </button>
+                                                            <button wire:click="initiateValidation({{ $achievement->id }}, 'reject')" @class([
+                                                                'p-1.5 rounded-lg transition-all',
+                                                                'bg-white text-red-600 shadow-sm' => $myValidation && $myValidation->type === 'reject',
+                                                                'text-slate-400 hover:text-red-600' => !$myValidation || $myValidation->type !== 'reject'
+                                                            ]) title="Rejeter">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                            </button>
+                                                        </div>
+                                                    @endif
+                                                @endauth
+                                                
+                                                <button wire:click="openValidationModal({{ $achievement->id }})" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-100 rounded-xl hover:border-blue-200 transition-all group/vcount">
+                                                    @php 
+                                                        $valCount = $achievement->validations->where('type', 'validate')->count();
+                                                        $rejCount = $achievement->validations->where('type', 'reject')->count();
+                                                        $score = $valCount - $rejCount;
+                                                    @endphp
+                                                    <span @class([
+                                                        'text-[10px] font-black',
+                                                        'text-green-600' => $score > 0,
+                                                        'text-red-600' => $score < 0,
+                                                        'text-slate-400' => $score === 0
+                                                    ])>{{ $score > 0 ? '+' : '' }}{{ $score }}</span>
+                                                    <div class="flex -space-x-2">
+                                                        @foreach($achievement->validations->take(3) as $v)
+                                                            <img src="{{ $v->user->avatar }}" class="w-4 h-4 rounded-full border border-white shadow-sm">
+                                                        @endforeach
+                                                    </div>
+                                                </button>
+                                            </div>
                                         </div>
                                         
                                         <div class="flex items-center gap-3 mb-4">
@@ -395,9 +509,16 @@
 
                             <div>
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Description / Contexte</label>
-                                <textarea wire:model="proofDescription" rows="4" placeholder="Expliquez ce que vous avez accompli, le résultat concret..." 
+                                <textarea wire:model="proofDescription" rows="3" placeholder="Expliquez ce que vous avez accompli, le résultat concret..." 
                                     class="w-full bg-slate-50 border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold italic"></textarea>
                                 @error('proofDescription') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Date de réalisation</label>
+                                <input wire:model="realizedAt" type="date"
+                                    class="w-full bg-slate-50 border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold uppercase tracking-widest">
+                                @error('realizedAt') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
                             </div>
 
                             <button wire:click="submitProof" class="w-full py-6 bg-blue-600 text-white rounded-[2.5rem] font-black text-sm tracking-[0.3em] uppercase hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/20">
@@ -435,6 +556,116 @@
                     <p class="text-center text-[9px] font-medium text-slate-400 italic">
                         Le profil sera géré par vous jusqu'à son transfert définitif.
                     </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Achievement Validation Details Modal -->
+    @if($showValidationModal && $selectedAchievement)
+        <div class="fixed inset-0 z-[110] flex items-center justify-center px-6">
+            <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" wire:click="$set('showValidationModal', false)"></div>
+            
+            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div class="bg-slate-900 p-10 text-white flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-black uppercase tracking-tight italic">"{{ $selectedAchievement->title }}"</h3>
+                        <div class="flex items-center gap-4 mt-2">
+                            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Score : {{ $selectedAchievement->validations->where('type', 'validate')->count() - $selectedAchievement->validations->where('type', 'reject')->count() }}</p>
+                            @if($votingType)
+                                <span @class([
+                                    'px-3 py-1 rounded-full text-[8px] font-black uppercase',
+                                    'bg-green-600 text-white' => $votingType === 'validate',
+                                    'bg-red-600 text-white' => $votingType === 'reject',
+                                ])>VOTE : {{ $votingType === 'validate' ? 'VALIDER' : 'REJETER' }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    <button wire:click="$set('showValidationModal', false)" class="text-slate-400 hover:text-white transition-colors">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                
+                    @php 
+                        $myV = $selectedAchievement->validations->where('user_id', auth()->id())->first();
+                    @endphp
+
+                    @if(($votingType || $myV) && !($myV?->reply))
+                        <div class="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-inner">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">
+                                {{ $myV ? 'Modifier votre retour' : 'Pourquoi ' . ($votingType === 'validate' ? 'validez' : 'rejetez') . '-vous cette preuve ?' }}
+                            </label>
+                            <textarea wire:model="validationComment" rows="3" placeholder="Laissez un message (optionnel)..." 
+                                class="w-full bg-white border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold italic shadow-sm"></textarea>
+                            <button wire:click="confirmValidation" @class([
+                                'w-full mt-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white transition-all shadow-lg',
+                                'bg-green-600 hover:bg-green-700 shadow-green-500/20' => ($votingType ?? ($myV?->type)) === 'validate',
+                                'bg-red-600 hover:bg-red-700 shadow-red-500/20' => ($votingType ?? ($myV?->type)) === 'reject',
+                            ])>
+                                {{ $myV ? 'Mettre à jour mon feedback' : 'Confirmer mon vote' }}
+                            </button>
+                        </div>
+                    @elseif($myV?->reply)
+                        <div class="bg-slate-900/5 p-8 rounded-[2.5rem] border border-slate-200 shadow-inner">
+                            <div class="flex items-center gap-3 mb-4">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Échange verrouillé</span>
+                            </div>
+                            <p class="text-xs font-bold text-slate-500 italic">"{{ $myV->comment }}"</p>
+                        </div>
+                    @endif
+
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-4 italic">Historique des retours</label>
+                        @forelse($selectedAchievement->validations as $v)
+                            <div @class([
+                                'p-6 rounded-[2rem] flex gap-5 border transition-all',
+                                'bg-green-50/50 border-green-100 text-green-900 italic' => $v->type === 'validate',
+                                'bg-red-50/50 border-red-100 text-red-900 italic' => $v->type === 'reject',
+                            ])>
+                                <img src="{{ $v->user->avatar }}" class="w-12 h-12 rounded-2xl object-cover ring-4 ring-white shadow-md">
+                                <div class="flex-grow">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-black uppercase">{{ $v->user->name }}</span>
+                                        <span @class([
+                                            'text-[8px] font-black uppercase px-2 py-0.5 rounded-full',
+                                            'bg-green-600 text-white' => $v->type === 'validate',
+                                            'bg-red-600 text-white' => $v->type === 'reject',
+                                        ])>{{ $v->type === 'validate' ? 'Validé' : 'Rejeté' }}</span>
+                                    </div>
+                                    @if($v->comment)
+                                        <p class="text-xs font-semibold leading-relaxed">"{{ $v->comment }}"</p>
+                                    @endif
+
+                                    @if($v->reply)
+                                        <div class="mt-4 p-4 bg-white/60 rounded-2xl border border-white/80 shadow-sm relative pr-12">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="text-[8px] font-black uppercase text-blue-600 tracking-tighter">Réponse de l'expert</span>
+                                            </div>
+                                            <p class="text-[10px] font-bold italic text-slate-700">"{{ $v->reply }}"</p>
+                                            <div class="absolute top-4 right-4 text-blue-400">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            </div>
+                                        </div>
+                                    @elseif(auth()->id() === $selectedAchievement->user_id && auth()->id() !== $v->user_id)
+                                        <div class="mt-4 pt-4 border-t border-slate-100/50">
+                                            <div class="flex gap-2">
+                                                <input wire:model="replyText" type="text" placeholder="Répondre à ce retour..." 
+                                                    class="flex-grow bg-white/50 border-none rounded-xl px-4 py-2 text-[10px] font-bold italic focus:ring-2 focus:ring-blue-500/20">
+                                                <button wire:click="submitReply({{ $v->id }})" class="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-all shadow-md">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="py-12 text-center">
+                                <p class="text-slate-400 font-black uppercase tracking-widest text-[10px]">Aucune validation pour le moment.</p>
+                            </div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
         </div>

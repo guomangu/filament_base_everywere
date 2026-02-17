@@ -214,6 +214,15 @@
                                 </div>
                             </div>
                             
+                            @auth
+                                @php $trustPath = auth()->user()->getTrustPathTo($expert); @endphp
+                                @if(count($trustPath) > 0)
+                                    <div class="mb-6 p-3 bg-slate-50 rounded-2xl border border-slate-100 scale-90 origin-left">
+                                        <x-user-trust-chain :path="$trustPath" />
+                                    </div>
+                                @endif
+                            @endauth
+                            
                             <div class="flex flex-wrap gap-2">
                                 {{-- Direct Achievements --}}
                                 @foreach($expert->achievements->unique('skill_id') as $ach)

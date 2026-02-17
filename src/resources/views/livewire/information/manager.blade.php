@@ -87,9 +87,9 @@
                         <!-- Upload Progress Bar -->
                         <div x-show="isUploading" class="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-[2rem] flex flex-col items-center justify-center p-6 transition-all">
                             <div class="w-full bg-slate-100 rounded-full h-2 mb-2">
-                                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="`width: ${progress}%`Ratio"></div>
+                                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="`width: ${progress}%` shadow-sm"></div>
                             </div>
-                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest animate-pulse" x-text="`Chargement... ${progress}%`Ratio"></span>
+                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest animate-pulse" x-text="`Chargement... ${progress}%` "></span>
                         </div>
                     </div>
                     

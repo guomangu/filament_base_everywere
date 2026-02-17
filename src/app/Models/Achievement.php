@@ -25,6 +25,7 @@ class Achievement extends Model
         'metadata',
         'is_verified',
         'proche_id',
+        'realized_at',
     ];
 
     /**
@@ -42,6 +43,7 @@ class Achievement extends Model
             'proche_id' => 'integer',
             'metadata' => 'array',
             'is_verified' => 'boolean',
+            'realized_at' => 'date',
         ];
     }
 
@@ -68,5 +70,10 @@ class Achievement extends Model
     public function informations()
     {
         return $this->morphMany(Information::class, 'informable');
+    }
+
+    public function validations()
+    {
+        return $this->hasMany(AchievementValidation::class);
     }
 }

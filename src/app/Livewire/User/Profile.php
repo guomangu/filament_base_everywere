@@ -17,17 +17,35 @@ class Profile extends Component
     public string $proofDescription = '';
     public ?int $selectedSkillId = null;
     public ?int $selectedProcheId = null;
+    public $realizedAt = '';
+
+    // Validation Details
+    public bool $showValidationModal = false;
+    public ?\App\Models\Achievement $selectedAchievement = null;
+    public string $validationComment = '';
+    public ?string $votingType = null;
+    public string $replyText = '';
+    public string $search = '';
 
     protected $rules = [
         'skillName' => 'required_if:step,1|min:2',
         'proofTitle' => 'required_if:step,2|min:3',
         'proofDescription' => 'required_if:step,2|min:10',
         'procheName' => 'required_if:showProcheModal,true|min:2',
+        'realizedAt' => 'required_if:showCreateModal,true|date',
     ];
 
     public function mount(\App\Models\User $user)
     {
-        $this->user = $user->load(['activeJoinedCircles.members.user.achievements.skill', 'achievements.skill', 'achievements.circle', 'vouchesReceived.voucher', 'proches.achievements.skill']);
+        $this->user = $user->load([
+            'activeJoinedCircles.members.user.achievements.skill', 
+            'achievements.skill', 
+            'achievements.circle', 
+            'achievements.validations.user',
+            'vouchesReceived.voucher', 
+            'proches.achievements.skill',
+            'proches.achievements.validations.user'
+        ]);
     }
 
     public function canEdit(): bool
@@ -140,16 +158,91 @@ class Profile extends Component
             'circle_id' => null, 
             'title' => $this->proofTitle,
             'description' => $this->proofDescription,
+            'realized_at' => $this->realizedAt,
             'is_verified' => false, 
         ]);
 
         $this->showCreateModal = false;
+        $this->user->recalculateTrustScore(); // Might change if we had base points for adding proofs
         $this->user->load('achievements.skill', 'achievements.circle', 'proches.achievements.skill');
         
         $this->dispatch('notify', [
             'message' => 'Preuve ajoutée avec succès !',
             'type' => 'success'
         ]);
+    }
+
+    public function initiateValidation(int $achievementId, string $type)
+    {
+        if (!auth()->check() || auth()->id() === $this->user->id) return;
+
+        // Perform vote immediately
+        \App\Models\AchievementValidation::updateOrCreate(
+            ['user_id' => auth()->id(), 'achievement_id' => $achievementId],
+            ['type' => $type]
+        );
+
+        $this->selectedAchievement = \App\Models\Achievement::with('validations.user')->find($achievementId);
+        $this->votingType = $type; // Still useful to show "You voted [Type]" in modal
+        $this->showValidationModal = true;
+        
+        $this->user->recalculateTrustScore();
+        $this->user->load('achievements.validations.user', 'proches.achievements.validations.user');
+        
+        // Load my existing comment if any
+        $myV = $this->selectedAchievement->validations->where('user_id', auth()->id())->first();
+        $this->validationComment = $myV ? ($myV->comment ?? '') : '';
+    }
+
+    public function confirmValidation()
+    {
+        if (!$this->selectedAchievement) return;
+        if (!auth()->check() || auth()->id() === $this->user->id) return;
+
+        $v = \App\Models\AchievementValidation::where('user_id', auth()->id())
+            ->where('achievement_id', $this->selectedAchievement->id)
+            ->first();
+
+        // Lock if reply exists
+        if ($v && $v->reply) {
+            $this->dispatch('notify', ['message' => 'Impossible de modifier un vote ayant reçu une réponse.', 'type' => 'error']);
+            return;
+        }
+
+        if ($v) {
+            $v->update(['comment' => $this->validationComment]);
+        }
+
+        $this->user->load('achievements.validations.user', 'proches.achievements.validations.user');
+        
+        $this->showValidationModal = false;
+        $this->votingType = null;
+        $this->validationComment = '';
+
+        $this->dispatch('notify', ['message' => 'Commentaire enregistré !', 'type' => 'success']);
+    }
+
+    public function openValidationModal(int $achievementId)
+    {
+        $this->selectedAchievement = \App\Models\Achievement::with('validations.user')->find($achievementId);
+        $this->votingType = null; // Read-only mode
+        $this->showValidationModal = true;
+        $this->replyText = ''; // Clear reply buffer
+    }
+
+    public function submitReply(int $validationId)
+    {
+        $v = \App\Models\AchievementValidation::with('achievement')->find($validationId);
+        if (!$v || $v->achievement->user_id !== auth()->id()) return;
+        if ($v->reply) return; // Already replied
+
+        $v->update(['reply' => $this->replyText]);
+        
+        $this->replyText = '';
+        $this->selectedAchievement = \App\Models\Achievement::with('validations.user')->find($v->achievement_id);
+        $this->user->load('achievements.validations.user', 'proches.achievements.validations.user');
+
+        $this->dispatch('notify', ['message' => 'Réponse envoyée ! L\'échange est maintenant verrouillé.', 'type' => 'success']);
     }
 
     public function openProcheModal()
@@ -221,10 +314,93 @@ class Profile extends Component
         // Combine local and proches achievements
         $allAchievements = $this->user->achievements->merge($prochesAchievements);
 
+        // Network Results (1st & 2nd degree) if searching
+        $searchResults = collect();
+        if (!empty($this->search) && auth()->check() && auth()->id() === $this->user->id) {
+            $me = auth()->user();
+            $searchTerm = '%' . strtolower($this->search) . '%';
+
+            // 1. Get 1st Degree: Members of circles I am in
+            $myCircleIds = $me->activeJoinedCircles->pluck('id');
+            $firstDegreeUserIds = \App\Models\CircleMember::whereIn('circle_id', $myCircleIds)
+                ->where('status', 'active')
+                ->pluck('user_id')
+                ->unique();
+
+            // 2. Get 2nd Degree: Circles these members are in, and THEIR members
+            $secondDegreeCircleIds = \App\Models\CircleMember::whereIn('user_id', $firstDegreeUserIds)
+                ->where('status', 'active')
+                ->pluck('circle_id')
+                ->unique();
+
+            $secondDegreeUserIds = \App\Models\CircleMember::whereIn('circle_id', $secondDegreeCircleIds)
+                ->where('status', 'active')
+                ->pluck('user_id')
+                ->unique()
+                ->diff($firstDegreeUserIds)
+                ->diff([$me->id]);
+
+            $networkUserIds = $firstDegreeUserIds->merge($secondDegreeUserIds)->unique();
+
+            $searchResults = \App\Models\User::whereIn('id', $networkUserIds)
+                ->with([
+                    'achievements.skill', 
+                    'proches.achievements.skill', 
+                    'activeJoinedCircles',
+                    'vouchesReceived.voucher'
+                ])
+                ->where(function($q) use ($searchTerm) {
+                    $q->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                      ->orWhereRaw('LOWER(bio) LIKE ?', [$searchTerm])
+                      ->orWhereHas('achievements', function($aq) use ($searchTerm) {
+                          $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
+                            ->orWhereHas('skill', function($sq) use ($searchTerm) {
+                                $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
+                            });
+                      })
+                      ->orWhereHas('proches', function($pq) use ($searchTerm) {
+                          $pq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                            ->orWhereHas('achievements', function($aq) use ($searchTerm) {
+                                $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                                  ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
+                                  ->orWhereHas('skill', function($sq) use ($searchTerm) {
+                                      $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
+                                  });
+                            });
+                      });
+                })
+                ->get()
+                ->map(function($u) use ($firstDegreeUserIds, $searchTerm) {
+                    $u->degree = $firstDegreeUserIds->contains($u->id) ? 1 : 2;
+                    
+                    // Identify match reason
+                    $s = str_replace('%', '', $searchTerm);
+                    if (str_contains(strtolower($u->name), $s)) $u->matchReason = "Nom";
+                    else if (str_contains(strtolower($u->bio), $s)) $u->matchReason = "Bio";
+                    else {
+                        $matchedSkill = $u->achievements->first(fn($a) => str_contains(strtolower($a->skill?->name), $s));
+                        if ($matchedSkill) $u->matchReason = "Compétence: " . $matchedSkill->skill->name;
+                        else {
+                            $matchedProche = $u->proches->first(fn($p) => str_contains(strtolower($p->name), $s));
+                            if ($matchedProche) $u->matchReason = "Proche: " . $matchedProche->name;
+                            else {
+                                $matchedPach = $u->proches->flatMap->achievements->first(fn($a) => str_contains(strtolower($a->skill?->name), $s));
+                                if ($matchedPach) $u->matchReason = "Compétence Proche: " . $matchedPach->skill->name;
+                                else $u->matchReason = "Expertise";
+                            }
+                        }
+                    }
+                    return $u;
+                })
+                ->sortBy('degree');
+        }
+
         return view('livewire.user.profile', [
             'totalVouchs' => $this->user->vouchesReceived->count(),
             'groupedAchievements' => $allAchievements->groupBy(fn($ach) => $ach->skill->name),
             'networkExperts' => $networkExperts,
+            'searchResults' => $searchResults,
             'canEdit' => $this->canEdit()
         ]);
     }
