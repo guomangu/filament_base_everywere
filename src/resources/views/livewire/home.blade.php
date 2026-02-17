@@ -108,8 +108,11 @@ class="min-h-screen bg-slate-50/50">
                     <!-- Circle Entity Aesthetic -->
                     <div class="absolute -top-6 -left-6 w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full opacity-10 group-hover:scale-150 transition-transform duration-700 blur-2xl"></div>
                     
-                    <a href="{{ route('circles.show', $circle) }}" class="flex flex-col relative h-full bg-white border border-slate-100 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 group/card">
-                        <div class="flex-grow p-8 md:p-10">
+                    <div class="flex flex-col relative h-full bg-white border border-slate-100 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 group/card">
+                        <!-- Full Card Link Overlay -->
+                        <a href="{{ route('circles.show', $circle) }}" class="absolute inset-0 z-0"></a>
+
+                        <div class="flex-grow p-8 md:p-10 relative z-10 pointer-events-none">
                             <!-- Header -->
                             <div class="flex items-start justify-between mb-8">
                                 <div class="w-16 h-16 md:w-20 md:h-20 bg-slate-50 rounded-[1.8rem] md:rounded-[2.2rem] flex items-center justify-center text-slate-400 group-hover/card:bg-blue-600 group-hover/card:text-white transition-all duration-500 group-hover/card:rotate-6 shadow-sm">
@@ -187,20 +190,20 @@ class="min-h-screen bg-slate-50/50">
                         </div>
 
                         <!-- User Info Bar -->
-                        <div class="px-8 md:px-10 py-6 border-t border-slate-50 flex items-center justify-between mt-auto">
+                        <div class="px-8 md:px-10 py-6 border-t border-slate-50 flex items-center justify-between mt-auto relative z-10">
                             <div class="flex -space-x-3">
-                                <span class="relative z-10 block hover:scale-110 transition-transform">
+                                <a href="{{ route('users.show', $circle->owner) }}" class="relative z-10 block hover:scale-110 transition-transform">
                                     <img src="{{ $circle->owner->avatar }}" class="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white shadow-md">
-                                </span>
+                                </a>
                                 <div class="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-300">
                                     +{{ $circle->members->count() }}
                                 </div>
                             </div>
-                            <div class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] group-hover/card:text-blue-600 transition-colors">
+                            <div class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] group-hover/card:text-blue-600 transition-colors pointer-events-none">
                                 Détails
                             </div>
                         </div>
-                    </a>
+                    </div>
                 </div>
             @empty
                 <div class="col-span-full py-24 text-center">

@@ -166,8 +166,8 @@
                                 @forelse($networkExperts as $expert)
                                     <div class="group/exp p-4 bg-white/5 border border-white/5 rounded-3xl hover:bg-white/10 hover:border-white/10 transition-all duration-500">
                                         <div class="flex items-center gap-4">
-                                            <a href="{{ route('users.show', $expert) }}" class="relative flex-shrink-0">
-                                                <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover ring-1 ring-white/10 group-hover/exp:ring-blue-500 transition-all">
+                                            <a href="{{ route('users.show', $expert) }}" class="relative flex-shrink-0 group/av">
+                                                <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover ring-1 ring-white/10 group-hover/av:ring-blue-500 group-hover/av:scale-110 transition-all">
                                             </a>
                                             <div class="min-w-0">
                                                 <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{{ $expert->trust_score }}% Trust</div>
@@ -415,7 +415,9 @@
                                                     ])>{{ $score > 0 ? '+' : '' }}{{ $score }}</span>
                                                     <div class="flex -space-x-2">
                                                         @foreach($achievement->validations->take(3) as $v)
-                                                            <img src="{{ $v->user->avatar }}" class="w-4 h-4 rounded-full border border-white shadow-sm">
+                                                            <a href="{{ route('users.show', $v->user) }}" class="hover:z-20 transition-transform hover:scale-125">
+                                                                <img src="{{ $v->user->avatar }}" class="w-4 h-4 rounded-full border border-white shadow-sm">
+                                                            </a>
                                                         @endforeach
                                                     </div>
                                                 </button>
@@ -605,15 +607,7 @@
                                 {{ $myV ? 'Mettre à jour mon feedback' : 'Confirmer mon vote' }}
                             </button>
                         </div>
-                    @elseif($myV?->reply)
-                        <div class="bg-slate-900/5 p-8 rounded-[2.5rem] border border-slate-200 shadow-inner">
-                            <div class="flex items-center gap-3 mb-4">
-                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Échange verrouillé</span>
-                            </div>
-                            <p class="text-xs font-bold text-slate-500 italic">"{{ $myV->comment }}"</p>
-                        </div>
-                    @endif
+                     @endif
 
                     <div class="space-y-4">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-4 italic">Historique des retours</label>
@@ -623,10 +617,12 @@
                                 'bg-green-50/50 border-green-100 text-green-900 italic' => $v->type === 'validate',
                                 'bg-red-50/50 border-red-100 text-red-900 italic' => $v->type === 'reject',
                             ])>
-                                <img src="{{ $v->user->avatar }}" class="w-12 h-12 rounded-2xl object-cover ring-4 ring-white shadow-md">
+                                <a href="{{ route('users.show', $v->user) }}" class="shrink-0 hover:scale-110 transition-transform">
+                                    <img src="{{ $v->user->avatar }}" class="w-12 h-12 rounded-2xl object-cover ring-4 ring-white shadow-md">
+                                </a>
                                 <div class="flex-grow">
                                     <div class="flex items-center justify-between mb-2">
-                                        <span class="text-sm font-black uppercase">{{ $v->user->name }}</span>
+                                        <a href="{{ route('users.show', $v->user) }}" class="text-sm font-black uppercase hover:text-blue-600 transition-colors">{{ $v->user->name }}</a>
                                         <span @class([
                                             'text-[8px] font-black uppercase px-2 py-0.5 rounded-full',
                                             'bg-green-600 text-white' => $v->type === 'validate',

@@ -205,7 +205,9 @@
                     @forelse($memberExperts as $expert)
                         <div class="bg-white/60 backdrop-blur-3xl border border-white/60 p-6 rounded-[2.5rem] hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 group">
                             <div class="flex items-center gap-4 mb-6">
-                                <img src="{{ $expert->avatar }}" class="w-12 h-12 rounded-2xl object-cover shadow-lg group-hover:scale-110 transition-transform duration-500">
+                                <a href="{{ route('users.show', $expert) }}" class="flex-shrink-0 group/av">
+                                    <img src="{{ $expert->avatar }}" class="w-12 h-12 rounded-2xl object-cover shadow-lg group-hover/av:scale-110 transition-transform duration-500">
+                                </a>
                                 <div class="min-w-0">
                                     <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">{{ $expert->trust_score }}% Confiance</div>
                                     <a href="{{ route('users.show', $expert) }}" class="text-sm font-black text-slate-900 uppercase tracking-tight hover:text-blue-500 transition-colors truncate block">
@@ -263,7 +265,9 @@
                         @foreach($networkExperts as $expert)
                             <div class="bg-slate-50/50 border border-dashed border-slate-200 p-6 rounded-[2.5rem] group/n transition-all">
                                 <div class="flex items-center gap-4 mb-4">
-                                    <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover grayscale group-hover/n:grayscale-0 transition-all">
+                                    <a href="{{ route('users.show', $expert) }}" class="flex-shrink-0">
+                                        <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover grayscale group-hover/n:grayscale-0 group-hover/n:scale-110 transition-all">
+                                    </a>
                                     <div class="min-w-0">
                                         <a href="{{ route('users.show', $expert) }}" class="text-xs font-black text-slate-500 uppercase tracking-tight group-hover/n:text-blue-500 transition-colors">
                                             {{ $expert->name }}

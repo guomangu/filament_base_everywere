@@ -157,7 +157,7 @@ class User extends Authenticatable implements FilamentUser
     public function getTrustPathTo(User $other): array
     {
         if ($this->id === $other->id) {
-            return [['type' => 'user', 'name' => 'Vous', 'avatar' => $this->avatar]];
+            return [['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar]];
         }
 
         // 1st Degree: Common Circles
@@ -168,9 +168,9 @@ class User extends Authenticatable implements FilamentUser
         if ($commonCircles->isNotEmpty()) {
             $circle = Circle::find($commonCircles->first());
             return [
-                ['type' => 'user', 'name' => 'Vous', 'avatar' => $this->avatar],
-                ['type' => 'circle', 'name' => $circle->name],
-                ['type' => 'user', 'name' => $other->name, 'avatar' => $other->avatar]
+                ['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar],
+                ['type' => 'circle', 'id' => $circle->id, 'name' => $circle->name],
+                ['type' => 'user', 'id' => $other->id, 'name' => $other->name, 'avatar' => $other->avatar]
             ];
         }
 
@@ -193,11 +193,11 @@ class User extends Authenticatable implements FilamentUser
             if ($commonWithOther->isNotEmpty()) {
                 $sharedWithOther = Circle::find($commonWithOther->first());
                 return [
-                    ['type' => 'user', 'name' => 'Vous', 'avatar' => $this->avatar],
-                    ['type' => 'circle', 'name' => $sharedWithMe->name],
-                    ['type' => 'user', 'name' => $intermediary->name, 'avatar' => $intermediary->avatar],
-                    ['type' => 'circle', 'name' => $sharedWithOther->name],
-                    ['type' => 'user', 'name' => $other->name, 'avatar' => $other->avatar]
+                    ['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar],
+                    ['type' => 'circle', 'id' => $sharedWithMe->id, 'name' => $sharedWithMe->name],
+                    ['type' => 'user', 'id' => $intermediary->id, 'name' => $intermediary->name, 'avatar' => $intermediary->avatar],
+                    ['type' => 'circle', 'id' => $sharedWithOther->id, 'name' => $sharedWithOther->name],
+                    ['type' => 'user', 'id' => $other->id, 'name' => $other->name, 'avatar' => $other->avatar]
                 ];
             }
         }
