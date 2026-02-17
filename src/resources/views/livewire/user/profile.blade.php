@@ -36,17 +36,8 @@
                         <div class="mt-10">
                             @auth
                                 @if(auth()->id() !== $user->id)
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        @php $hasVouched = $user->vouchesReceived->contains('voucher_id', auth()->id()); @endphp
-                                        <button wire:click="vouch" @class([
-                                            'px-6 py-4 rounded-[2rem] font-black text-sm tracking-widest uppercase transition-all shadow-xl flex items-center justify-center gap-3',
-                                            'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20' => !$hasVouched,
-                                            'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/10' => $hasVouched,
-                                        ])>
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                                            {{ $hasVouched ? 'Retirer Garantie' : 'Se Porter Garant' }}
-                                        </button>
-                                        <button class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-blue-600 hover:text-blue-600 transition-all">
+                                    <div class="flex gap-4">
+                                        <button class="flex-grow px-6 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-600 transition-all shadow-xl">
                                             Message
                                         </button>
                                     </div>
@@ -84,23 +75,6 @@
                             @endauth
                         </div>
 
-                        <!-- Guarantors List -->
-                        @if($user->vouchesReceived->count() > 0)
-                            <div class="mt-8 pt-8 border-t border-white/20">
-                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Garantis par des experts</h4>
-                                <div class="flex flex-wrap gap-3">
-                                    @foreach($user->vouchesReceived as $vouch)
-                                        <a href="{{ route('users.show', $vouch->voucher) }}" class="group/v flex items-center gap-2 bg-white/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/60 hover:bg-white transition-all shadow-sm">
-                                            <img src="{{ $vouch->voucher->avatar }}" class="w-6 h-6 rounded-full border border-white shadow-sm group-hover/v:scale-110 transition-transform">
-                                            <div class="flex flex-col">
-                                                <span class="text-[9px] font-black text-slate-900 uppercase tracking-tighter leading-none">{{ $vouch->voucher->name }}</span>
-                                                <span class="text-[7px] font-black text-blue-500 uppercase tracking-widest">{{ $vouch->voucher->trust_score }}% Trust</span>
-                                            </div>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -124,16 +98,36 @@
                             <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-lg shadow-blue-500/20" style="width: {{ $user->trust_score }}%"></div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4 pt-8 border-t border-slate-50">
-                        <div class="p-6 bg-slate-50 rounded-3xl">
-                            <div class="text-2xl font-black text-slate-900 leading-none mb-1">{{ $totalVouchs }}</div>
-                            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Garants</div>
+                    <div class="grid grid-cols-3 gap-4 pt-8 border-t border-slate-50">
+                        <div class="p-6 bg-green-50/50 rounded-3xl border border-green-100/50">
+                            <div class="text-2xl font-black text-green-600 leading-none mb-1">+{{ $valCount }}</div>
+                            <div class="text-[9px] font-black text-green-600/60 uppercase tracking-widest">Validations</div>
                         </div>
-                        <div class="p-6 bg-slate-50 rounded-3xl">
+                        <div class="p-6 bg-red-50/50 rounded-3xl border border-red-100/50">
+                            <div class="text-2xl font-black text-red-600 leading-none mb-1">-{{ $rejCount }}</div>
+                            <div class="text-[9px] font-black text-red-600/60 uppercase tracking-widest">Réfutations</div>
+                        </div>
+                        <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
                             <div class="text-2xl font-black text-slate-900 leading-none mb-1">{{ $user->joinedCircles->count() }}</div>
                             <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cercles</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- CV Action Block -->
+                <div class="mt-8">
+                    <a href="{{ route('cv.user', $user) }}" target="_blank" class="flex items-center justify-between p-6 bg-slate-900 text-white rounded-[2.5rem] group hover:bg-blue-600 transition-all shadow-2xl shadow-slate-900/20">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center group-hover:bg-white group-hover:text-blue-600 transition-all">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4"/></svg>
+                            </div>
+                            <div>
+                                <div class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Expertise Export</div>
+                                <div class="text-sm font-black uppercase">Générer mon CV</div>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
                 </div>
             </div>
  

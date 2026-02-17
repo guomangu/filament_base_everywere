@@ -18,6 +18,8 @@ class Profile extends Component
     public ?int $selectedSkillId = null;
     public ?int $selectedProcheId = null;
     public $realizedAt = '';
+    public int $valCount = 0;
+    public int $rejCount = 0;
 
     // Validation Details
     public bool $showValidationModal = false;
@@ -46,11 +48,14 @@ class Profile extends Component
             'achievements.circle', 
             'achievements.validations.user.achievements.skill',
             'achievements.validations.user.proches.achievements.skill',
-            'vouchesReceived.voucher', 
             'proches.achievements.skill',
             'proches.achievements.validations.user.achievements.skill',
-            'proches.achievements.validations.user.proches.achievements.skill'
+            'proches.achievements.validations.user.proches.achievements.skill',
+            'validationsReceived'
         ]);
+
+        $this->valCount = $this->user->validationsReceived->where('type', 'validate')->count();
+        $this->rejCount = $this->user->validationsReceived->where('type', 'reject')->count();
 
         if (auth()->check() && auth()->user()->coordinates && auth()->user()->location) {
             $this->lat = auth()->user()->coordinates['lat'];
@@ -92,32 +97,6 @@ class Profile extends Component
         return false;
     }
 
-    public function vouch()
-    {
-        if (!auth()->check()) return redirect()->route('login');
-        if (auth()->id() === $this->user->id) return;
-
-        $existing = \App\Models\Vouch::where('voucher_id', auth()->id())
-            ->where('vouchee_id', $this->user->id)
-            ->first();
-
-        if ($existing) {
-            $existing->delete();
-        } else {
-            \App\Models\Vouch::create([
-                'voucher_id' => auth()->id(),
-                'vouchee_id' => $this->user->id,
-            ]);
-        }
-
-        $this->user->recalculateTrustScore();
-        $this->user->load('vouchesReceived.voucher');
-        
-        $this->dispatch('notify', [
-            'message' => $existing ? 'Garantie retirée' : 'Vous vous portez désormais garant !',
-            'type' => 'success'
-        ]);
-    }
 
     public function openCreateModal($procheId = null)
     {
@@ -388,8 +367,7 @@ class Profile extends Component
                 ->with([
                     'achievements.skill', 
                     'proches.achievements.skill', 
-                    'activeJoinedCircles',
-                    'vouchesReceived.voucher'
+                    'activeJoinedCircles'
                 ]);
 
             if ($this->lat && $this->lng) {
@@ -478,7 +456,6 @@ class Profile extends Component
         }
 
         return view('livewire.user.profile', [
-            'totalVouchs' => $this->user->vouchesReceived->count(),
             'groupedAchievements' => $allAchievements->groupBy(fn($ach) => $ach->skill->name),
             'networkExperts' => $networkExperts,
             'searchResults' => $searchResults,

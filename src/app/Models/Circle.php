@@ -58,4 +58,91 @@ class Circle extends Model
     {
         return $this->hasMany(Achievement::class);
     }
+
+    /**
+     * Calculate the average trust score of the circle based on owner and active members
+     */
+    public function getAverageTrustScore(): int
+    {
+        // Get owner score
+        $ownerScore = $this->owner->trust_score ?? 0;
+        
+        // Get active members scores
+        $memberScores = $this->activeMembers()
+            ->with('user')
+            ->get()
+            ->pluck('user.trust_score')
+            ->filter()
+            ->toArray();
+        
+        // Combine owner + members
+        $allScores = array_merge([$ownerScore], $memberScores);
+        
+        // Calculate average
+        if (empty($allScores)) {
+            return 0;
+        }
+        
+        return (int) round(array_sum($allScores) / count($allScores));
+    }
+
+    /**
+     * Get all achievements from owner and active members
+     */
+    public function getAllMemberAchievements()
+    {
+        // Get owner achievements
+        $ownerAchievements = $this->owner->achievements()
+            ->where('title', '!=', '__SKELETON__')
+            ->with(['skill', 'validations.user'])
+            ->get();
+        
+        // Get active members achievements
+        $memberAchievements = Achievement::whereHas('user.circleMembers', function($q) {
+            $q->where('circle_id', $this->id)
+              ->where('status', 'active');
+        })
+        ->where('title', '!=', '__SKELETON__')
+        ->with(['skill', 'validations.user'])
+        ->get();
+        
+        // Combine and return
+        return $ownerAchievements->merge($memberAchievements)->unique('id');
+    }
+
+    /**
+     * Get all validations received by circle members
+     */
+    public function getAllMemberValidations()
+    {
+        $memberUserIds = $this->activeMembers()
+            ->pluck('user_id')
+            ->push($this->owner_id)
+            ->unique();
+        
+        return \App\Models\AchievementValidation::whereHas('achievement', function($q) use ($memberUserIds) {
+            $q->whereIn('user_id', $memberUserIds);
+        })->get();
+    }
+
+    /**
+     * Get all information from owner and active members
+     */
+    public function getAllMemberInformation()
+    {
+        // Get circle's own information
+        $circleInfo = $this->informations;
+        
+        // Get owner information
+        $ownerInfo = $this->owner->informations;
+        
+        // Get active members information
+        $memberUserIds = $this->activeMembers()->pluck('user_id');
+        $memberInfo = \App\Models\Information::where('informable_type', 'App\\Models\\User')
+            ->whereIn('informable_id', $memberUserIds)
+            ->get();
+        
+        // Combine and return unique
+        return $circleInfo->merge($ownerInfo)->merge($memberInfo)->unique('id');
+    }
 }

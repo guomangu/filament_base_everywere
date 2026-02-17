@@ -24,15 +24,6 @@ class User extends Authenticatable implements FilamentUser
         return $this->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random&color=fff';
     }
 
-    public function vouchesReceived(): HasMany
-    {
-        return $this->hasMany(Vouch::class, 'vouchee_id');
-    }
-
-    public function vouchesGiven(): HasMany
-    {
-        return $this->hasMany(Vouch::class, 'voucher_id');
-    }
 
     public function validationsReceived(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
     {
@@ -41,21 +32,22 @@ class User extends Authenticatable implements FilamentUser
 
     public function recalculateTrustScore()
     {
-        // Base score is 10 (neutral)
-        $score = 10;
+        // Base score: 20
+        $score = 20;
         
-        // Impact from vouches: sum of (guarantor_trust_score / 10)
-        $vouchImpact = $this->vouchesReceived()->with('voucher')->get()->sum(function($vouch) {
-            return round($vouch->voucher->trust_score / 10);
-        });
-
         // Impact from Achievement Validations:
-        // Each validation adds points, each rejection removes points
-        $validationImpact = $this->validationsReceived()->get()->sum(function($v) {
-            return $v->type === 'validate' ? 2 : -5;
-        });
+        // +12 per validation, -25 per rejection
+        $validations = $this->validationsReceived()->get();
+        $valCount = $validations->where('type', 'validate')->count();
+        $rejCount = $validations->where('type', 'reject')->count();
+        
+        $validationImpact = ($valCount * 12) - ($rejCount * 25);
 
-        $score += $vouchImpact + $validationImpact;
+        // Impact from Circle participation:
+        // +8 per active circle membership
+        $circleImpact = $this->activeJoinedCircles()->count() * 8;
+
+        $score += $validationImpact + $circleImpact;
 
         // Cap between 0 and 100
         $this->update(['trust_score' => max(0, min(100, $score))]);

@@ -44,8 +44,8 @@
         @livewireStyles
         @filamentStyles
     </head>
-    <body class="bg-gradient-mesh text-slate-900 antialiased min-h-screen">
-        <nav x-data="{ open: false }" class="bg-white/40 backdrop-blur-2xl sticky top-0 z-50 border-b border-white/20">
+    <body class="bg-gradient-mesh text-slate-900 antialiased min-h-screen print:bg-white print:min-h-0">
+        <nav x-data="{ open: false }" class="bg-white/40 backdrop-blur-2xl sticky top-0 z-50 border-b border-white/20 print:hidden">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-24">
                     <!-- Left: Logo -->
@@ -92,8 +92,8 @@
             </div>
         </nav>
 
-        <main class="py-12">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <main class="py-12 print:p-0">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 print:max-w-none print:p-0">
                 {{ $slot }}
             </div>
         </main>

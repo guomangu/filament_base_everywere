@@ -23,6 +23,9 @@ Route::get('/proches/claim/{token}', \App\Livewire\User\Claim::class)->name('pro
 Route::get('/circles/{circle}', CircleProfile::class)->name('circles.show');
 Route::get('/users/{user}', UserProfile::class)->name('users.show');
 
+Route::get('/cv/u/{user}', \App\Livewire\Cv\Viewer::class)->name('cv.user');
+Route::get('/cv/c/{circle}', \App\Livewire\Cv\Viewer::class)->name('cv.circle');
+
 Route::post('/logout', function () {
     auth()->logout();
     request()->session()->invalidate();
