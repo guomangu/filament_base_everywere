@@ -52,12 +52,21 @@ class Manager extends Component
     public function save()
     {
         $this->validate([
-            'title' => 'required|string|max:255',
+            'title' => [
+                'required', 
+                'string', 
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    if (str_contains(strtolower($value), 'http://') || str_contains(strtolower($value), 'https://')) {
+                        $fail('Le titre ne peut pas contenir d\'URL. Veuillez placer le lien dans le champ détails.');
+                    }
+                },
+            ],
             'label' => 'nullable|string',
         ]);
 
         $this->model->informations()->create([
-            'title' => $this->title,
+           'title' => $this->title,
             'label' => $this->label,
             'images' => $this->images,
             'author_id' => auth()->id(),

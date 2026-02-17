@@ -15,10 +15,19 @@
                     </div>
                 @endif
                 
-                <div class="flex flex-col">
+                <div class="flex flex-col min-w-0">
                     <span class="text-[10px] font-black text-slate-900 uppercase tracking-tight">{{ $info->title }}</span>
                     @if($info->label)
-                        <span class="text-[8px] font-bold text-slate-400 truncate max-w-[100px]">{{ $info->label }}</span>
+                        @php 
+                            $isUrl = str_starts_with($info->label, 'http');
+                            $displayLabel = $isUrl ? parse_url($info->label, PHP_URL_HOST) : $info->label;
+                        @endphp
+                        <div class="flex items-center gap-1 overflow-hidden">
+                            @if($isUrl)
+                                <svg class="w-2 h-2 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            @endif
+                            <span class="text-[8px] font-bold text-slate-400 truncate max-w-[100px]">{{ $displayLabel }}</span>
+                        </div>
                     @endif
                 </div>
 
@@ -59,11 +68,12 @@
                 <div class="space-y-2">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Titre de l'info</label>
                     <input wire:model="title" type="text" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none" placeholder="Ex: Matériel, Staff, Spécialité...">
+                    @error('title') <span class="text-red-500 text-[8px] font-black uppercase px-1">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Détails (Label)</label>
-                    <input wire:model="label" type="text" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none" placeholder="Ex: Haute qualité, 5 personnes...">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Détails (Label or URL)</label>
+                    <input wire:model="label" type="text" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none" placeholder="Ex: Haute qualité, 5 personnes, URL ...">
                 </div>
 
                 <div class="space-y-2">
@@ -136,9 +146,27 @@
                         </button>
                     </div>
                     <h2 class="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-6">{{ $selectedInfo->title }}</h2>
-                    <p class="text-xl text-slate-500 font-medium leading-relaxed italic">"{{ $selectedInfo->label ?? 'Aucune précision supplémentaire.' }}"</p>
+                    
+                    @if($selectedInfo->label)
+                        @php $isUrl = str_starts_with($selectedInfo->label, 'http'); @endphp
+                        
+                        @if($isUrl)
+                            <a href="{{ $selectedInfo->label }}" target="_blank" class="inline-flex items-center gap-4 px-8 py-5 bg-blue-600 text-white rounded-[2rem] shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all group">
+                                <div class="flex flex-col items-start leading-none">
+                                    <span class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Consulter le lien</span>
+                                    <span class="text-lg font-black tracking-tight">{{ parse_url($selectedInfo->label, PHP_URL_HOST) }}</span>
+                                </div>
+                                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </div>
+                            </a>
+                        @else
+                            <p class="text-xl text-slate-500 font-medium leading-relaxed italic">"{{ $selectedInfo->label }}"</p>
+                        @endif
+                    @else
+                        <p class="text-xl text-slate-500 font-medium leading-relaxed italic">Aucune précision supplémentaire.</p>
+                    @endif
                 </div>
-
                 <!-- Gallery -->
                 @if($selectedInfo->images && count($selectedInfo->images) > 0)
                     <div class="px-12 pb-12">
