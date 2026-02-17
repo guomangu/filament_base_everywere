@@ -28,8 +28,14 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10">
                             @auth
                                 @if(auth()->id() !== $user->id)
-                                    <button class="px-6 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-sm tracking-widest uppercase hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10">
-                                        Se Porter Garant
+                                    @php $hasVouched = $user->vouchesReceived->contains('voucher_id', auth()->id()); @endphp
+                                    <button wire:click="vouch" @class([
+                                        'px-6 py-4 rounded-[2rem] font-black text-sm tracking-widest uppercase transition-all shadow-xl flex items-center justify-center gap-3',
+                                        'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20' => !$hasVouched,
+                                        'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/10' => $hasVouched,
+                                    ])>
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                        {{ $hasVouched ? 'Retirer Garantie' : 'Se Porter Garant' }}
                                     </button>
                                     <button class="px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-[2rem] font-black text-sm tracking-widest uppercase hover:border-blue-600 hover:text-blue-600 transition-all">
                                         Message
@@ -45,6 +51,24 @@
                                 @endif
                             @endauth
                         </div>
+
+                        <!-- Guarantors List -->
+                        @if($user->vouchesReceived->count() > 0)
+                            <div class="mt-8 pt-8 border-t border-white/20">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Garantis par des experts</h4>
+                                <div class="flex flex-wrap gap-3">
+                                    @foreach($user->vouchesReceived as $vouch)
+                                        <a href="{{ route('users.show', $vouch->voucher) }}" class="group/v flex items-center gap-2 bg-white/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/60 hover:bg-white transition-all shadow-sm">
+                                            <img src="{{ $vouch->voucher->avatar }}" class="w-6 h-6 rounded-full border border-white shadow-sm group-hover/v:scale-110 transition-transform">
+                                            <div class="flex flex-col">
+                                                <span class="text-[9px] font-black text-slate-900 uppercase tracking-tighter leading-none">{{ $vouch->voucher->name }}</span>
+                                                <span class="text-[7px] font-black text-blue-500 uppercase tracking-widest">{{ $vouch->voucher->trust_score }}% Trust</span>
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

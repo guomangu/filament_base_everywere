@@ -26,7 +26,34 @@ class Profile extends Component
 
     public function mount(\App\Models\User $user)
     {
-        $this->user = $user->load(['joinedCircles', 'achievements.skill', 'achievements.circle']);
+        $this->user = $user->load(['joinedCircles', 'achievements.skill', 'achievements.circle', 'vouchesReceived.voucher']);
+    }
+
+    public function vouch()
+    {
+        if (!auth()->check()) return redirect()->route('login');
+        if (auth()->id() === $this->user->id) return;
+
+        $existing = \App\Models\Vouch::where('voucher_id', auth()->id())
+            ->where('vouchee_id', $this->user->id)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+        } else {
+            \App\Models\Vouch::create([
+                'voucher_id' => auth()->id(),
+                'vouchee_id' => $this->user->id,
+            ]);
+        }
+
+        $this->user->recalculateTrustScore();
+        $this->user->load('vouchesReceived.voucher');
+        
+        $this->dispatch('notify', [
+            'message' => $existing ? 'Garantie retirée' : 'Vous vous portez désormais garant !',
+            'type' => 'success'
+        ]);
     }
 
     public function openCreateModal()
@@ -97,7 +124,7 @@ class Profile extends Component
     public function render()
     {
         return view('livewire.user.profile', [
-            'totalVouchs' => \App\Models\CircleMember::where('user_id', $this->user->id)->whereNotNull('vouched_by_id')->count(),
+            'totalVouchs' => $this->user->vouchesReceived->count(),
             'groupedAchievements' => $this->user->achievements->groupBy(fn($ach) => $ach->skill->name)
         ]);
     }

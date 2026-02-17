@@ -19,6 +19,33 @@ class User extends Authenticatable implements FilamentUser
         return $this->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random&color=fff';
     }
 
+    public function vouchesReceived(): HasMany
+    {
+        return $this->hasMany(Vouch::class, 'vouchee_id');
+    }
+
+    public function vouchesGiven(): HasMany
+    {
+        return $this->hasMany(Vouch::class, 'voucher_id');
+    }
+
+    public function recalculateTrustScore()
+    {
+        // Base score is 10 (neutral)
+        $score = 10;
+        
+        // Impact from vouches: sum of (guarantor_trust_score / 10)
+        // This means a guarantor with 90% trust adds 9 points.
+        $vouchImpact = $this->vouchesReceived()->with('voucher')->get()->sum(function($vouch) {
+            return round($vouch->voucher->trust_score / 10);
+        });
+
+        $score += $vouchImpact;
+
+        // Cap at 100
+        $this->update(['trust_score' => min(100, $score)]);
+    }
+
     protected $fillable = [
         'name',
         'email',
