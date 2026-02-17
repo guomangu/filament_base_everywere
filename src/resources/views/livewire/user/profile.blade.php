@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-slate-50/50 pb-20 pt-32">
+<div class="min-h-screen bg-slate-50/50 pb-20 pt-10">
     <!-- User Header Portfolio -->
     <div class="max-w-7xl mx-auto px-6 mb-16">
         <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[4rem] p-10 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
@@ -113,16 +113,33 @@
                     <span class="text-[9px] font-black uppercase text-blue-400 border border-blue-400/30 px-2 py-0.5 rounded-full">Proximité 2</span>
                 </div>
                 
-                <div class="flex flex-wrap gap-2 relative z-10">
-                    @forelse($extendedSkills as $item)
-                        <a href="{{ route('users.show', $item['expert_id']) }}" class="group/tag flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/5 hover:bg-white hover:border-slate-700 rounded-xl transition-all">
-                            <span class="text-[10px] font-black uppercase tracking-tight text-slate-300 group-hover/tag:text-slate-900">{{ $item['skill'] }}</span>
-                            <span class="w-1 h-1 bg-white/20 rounded-full group-hover/tag:bg-slate-200"></span>
-                            <span class="text-[8px] font-black text-slate-500 group-hover/tag:text-slate-600 italic">{{ $item['expert'] }}</span>
-                        </a>
+                <div class="space-y-4 relative z-10">
+                    @forelse($networkExperts as $expert)
+                        <div class="group/exp p-4 bg-white/5 border border-white/5 rounded-3xl hover:bg-white/10 hover:border-white/10 transition-all duration-500">
+                            <div class="flex items-center gap-4 mb-4">
+                                <a href="{{ route('users.show', $expert) }}" class="relative flex-shrink-0">
+                                    <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover ring-1 ring-white/10 group-hover/exp:ring-blue-500 transition-all">
+                                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-slate-900 group-hover/exp:scale-125 transition-transform"></div>
+                                </a>
+                                <div class="min-w-0">
+                                    <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-0.5">{{ $expert->trust_score }}% Trust</div>
+                                    <a href="{{ route('users.show', $expert) }}" class="text-[11px] font-black text-white uppercase tracking-tight hover:text-blue-400 transition-colors truncate block">
+                                        {{ $expert->name }}
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-1.5 pl-1.5 border-l border-white/5">
+                                @foreach($expert->achievements->unique('skill_id')->take(4) as $ach)
+                                    <span class="px-2 py-0.5 bg-white/5 text-[8px] font-black text-slate-400 uppercase tracking-tighter rounded-md group-hover/exp:bg-slate-800 group-hover/exp:text-slate-300 transition-colors">
+                                        {{ $ach->skill->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
                     @empty
-                        <div class="w-full py-8 text-center text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                            Rejoignez des cercles pour voir les talents de vos pairs...
+                        <div class="w-full py-12 text-center text-slate-600 text-[10px] font-black uppercase tracking-widest bg-white/5 rounded-3xl border border-dashed border-white/5">
+                            Élargissez votre cercle pour voir les talents de vos pairs...
                         </div>
                     @endforelse
                 </div>

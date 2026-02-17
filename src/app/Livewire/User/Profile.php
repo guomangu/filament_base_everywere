@@ -139,28 +139,18 @@ class Profile extends Component
             ->pluck('user_id')
             ->unique();
 
-        // 2. Experts from these circles
-        $experts = \App\Models\User::whereIn('id', $circleMemberIds)
+        // 2. Experts from these circles (limit and sort by trust)
+        $networkExperts = \App\Models\User::whereIn('id', $circleMemberIds)
             ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
-            ->get();
-
-        // 3. Map to unique skills with expert attribution
-        $extendedSkills = $experts->flatMap(function($expert) {
-            return $expert->achievements->map(fn($a) => [
-                'skill' => $a->skill->name,
-                'expert' => $expert->name,
-                'trust' => $expert->trust_score,
-                'expert_id' => $expert->id
-            ]);
-        })
-        ->unique('skill')
-        ->sortByDesc('trust')
-        ->take(50);
+            ->get()
+            ->filter(fn($u) => $u->achievements->count() > 0)
+            ->sortByDesc('trust_score')
+            ->take(30);
 
         return view('livewire.user.profile', [
             'totalVouchs' => $this->user->vouchesReceived->count(),
             'groupedAchievements' => $this->user->achievements->groupBy(fn($ach) => $ach->skill->name),
-            'extendedSkills' => $extendedSkills
+            'networkExperts' => $networkExperts
         ]);
     }
 }
