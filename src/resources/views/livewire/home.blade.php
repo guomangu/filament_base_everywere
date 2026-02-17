@@ -138,9 +138,9 @@ class="min-h-screen bg-slate-50/50">
                                 <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-1 leading-tight group-hover/card:text-blue-600 transition-colors">
                                     {{ $circle->name }}
                                 </h3>
-                                <div class="flex items-center gap-1.5 text-slate-400">
-                                    <svg class="w-1.5 h-1.5 text-blue-500 animate-pulse" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                    <span class="text-[11px] md:text-xs font-bold truncate italic">{{ $circle->address }}</span>
+                                <div class="flex items-center gap-1.5 text-slate-400 overflow-hidden">
+                                    <svg class="w-1.5 h-1.5 text-blue-500 animate-pulse flex-shrink-0" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                    <span class="text-[10px] md:text-xs font-bold truncate italic">{{ $circle->address }}</span>
                                 </div>
                             </div>
 

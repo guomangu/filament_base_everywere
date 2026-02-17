@@ -38,25 +38,25 @@
         </div>
 
         <div class="max-w-7xl mx-auto px-6">
-            <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[4rem] p-10 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
+            <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[3rem] md:rounded-[4rem] p-8 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
                 <!-- Top Badge Status -->
-                <div class="flex flex-wrap items-center gap-3 mb-8 md:absolute md:top-10 md:right-10 md:mb-0">
-                    <span class="px-4 py-1.5 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2 md:gap-3 mb-8 md:absolute md:top-10 md:right-10 md:mb-0">
+                    <span class="px-3 md:px-4 py-1.5 bg-green-50 text-green-600 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-2">
                         <span class="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></span>
                         Cercle Actif
                     </span>
                     @if($circle->is_public)
-                        <span class="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">Public</span>
+                        <span class="px-3 md:px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-blue-100">Public</span>
                     @else
-                        <span class="px-4 py-1.5 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">Privé</span>
+                        <span class="px-3 md:px-4 py-1.5 bg-amber-50 text-amber-600 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-amber-100">Privé</span>
                     @endif
                 </div>
 
                 <div class="flex flex-col lg:flex-row gap-12 relative z-10">
                     <!-- Icon / Identity -->
-                    <div class="flex-shrink-0">
-                        <div class="w-32 h-32 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-600/30 rotate-3 group-hover:rotate-6 transition-transform duration-500">
-                            <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex-shrink-0 flex justify-center lg:block">
+                        <div class="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-600/30 rotate-3 group-hover:rotate-6 transition-transform duration-500">
+                            <svg class="w-12 h-12 md:w-16 md:h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 @if($circle->type === 'business')
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                 @else
@@ -73,26 +73,29 @@
                             <span class="text-slate-200">/</span>
                             <span class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">{{ $circle->type }}</span>
                         </div>
-                        <h1 class="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-6">
-                            {{ $circle->name }}
-                        </h1>
+                        <div class="flex flex-col md:flex-row items-center gap-4 mb-6">
+                            <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none text-center md:text-left">
+                                {{ $circle->name }}
+                            </h1>
+                            <livewire:information.manager :model="$circle" :key="'circle-info-'.$circle->id" />
+                        </div>
                         <p class="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed mb-8">
                             {{ $circle->description }}
                         </p>
 
                         <!-- Stats Bar -->
-                        <div class="grid grid-cols-3 gap-8 py-8 border-t border-slate-100">
-                            <div>
-                                <div class="text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->members->count() }}</div>
-                                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres</div>
+                        <div class="grid grid-cols-3 gap-4 md:gap-8 py-8 border-t border-slate-100">
+                            <div class="text-center md:text-left">
+                                <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->members->count() }}</div>
+                                <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres</div>
                             </div>
-                            <div>
-                                <div class="text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->achievements->count() }}</div>
-                                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Preuves</div>
+                            <div class="text-center md:text-left">
+                                <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->achievements->count() }}</div>
+                                <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Preuves</div>
                             </div>
-                            <div>
-                                <div class="text-3xl font-black text-slate-900 leading-none mb-1">98%</div>
-                                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score Confiance</div>
+                            <div class="text-center md:text-left">
+                                <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">98%</div>
+                                <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Confiance</div>
                             </div>
                         </div>
                     </div>
@@ -201,36 +204,34 @@
                 <div class="grid grid-cols-1 gap-6">
                     @forelse($circleSkills as $skillId => $achievements)
                         @php $latestAch = $achievements->first(); @endphp
-                        <div class="group relative bg-white/60 backdrop-blur-2xl border border-white/60 p-6 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all duration-500">
-                            <div class="flex flex-col md:flex-row items-center gap-6">
+                        <div class="group relative bg-white/60 backdrop-blur-2xl border border-white/60 p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all duration-500">
+                            <div class="flex flex-col sm:flex-row items-center gap-4 md:gap-6">
                                 <!-- Skill Icon & Info -->
-                                <div class="flex items-center gap-4 flex-shrink-0 min-w-[200px]">
-                                    <div class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-xs font-black shadow-lg uppercase">
+                                <div class="flex items-center gap-4 flex-shrink-0 w-full sm:w-auto">
+                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-[10px] md:text-xs font-black shadow-lg uppercase">
                                         {{ substr($latestAch->skill->name, 0, 2) }}
                                     </div>
-                                    <div>
-                                        <h3 class="font-black text-slate-900 uppercase tracking-tight">{{ $latestAch->skill->name }}</h3>
-                                        <span class="text-[9px] font-black text-blue-500 uppercase tracking-widest">{{ $achievements->count() }} expert(s)</span>
+                                    <div class="min-w-0">
+                                        <h3 class="font-black text-slate-900 uppercase tracking-tight text-sm md:text-base truncate">{{ $latestAch->skill->name }}</h3>
+                                        <span class="text-[8px] md:text-[9px] font-black text-blue-500 uppercase tracking-widest">{{ $achievements->count() }} expert(s)</span>
                                     </div>
                                 </div>
-
+                                <div class="hidden sm:block h-8 w-px bg-slate-100 flex-shrink-0"></div>
                                 <!-- Latest Proof & User -->
-                                <div class="flex-grow flex flex-col md:flex-row items-center gap-6 border-l border-slate-100 pl-6 w-full">
-                                    <div class="flex-grow">
-                                        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Dernière réussite :</div>
-                                        <h4 class="font-black text-slate-900 text-sm italic group-hover:text-blue-600 transition-colors">"{{ $latestAch->title }}"</h4>
+                                <div class="flex-grow flex flex-col md:flex-row items-center gap-4 md:gap-6 w-full">
+                                    <div class="flex-grow text-center sm:text-left w-full">
+                                        <div class="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Dernière réussite :</div>
+                                        <h4 class="font-black text-slate-900 text-xs md:text-sm italic group-hover:text-blue-600 transition-colors line-clamp-1">"{{ $latestAch->title }}"</h4>
                                     </div>
-
-                                    <a href="{{ route('users.show', $latestAch->user) }}" class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 flex-shrink-0 hover:bg-white hover:border-blue-200 transition-all group/u">
-                                        <img src="{{ $latestAch->user->avatar }}" class="w-6 h-6 rounded-lg object-cover shadow-sm group-hover/u:scale-110 transition-transform">
-                                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-tight group-hover/u:text-blue-600 transition-colors">{{ $latestAch->user->name }}</span>
+                                    <a href="{{ route('users.show', $latestAch->user) }}" class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl border border-slate-100 flex-shrink-0 hover:bg-white hover:border-blue-200 transition-all group/u w-full sm:w-auto justify-center sm:justify-start">
+                                        <img src="{{ $latestAch->user->avatar }}" class="w-5 h-5 md:w-6 md:h-6 rounded-lg object-cover shadow-sm group-hover/u:scale-110 transition-transform">
+                                        <span class="text-[8px] md:text-[10px] font-black text-slate-600 uppercase tracking-tight group-hover/u:text-blue-600 transition-colors truncate max-w-[100px]">{{ $latestAch->user->name }}</span>
                                     </a>
                                 </div>
-
                                 <!-- Detail Action -->
-                                <div class="flex-shrink-0">
-                                    <button class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                                <div class="flex-shrink-0 hidden sm:block">
+                                    <button class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                                        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
                                     </button>
                                 </div>
                             </div>
@@ -246,13 +247,13 @@
             <!-- Compact Members Section at Bottom -->
             <div class="pt-12 border-t border-slate-100">
                 <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Membres du Cercle</h3>
-                <div class="flex flex-wrap gap-4">
+                <div class="flex flex-wrap gap-3">
                     @foreach($circle->members as $member)
-                        <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-3 bg-white/60 p-2 pr-4 rounded-2xl border border-white/60 hover:border-blue-200 hover:bg-white transition-colors group">
-                            <img src="{{ $member->user->avatar }}" class="w-8 h-8 rounded-xl object-cover shadow-sm group-hover:scale-110 transition-transform">
+                        <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-2 md:gap-3 bg-white/60 p-1.5 md:p-2 pr-3 md:pr-4 rounded-xl md:rounded-2xl border border-white/60 hover:border-blue-200 hover:bg-white transition-colors group">
+                            <img src="{{ $member->user->avatar }}" class="w-6 h-6 md:w-8 md:h-8 rounded-lg md:rounded-xl object-cover shadow-sm group-hover:scale-110 transition-transform">
                             <div class="min-w-0">
-                                <div class="text-[10px] font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors">{{ $member->user->name }}</div>
-                                <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{{ $member->role }}</div>
+                                <div class="text-[9px] md:text-[10px] font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors max-w-[80px] md:max-w-none">{{ $member->user->name }}</div>
+                                <div class="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{{ $member->role }}</div>
                             </div>
                         </a>
                     @endforeach

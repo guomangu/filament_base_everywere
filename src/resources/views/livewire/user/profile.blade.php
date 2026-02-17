@@ -3,13 +3,13 @@
     <div class="max-w-7xl mx-auto px-6 mb-16">
         <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[4rem] p-10 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
             <div class="relative z-10">
-                <div class="flex flex-col md:flex-row items-center gap-12">
+                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12">
                     <div class="relative flex-shrink-0">
-                        <div class="absolute inset-0 bg-blue-600/20 rounded-[3.5rem] blur-2xl group-hover:blur-3xl transition-all duration-700"></div>
-                        <img src="{{ $user->avatar }}" class="relative w-48 h-48 md:w-64 md:h-64 rounded-[3.5rem] object-cover border-4 border-white shadow-2xl transition-transform duration-700 group-hover:scale-[1.02]">
-                        <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-slate-900 rounded-3xl flex flex-col items-center justify-center shadow-2xl border-4 border-white">
-                            <span class="text-xs font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Score</span>
-                            <span class="text-3xl font-black text-white leading-none">{{ $user->trust_score }}</span>
+                        <div class="absolute inset-0 bg-blue-600/20 rounded-[3rem] md:rounded-[3.5rem] blur-2xl group-hover:blur-3xl transition-all duration-700"></div>
+                        <img src="{{ $user->avatar }}" class="relative w-40 h-40 md:w-64 md:h-64 rounded-[3rem] md:rounded-[3.5rem] object-cover border-4 border-white shadow-2xl transition-transform duration-700 group-hover:scale-[1.02]">
+                        <div class="absolute -bottom-2 -right-2 md:-bottom-4 md:-right-4 w-16 h-16 md:w-20 md:h-20 bg-slate-900 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center shadow-2xl border-4 border-white">
+                            <span class="text-[8px] md:text-xs font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Score</span>
+                            <span class="text-2xl md:text-3xl font-black text-white leading-none">{{ $user->trust_score }}</span>
                         </div>
                     </div>
 
@@ -17,8 +17,11 @@
                         <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6 border border-blue-100">
                             Profil Vérifié
                         </div>
-                        <h1 class="text-4xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-6">{{ $user->name }}</h1>
-                        <p class="text-slate-500 font-medium text-lg md:text-xl max-w-2xl leading-relaxed italic">
+                        <div class="flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 mb-6">
+                            <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">{{ $user->name }}</h1>
+                            <livewire:information.manager :model="$user" :key="'user-info-'.$user->id" />
+                        </div>
+                        <p class="text-slate-500 font-medium text-base md:text-xl max-w-2xl leading-relaxed italic px-4 md:px-0">
                             "{{ $user->bio ?? 'Ce bâtisseur de confiance n\'a pas encore rédigé sa bio.' }}"
                         </p>
                         
@@ -152,7 +155,10 @@
                                             @endif
                                         </div>
                                         
-                                        <h4 class="text-xl font-black text-slate-900 mb-4 tracking-tight leading-tight italic">"{{ $achievement->title }}"</h4>
+                                        <div class="flex items-center gap-3 mb-4">
+                                            <h4 class="text-xl font-black text-slate-900 tracking-tight leading-tight italic">"{{ $achievement->title }}"</h4>
+                                            <livewire:information.manager :model="$achievement" :key="'ach-info-'.$achievement->id" />
+                                        </div>
                                         <p class="text-slate-500 text-sm font-medium mb-8 leading-relaxed line-clamp-2 italic">{{ $achievement->description }}</p>
 
                                         <div class="pt-6 border-t border-slate-50 flex items-center gap-3">

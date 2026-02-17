@@ -59,4 +59,9 @@ class Circle extends Model
     {
         return $this->hasMany(Achievement::class);
     }
+
+    public function informations()
+    {
+        return $this->morphMany(Information::class, 'informable');
+    }
 }

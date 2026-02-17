@@ -57,4 +57,9 @@ class Achievement extends Model
     {
         return $this->belongsTo(Circle::class);
     }
+
+    public function informations()
+    {
+        return $this->morphMany(Information::class, 'informable');
+    }
 }

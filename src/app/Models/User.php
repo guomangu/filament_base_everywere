@@ -83,4 +83,9 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(CircleMember::class);
     }
+
+    public function informations()
+    {
+        return $this->morphMany(Information::class, 'informable');
+    }
 }
