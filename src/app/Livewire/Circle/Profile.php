@@ -81,15 +81,6 @@ class Profile extends Component
     {
         $this->validate();
 
-        // Security: Check if active member or owner
-        $isMember = $this->circle->activeMembers()->where('user_id', auth()->id())->exists();
-        $isOwner = $this->circle->owner_id === auth()->id();
-
-        if (!$isMember && !$isOwner) {
-             // Fallback: Check if guest allowed (current logic allows guest questions)
-             // But for logistical chat, we might want to restrict to members
-        }
-
         \App\Models\Message::create([
             'circle_id' => $this->circle->id,
             'sender_id' => auth()->id(),

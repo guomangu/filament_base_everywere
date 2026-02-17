@@ -254,7 +254,7 @@
                     <span class="px-3 py-1 bg-white/10 text-xs rounded-full border border-white/10 font-black">{{ $circle->messages->count() }}</span>
                 </h2>
 
-                <!-- Input area if active member or owner -->
+                <!-- Input area if authenticated -->
                 @auth
                     @php 
                         $isActiveMember = $circle->activeMembers->contains('user_id', auth()->id());
@@ -262,22 +262,15 @@
                     @endphp
 
                     <div class="relative z-10 p-4 bg-white/5 border border-white/10 rounded-[2.5rem] mb-10">
-                        @if($isActiveMember || $isOwner)
-                            <textarea wire:model="message" 
-                                placeholder="Partagez une info logistique..." 
-                                class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
-                                rows="3"></textarea>
-                            
-                            <button wire:click="sendMessage" 
-                                class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-white/5">
-                                Envoyer
-                            </button>
-                        @else
-                            <div class="py-12 text-center">
-                                <svg class="w-6 h-6 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                <p class="text-[10px] font-black uppercase text-slate-600 tracking-widest leading-relaxed">Le Board est réservé<br>aux membres actifs.</p>
-                            </div>
-                        @endif
+                        <textarea wire:model="message" 
+                            placeholder="{{ ($isActiveMember || $isOwner) ? 'Partagez une info logistique...' : 'Posez une question en tant qu\'invité...' }}" 
+                            class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
+                            rows="3"></textarea>
+                        
+                        <button wire:click="sendMessage" 
+                            class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-white/5">
+                            Envoyer {{ ($isActiveMember || $isOwner) ? '' : '(Invité)' }}
+                        </button>
                     </div>
                 @else
                     <div class="relative z-10 text-center p-8 bg-white/5 border border-dashed border-white/10 rounded-3xl mb-10">
@@ -286,11 +279,14 @@
                 @endauth
 
                 <!-- Messages Feed -->
+                @php
+                    $activeMemberIds = $circle->activeMembers->pluck('user_id')->toArray();
+                @endphp
                 <div class="space-y-6 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar relative z-10">
                     @forelse($circle->messages as $msg)
                         @php
                             $isOwner = $msg->sender_id === $circle->owner_id;
-                            $isMember = $circle->members->contains('user_id', $msg->sender_id);
+                            $isMember = in_array($msg->sender_id, $activeMemberIds);
                             $isGuest = !$isOwner && !$isMember;
                         @endphp
                         <div class="flex flex-col gap-2">
