@@ -35,29 +35,31 @@ Le projet suit le manifeste **God Stack** : une application **ultra-portable**, 
 Les modèles sont définis via **Blueprint** dans `src/draft.yaml`.
 
 - **User** : Entité centrale. Possède un `trust_score`, une `location` et des `coordinates` (JSON).
+- **Proche** : Profil "géré" par un utilisateur parent. Permet de référencer l'expertise de son réseau sans que les personnes n'aient de compte.
 - **Circle** : Groupes, Lieux ou Projets. Peuvent être publics ou privés. Ont un `Owner`.
-- **CircleMember** : Gère l'appartenance à un cercle (rôles: `admin`, `member`, `guest`).
-- **Skill** : Catalogue de compétences (ex: Menuiserie, Développement, Cuisine).
-- **Achievement** : Preuve concrète d'une compétence liée à un utilisateur et optionnellement à un Cercle. C'est l'unité de "confiance" du réseau.
-- **Message** : Discussions au sein d'un Cercle (type `chat` ou `logistics`).
+- **Achievement** : Preuve concrète d'une compétence liée à un `User` OU un `Proche`. C'est l'unité de "confiance" du réseau.
+- **Information** : Système polymorphique (`morphMany`) pour ajouter des métadonnées dynamiques (liens, horaires, labels) sur n'importe quel modèle.
+- **Vouch** : Système de garantie mutuelle entre utilisateurs pour augmenter le `trust_score`.
 
 ---
 
 ## 🚀 Fonctionnalités Clés
 
-### 1. Recherche Intelligente & Proximité
+### 1. Recherche Universelle & Proximité
 Le composant `Home` implémente une recherche "Smart" :
-- Analyse le contenu des cercles, les compétences des propriétaires et des membres.
-- Calcule la distance en temps réel via SQL (Haversine formula sur JSON `coordinates`).
-- Priorise les résultats par pertinence sémantique et géographique.
+- Analyse le contenu des cercles, les compétences des propriétaires, des membres et de leurs **Proches**.
+- Calcule la distance en temps réel via SQL (Haversine sur JSON `coordinates`).
+- Contexte de matching clair : indique si l'expertise vient du fondateur, d'un membre ou d'un proche géré.
 
-### 2. Gestion des Cercles
-- Création et édition via des formulaires Filament injectés dans Livewire.
-- Gestion des membres avec système de "Vouching" (recommandation par un tiers).
+### 2. Gestion de l'Expertise Réseau (Proches)
+- Un utilisateur peut créer des profils `Proche` pour son entourage.
+- Attribution de compétences et preuves aux proches.
+- **Claim Strategy** : Système de transfert sécurisé (Token + Code) pour qu'un proche devienne un utilisateur autonome en récupérant tout son historique.
 
-### 3. Profils Enrichis
-- Affichage des "Achievements" (Preuves) pour valider l'expertise de l'utilisateur.
-- Edition de profil simplifiée via Filament Forms.
+### 3. UI/UX "God Stack Premium"
+- Design basé sur le **Glassmorphism** (bordures blanches translucides, flous de fond 3xl).
+- Responsive total de Desktop à Smartphone.
+- Utilisation de composants Filament Forms injectés pour les interactions complexes.
 
 ---
 
@@ -66,17 +68,19 @@ Le composant `Home` implémente une recherche "Smart" :
 Utilisez toujours les wrappers dans `bin/` pour rester dans l'environnement portable :
 
 - **Exécuter une commande Artisan** : `./bin/artisan <command>`
-- **Installer une dépendance** : `./bin/composer require <package>`
 - **Générer du code via Blueprint** : Modifier `src/draft.yaml` puis `./bin/artisan blueprint:build`
 - **Reset la DB & Seed** : `./bin/artisan migrate:fresh --seed`
-- **Accès SQL direct** : `./bin/mariadb/bin/mariadb -u root --socket=data/mysql/mysql.sock laravel`
+- **Tests de validation** : `./bin/php src/vendor/bin/phpunit -c src/phpunit.xml`
 
 ---
 
 ## 🚦 État Actuel & Prochaines Étapes
 - [x] Structure de base (God Stack) installée.
 - [x] Modèles User, Circle, Achievement, Message migrés.
-- [x] Dashboard Home avec recherche intelligente opérationnel.
+- [x] Système de **Proches** et transfert de compte opérationnel.
+- [x] Recherche étendue incluant le Vivier d'Expertises des Proches.
+- [x] Système d'Information polymorphique stabilisé.
+- [ ] Amélioration continue de l'UX/UI responsive (En cours).
 
 > [!IMPORTANT]
 > Ne jamais installer de paquets système (apt/dnf). Toujours utiliser ce qui est présent dans `/bin` ou via Composer/NPM dans `/src`.
