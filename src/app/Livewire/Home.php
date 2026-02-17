@@ -118,6 +118,27 @@ class Home extends Component
 
         // 4. Transform results with Smart Matching Context (Case Insensitive)
         $formattedResults = $results->map(function($circle) {
+            // Smart Distance Label
+            if (!empty($circle->coordinates) && ($circle->coordinates['lat'] != 0 || $circle->coordinates['lng'] != 0)) {
+                if (isset($circle->distance)) {
+                    $dist = $circle->distance;
+                    if ($dist < 1) {
+                        $circle->smart_distance = "À " . round($dist * 1000) . "m";
+                    } elseif ($dist < 2) {
+                        $circle->smart_distance = "Tout proche";
+                    } else {
+                        $circle->smart_distance = round($dist, 1) . " km";
+                    }
+                    
+                    // Same City Logic
+                    if ($this->locationName && stripos(mb_strtolower($circle->address), mb_strtolower(explode(',', $this->locationName)[0])) !== false) {
+                        $circle->smart_distance = "Même ville • " . $circle->smart_distance;
+                    }
+                }
+            } else {
+                $circle->smart_distance = "Remote / Dématérialisé";
+            }
+
             if (empty($this->search)) return $circle;
 
             $search = mb_strtolower($this->search);

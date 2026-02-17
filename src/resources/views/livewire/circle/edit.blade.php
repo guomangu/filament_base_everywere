@@ -41,9 +41,62 @@
                 </div>
             </div>
 
-            <div class="space-y-2">
+            <div class="space-y-2" x-data="{ 
+                query: @entangle('address'),
+                suggestions: [],
+                loading: false,
+                isOpen: false,
+                async fetchSuggestions() {
+                    if (this.query.length < 3) {
+                        this.suggestions = [];
+                        return;
+                    }
+                    this.loading = true;
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&limit=5`);
+                        this.suggestions = await response.json();
+                        this.isOpen = this.suggestions.length > 0;
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                select(suggestion) {
+                    this.query = suggestion.display_name;
+                    this.isOpen = false;
+                    $wire.set('address', this.query);
+                }
+            }">
                 <label class="text-sm font-black text-slate-400 uppercase tracking-widest px-1">Location / Address</label>
-                <input wire:model="address" type="text" class="w-full bg-white/60 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none" placeholder="Address">
+                <div class="relative">
+                    <input 
+                        x-model="query" 
+                        @input.debounce.300ms="fetchSuggestions()"
+                        @click.away="isOpen = false"
+                        type="text" 
+                        class="w-full bg-white/60 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none" 
+                        placeholder="Start typing an address or city...">
+                    
+                    <div x-show="loading" class="absolute right-6 top-1/2 -translate-y-1/2">
+                        <div class="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                    </div>
+
+                    <!-- Suggestions Dropdown -->
+                    <div x-show="isOpen" 
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        class="absolute z-50 w-full mt-2 bg-white/90 backdrop-blur-xl border border-slate-100 rounded-2xl shadow-xl overflow-hidden">
+                        <template x-for="suggestion in suggestions" :key="suggestion.place_id">
+                            <button @click="select(suggestion)" type="button" class="w-full text-left px-6 py-4 hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-none group">
+                                <div class="text-xs font-black text-slate-900 group-hover:text-blue-600 transition-colors" x-text="suggestion.display_name"></div>
+                                <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1" x-text="suggestion.type"></div>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 px-1 mt-1 italic">Laissez vide ou imprécis pour passer en mode <span class="text-blue-500">"Remote"</span>.</p>
                 @error('address') <span class="text-red-500 text-xs font-bold px-1">{{ $message }}</span> @enderror
             </div>
 

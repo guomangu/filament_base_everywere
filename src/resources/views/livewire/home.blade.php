@@ -123,8 +123,12 @@ class="min-h-screen bg-slate-50/50">
                                 </div>
                                 <div class="text-right">
                                     <div class="text-[0.6rem] font-black uppercase tracking-[0.2em] text-slate-300 mb-1">Cercle #{{ str_pad($circle->id, 3, '0', STR_PAD_LEFT) }}</div>
-                                    @if(isset($circle->distance))
-                                        <div class="inline-block bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black">{{ round($circle->distance, 1) }} km</div>
+                                    @if(isset($circle->smart_distance))
+                                        <div @class([
+                                            'inline-block px-3 py-1 rounded-full text-[10px] font-black shadow-sm',
+                                            'bg-blue-50 text-blue-600 shadow-blue-500/5' => !str_contains($circle->smart_distance, 'Remote'),
+                                            'bg-slate-900 text-white shadow-slate-900/10' => str_contains($circle->smart_distance, 'Remote'),
+                                        ])>{{ $circle->smart_distance }}</div>
                                     @endif
                                 </div>
                             </div>
@@ -135,7 +139,7 @@ class="min-h-screen bg-slate-50/50">
                                     {{ $circle->name }}
                                 </h3>
                                 <div class="flex items-center gap-1.5 text-slate-400">
-                                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <svg class="w-1.5 h-1.5 text-blue-500 animate-pulse" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                                     <span class="text-[11px] md:text-xs font-bold truncate italic">{{ $circle->address }}</span>
                                 </div>
                             </div>

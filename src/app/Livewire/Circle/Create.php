@@ -35,11 +35,10 @@ class Create extends Component implements HasForms
                             ->required()
                             ->maxLength(255)
                             ->placeholder('The Creative Forge...'),
-                        TextInput::make('address')
+                        \Filament\Forms\Components\ViewField::make('address')
                             ->label('Location / City')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('123 Alpha Street, Tech City...'),
+                            ->view('filament.forms.components.address-autocomplete')
+                            ->required(),
                         Textarea::make('description')
                             ->label('Mission & Description')
                             ->required()

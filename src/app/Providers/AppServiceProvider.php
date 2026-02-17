@@ -24,11 +24,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Livewire::component('app.filament.pages.auth.login', \App\Filament\Pages\Auth\Login::class);
-        Livewire::component('app.filament.pages.auth.register', \App\Filament\Pages\Auth\Register::class);
+        \Livewire\Livewire::component('app.filament.pages.auth.login', \App\Filament\Pages\Auth\Login::class);
+        \Livewire\Livewire::component('app.filament.pages.auth.register', \App\Filament\Pages\Auth\Register::class);
 
         if (class_exists(\App\Models\CircleMember::class)) {
             \App\Models\CircleMember::observe(\App\Observers\CircleMemberObserver::class);
+        }
+
+        if (class_exists(\App\Models\Circle::class)) {
+            \App\Models\Circle::observe(\App\Observers\CircleObserver::class);
         }
     }
 }
