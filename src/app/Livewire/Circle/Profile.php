@@ -61,7 +61,8 @@ class Profile extends Component
     public function refresh()
     {
         $this->circle->load([
-            'owner',
+            'owner.achievements.skill',
+            'owner.proches.achievements.skill',
             'activeMembers.user',
             'messages' => fn($q) => $q->with('sender')->latest()->take(20),
             'achievements.skill'

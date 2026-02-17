@@ -102,7 +102,7 @@ class="min-h-screen bg-slate-50/50">
             @endif
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+        <div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-12">
             @forelse ($circles as $circle)
                 <div class="relative group">
                     <!-- Circle Entity Aesthetic -->
@@ -148,10 +148,12 @@ class="min-h-screen bg-slate-50/50">
                             </div>
 
                             @if($circle->matching_context)
-                                <div class="relative z-10 p-4 bg-slate-50 border border-slate-100 rounded-3xl mb-6 group/highlight hover:border-blue-200 transition-colors">
-                                    <div class="flex items-center gap-3">
+                                <div class="relative z-10 p-4 bg-slate-50 border border-slate-100 rounded-3xl mb-6 group/highlight hover:border-blue-200 transition-colors pointer-events-auto">
+                                    <div class="flex items-center gap-3 mb-3">
                                         @if($circle->matched_object && isset($circle->matched_object['image']))
-                                            <img src="{{ $circle->matched_object['image'] }}" class="w-8 h-8 rounded-full border-2 border-white shadow-sm">
+                                            <a href="{{ route('users.show', $circle->matched_object['id']) }}" class="flex-shrink-0">
+                                                <img src="{{ $circle->matched_object['image'] }}" class="w-8 h-8 rounded-full border-2 border-white shadow-sm">
+                                            </a>
                                         @else
                                             <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -172,6 +174,12 @@ class="min-h-screen bg-slate-50/50">
                                             </div>
                                         </div>
                                     </div>
+
+                                    @if(isset($circle->matched_object['trustPath']) && count($circle->matched_object['trustPath']) > 0)
+                                        <div class="pt-3 border-t border-slate-200/50">
+                                            <x-user-trust-chain :path="$circle->matched_object['trustPath']" />
+                                        </div>
+                                    @endif
                                 </div>
                             @endif
 
@@ -191,12 +199,20 @@ class="min-h-screen bg-slate-50/50">
 
                         <!-- User Info Bar -->
                         <div class="px-8 md:px-10 py-6 border-t border-slate-50 flex items-center justify-between mt-auto relative z-10">
-                            <div class="flex -space-x-3">
-                                <a href="{{ route('users.show', $circle->owner) }}" class="relative z-10 block hover:scale-110 transition-transform">
-                                    <img src="{{ $circle->owner->avatar }}" class="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white shadow-md">
-                                </a>
-                                <div class="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-300">
-                                    +{{ $circle->members->count() }}
+                            <div class="flex items-center gap-4">
+                                <div class="flex -space-x-3">
+                                    <a href="{{ route('users.show', $circle->owner) }}" class="relative z-10 block hover:scale-110 transition-transform">
+                                        <img src="{{ $circle->owner->avatar }}" class="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white shadow-md">
+                                    </a>
+                                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-full border-4 border-white bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-300">
+                                        +{{ $circle->members->count() }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <a href="{{ route('users.show', $circle->owner) }}" class="text-[10px] font-black text-slate-900 uppercase tracking-tight hover:text-blue-600 transition-colors block mb-1">
+                                        {{ $circle->owner->name }}
+                                    </a>
+                                    <x-user-skills-tags :user="$circle->owner" limit="3" class="scale-90 origin-left" />
                                 </div>
                             </div>
                             <div class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] group-hover/card:text-blue-600 transition-colors pointer-events-none">

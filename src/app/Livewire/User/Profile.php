@@ -26,6 +26,9 @@ class Profile extends Component
     public ?string $votingType = null;
     public string $replyText = '';
     public string $search = '';
+    public $lat;
+    public $lng;
+    public $locationName;
 
     protected $rules = [
         'skillName' => 'required_if:step,1|min:2',
@@ -41,12 +44,40 @@ class Profile extends Component
             'activeJoinedCircles.members.user.achievements.skill', 
             'achievements.skill', 
             'achievements.circle', 
-            'achievements.validations.user',
+            'achievements.validations.user.achievements.skill',
+            'achievements.validations.user.proches.achievements.skill',
             'vouchesReceived.voucher', 
             'proches.achievements.skill',
-            'proches.achievements.validations.user'
+            'proches.achievements.validations.user.achievements.skill',
+            'proches.achievements.validations.user.proches.achievements.skill'
         ]);
+
+        if (auth()->check() && auth()->user()->coordinates && auth()->user()->location) {
+            $this->lat = auth()->user()->coordinates['lat'];
+            $this->lng = auth()->user()->coordinates['lng'];
+            $this->locationName = auth()->user()->location;
+        }
     }
+
+    public function resetLocation()
+    {
+        $this->reset(['lat', 'lng', 'locationName']);
+    }
+
+    public function setLocation($lat, $lng, $name)
+    {
+        $this->lat = $lat;
+        $this->lng = $lng;
+        $this->locationName = $name;
+
+        if (auth()->check()) {
+            auth()->user()->update([
+                'coordinates' => ['lat' => $lat, 'lng' => $lng],
+                'location' => $name
+            ]);
+        }
+    }
+
 
     public function canEdit(): bool
     {
@@ -182,7 +213,10 @@ class Profile extends Component
             ['type' => $type]
         );
 
-        $this->selectedAchievement = \App\Models\Achievement::with('validations.user')->find($achievementId);
+        $this->selectedAchievement = \App\Models\Achievement::with([
+            'validations.user.achievements.skill',
+            'validations.user.proches.achievements.skill'
+        ])->find($achievementId);
         $this->votingType = $type; // Still useful to show "You voted [Type]" in modal
         $this->showValidationModal = true;
         
@@ -239,9 +273,17 @@ class Profile extends Component
         $v->update(['reply' => $this->replyText]);
         
         $this->replyText = '';
-        $this->selectedAchievement = \App\Models\Achievement::with('validations.user')->find($v->achievement_id);
-        $this->user->load('achievements.validations.user', 'proches.achievements.validations.user');
-
+        $this->selectedAchievement = \App\Models\Achievement::with([
+            'validations.user.achievements.skill',
+            'validations.user.proches.achievements.skill'
+        ])->find($v->achievement_id);
+        $this->user->load([
+            'achievements.validations.user.achievements.skill', 
+            'achievements.validations.user.proches.achievements.skill',
+            'proches.achievements.validations.user.achievements.skill',
+            'proches.achievements.validations.user.proches.achievements.skill'
+        ]);
+        
         $this->dispatch('notify', ['message' => 'Réponse envoyée ! L\'échange est maintenant verrouillé.', 'type' => 'success']);
     }
 
@@ -342,16 +384,21 @@ class Profile extends Component
 
             $networkUserIds = $firstDegreeUserIds->merge($secondDegreeUserIds)->unique();
 
-            $searchResults = \App\Models\User::whereIn('id', $networkUserIds)
+            $query = \App\Models\User::whereIn('id', $networkUserIds)
                 ->with([
                     'achievements.skill', 
                     'proches.achievements.skill', 
                     'activeJoinedCircles',
                     'vouchesReceived.voucher'
-                ])
-                ->where(function($q) use ($searchTerm) {
+                ]);
+
+            if ($this->lat && $this->lng) {
+                $query->selectRaw("*, (6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coordinates, '$.lat'))))) AS distance", [$this->lat, $this->lng, $this->lat]);
+            }
+
+            $searchResults = $query->where(function($q) use ($searchTerm) {
                     $q->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                      ->orWhereRaw('LOWER(bio) LIKE ?', [$searchTerm])
+                     ->orWhereRaw('LOWER(bio) LIKE ?', [$searchTerm])
                       ->orWhereHas('achievements', function($aq) use ($searchTerm) {
                           $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
                             ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
@@ -373,24 +420,58 @@ class Profile extends Component
                 ->get()
                 ->map(function($u) use ($firstDegreeUserIds, $searchTerm) {
                     $u->degree = $firstDegreeUserIds->contains($u->id) ? 1 : 2;
+                    $sText = str_replace('%', '', strtolower($searchTerm));
                     
-                    // Identify match reason
-                    $s = str_replace('%', '', $searchTerm);
-                    if (str_contains(strtolower($u->name), $s)) $u->matchReason = "Nom";
-                    else if (str_contains(strtolower($u->bio), $s)) $u->matchReason = "Bio";
+                    // Priority 1: Direct Achievement Match
+                    $achievementMatch = $u->achievements->first(fn($a) => 
+                        str_contains(strtolower($a->title), $sText) || 
+                        str_contains(strtolower($a->description), $sText) || 
+                        str_contains(strtolower($a->skill?->name ?? ''), $sText)
+                    );
+
+                    if ($achievementMatch) {
+                        $u->matchReason = "Expertise: " . ($achievementMatch->skill?->name ?? $achievementMatch->title);
+                        $target = $achievementMatch;
+                    } 
+                    // Priority 2: Proche Match (Direct or Achievement)
                     else {
-                        $matchedSkill = $u->achievements->first(fn($a) => str_contains(strtolower($a->skill?->name), $s));
-                        if ($matchedSkill) $u->matchReason = "Compétence: " . $matchedSkill->skill->name;
-                        else {
-                            $matchedProche = $u->proches->first(fn($p) => str_contains(strtolower($p->name), $s));
-                            if ($matchedProche) $u->matchReason = "Proche: " . $matchedProche->name;
-                            else {
-                                $matchedPach = $u->proches->flatMap->achievements->first(fn($a) => str_contains(strtolower($a->skill?->name), $s));
-                                if ($matchedPach) $u->matchReason = "Compétence Proche: " . $matchedPach->skill->name;
-                                else $u->matchReason = "Expertise";
+                        $matchedProche = null;
+                        $matchedProcheAchievement = null;
+
+                        foreach($u->proches as $proche) {
+                            if (str_contains(strtolower($proche->name), $sText)) {
+                                $matchedProche = $proche;
+                                break;
+                            }
+                            $pa = $proche->achievements->first(fn($a) => 
+                                str_contains(strtolower($a->title), $sText) || 
+                                str_contains(strtolower($a->description), $sText) || 
+                                str_contains(strtolower($a->skill?->name ?? ''), $sText)
+                            );
+                            if ($pa) {
+                                $matchedProche = $proche;
+                                $matchedProcheAchievement = $pa;
+                                break;
                             }
                         }
+
+                        if ($matchedProcheAchievement) {
+                            $u->matchReason = "Expertise Proche: " . ($matchedProcheAchievement->skill?->name ?? $matchedProcheAchievement->title);
+                            $target = $matchedProcheAchievement;
+                        } elseif ($matchedProche) {
+                            $u->matchReason = "Proche: " . $matchedProche->name;
+                            $target = $matchedProche;
+                        } 
+                        // Priority 3: User Match (Name/Bio)
+                        else {
+                            if (str_contains(strtolower($u->name), $sText)) $u->matchReason = "Nom";
+                            else if (str_contains(strtolower($u->bio), $sText)) $u->matchReason = "Bio";
+                            else $u->matchReason = "Expertise";
+                            $target = $u;
+                        }
                     }
+
+                    $u->trustPath = auth()->check() ? auth()->user()->getTrustPathTo($target) : [];
                     return $u;
                 })
                 ->sortBy('degree');

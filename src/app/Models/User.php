@@ -12,6 +12,8 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use App\Models\Circle;
 use App\Models\CircleMember;
+use App\Models\Proche;
+use App\Models\Achievement;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -154,52 +156,93 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Proche::class, 'parent_id');
     }
 
-    public function getTrustPathTo(User $other): array
+    public function getTrustPathTo($other): array
     {
-        if ($this->id === $other->id) {
-            return [['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar]];
+        $path = [['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar]];
+
+        if ($other instanceof User && $this->id === $other->id) {
+            return $path;
         }
 
-        // 1st Degree: Common Circles
-        $myCircleIds = $this->activeJoinedCircles->pluck('id');
-        $otherCircleIds = $other->activeJoinedCircles->pluck('id');
-        $commonCircles = $myCircleIds->intersect($otherCircleIds);
+        // Helper to find path to a target User
+        $findUserPath = function(User $target) use ($path) {
+            if ($this->id === $target->id) return $path;
 
-        if ($commonCircles->isNotEmpty()) {
-            $circle = Circle::find($commonCircles->first());
-            return [
-                ['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar],
-                ['type' => 'circle', 'id' => $circle->id, 'name' => $circle->name],
-                ['type' => 'user', 'id' => $other->id, 'name' => $other->name, 'avatar' => $other->avatar]
-            ];
-        }
+            // 1st Degree: Common Circles
+            $myCircleIds = $this->activeJoinedCircles->pluck('id');
+            $otherCircleIds = $target->activeJoinedCircles->pluck('id');
+            $commonCircles = $myCircleIds->intersect($otherCircleIds);
 
-        // 2nd Degree: Intermediaries
-        // Get all members of my circles
-        $intermediaries = CircleMember::whereIn('circle_id', $myCircleIds)
-            ->where('status', 'active')
-            ->where('user_id', '!=', $this->id)
-            ->with(['user', 'circle'])
-            ->get();
-
-        foreach ($intermediaries as $member) {
-            $intermediary = $member->user;
-            $sharedWithMe = $member->circle;
-            
-            // Check if this intermediary shares a circle with $other
-            $interCircleIds = $intermediary->activeJoinedCircles->pluck('id');
-            $commonWithOther = $interCircleIds->intersect($otherCircleIds);
-            
-            if ($commonWithOther->isNotEmpty()) {
-                $sharedWithOther = Circle::find($commonWithOther->first());
-                return [
-                    ['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar],
-                    ['type' => 'circle', 'id' => $sharedWithMe->id, 'name' => $sharedWithMe->name],
-                    ['type' => 'user', 'id' => $intermediary->id, 'name' => $intermediary->name, 'avatar' => $intermediary->avatar],
-                    ['type' => 'circle', 'id' => $sharedWithOther->id, 'name' => $sharedWithOther->name],
-                    ['type' => 'user', 'id' => $other->id, 'name' => $other->name, 'avatar' => $other->avatar]
-                ];
+            if ($commonCircles->isNotEmpty()) {
+                $circle = Circle::find($commonCircles->first());
+                return array_merge($path, [
+                    ['type' => 'circle', 'id' => $circle->id, 'name' => $circle->name],
+                    ['type' => 'user', 'id' => $target->id, 'name' => $target->name, 'avatar' => $target->avatar]
+                ]);
             }
+
+            // 2nd Degree: Intermediaries
+            $intermediaries = CircleMember::whereIn('circle_id', $myCircleIds)
+                ->where('status', 'active')
+                ->where('user_id', '!=', $this->id)
+                ->with(['user', 'circle'])
+                ->get();
+
+            foreach ($intermediaries as $member) {
+                $intermediary = $member->user;
+                $sharedWithMe = $member->circle;
+                $interCircleIds = $intermediary->activeJoinedCircles->pluck('id');
+                $commonWithOther = $interCircleIds->intersect($otherCircleIds);
+                
+                if ($commonWithOther->isNotEmpty()) {
+                    $sharedWithOther = Circle::find($commonWithOther->first());
+                    return array_merge($path, [
+                        ['type' => 'circle', 'id' => $sharedWithMe->id, 'name' => $sharedWithMe->name],
+                        ['type' => 'user', 'id' => $intermediary->id, 'name' => $intermediary->name, 'avatar' => $intermediary->avatar],
+                        ['type' => 'circle', 'id' => $sharedWithOther->id, 'name' => $sharedWithOther->name],
+                        ['type' => 'user', 'id' => $target->id, 'name' => $target->name, 'avatar' => $target->avatar]
+                    ]);
+                }
+            }
+            return [];
+        };
+
+        if ($other instanceof User) {
+            return $findUserPath($other);
+        }
+
+        if ($other instanceof Proche) {
+            $userPath = $findUserPath($other->parent);
+            if (empty($userPath)) return [];
+            return array_merge($userPath, [
+                ['type' => 'proche', 'id' => $other->id, 'name' => $other->name, 'user_id' => $other->parent_id]
+            ]);
+        }
+
+        if ($other instanceof Achievement) {
+            $basePath = [];
+            $ownerId = null;
+
+            if ($other->proche_id) {
+                $proche = $other->proche ?? Proche::find($other->proche_id);
+                if ($proche) {
+                    $basePath = $this->getTrustPathTo($proche);
+                    $ownerId = $proche->parent_id;
+                }
+            } elseif ($other->user_id) {
+                $user = $other->user ?? User::find($other->user_id);
+                if ($user) {
+                    $basePath = $this->getTrustPathTo($user);
+                    $ownerId = $user->id;
+                }
+            }
+
+            if (empty($basePath)) return [];
+
+            return array_merge($basePath, [
+                ['type' => 'skill', 'id' => $other->skill_id, 'name' => $other->skill->name ?? 'Compétence', 'user_id' => $ownerId],
+                ['type' => 'achievement', 'id' => $other->id, 'name' => $other->title, 'user_id' => $ownerId]
+            ]);
         }
 
         return [];

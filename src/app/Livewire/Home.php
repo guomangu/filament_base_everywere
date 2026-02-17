@@ -185,7 +185,8 @@ class Home extends Component
                                   'type' => 'achievement',
                                   'name' => $match->skill->name ?? $match->title,
                                   'image' => null,
-                                  'icon' => 'sparkles'
+                                  'icon' => 'sparkles',
+                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($match) : []
                               ]);
             }
 
@@ -200,9 +201,11 @@ class Home extends Component
                 return $circle->setAttribute('matching_context', "Expertise Fondateur")
                               ->setAttribute('matched_object', [
                                   'type' => 'user',
+                                  'id' => $circle->owner->id,
                                   'name' => $circle->owner->name,
                                   'image' => $circle->owner->avatar,
-                                  'detail' => $ownerMatch ? ($ownerMatch->skill->name ?? $ownerMatch->title) : 'Profil vérifié'
+                                  'detail' => $ownerMatch ? ($ownerMatch->skill->name ?? $ownerMatch->title) : 'Profil vérifié',
+                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($ownerMatch ?? $circle->owner) : []
                               ]);
             }
 
@@ -219,9 +222,11 @@ class Home extends Component
                     return $circle->setAttribute('matching_context', "Expertise Membre")
                                   ->setAttribute('matched_object', [
                                       'type' => 'user',
+                                      'id' => $member->user->id,
                                       'name' => $member->user->name,
                                       'image' => $member->user->avatar,
-                                      'detail' => $memberMatch ? ($memberMatch->skill->name ?? $memberMatch->title) : 'Profil vérifié'
+                                      'detail' => $memberMatch ? ($memberMatch->skill->name ?? $memberMatch->title) : 'Profil vérifié',
+                                      'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($memberMatch ?? $member->user) : []
                                   ]);
                 }
 
@@ -239,7 +244,8 @@ class Home extends Component
                                           'type' => 'user',
                                           'name' => $proche->name,
                                           'image' => null,
-                                          'detail' => "(Géré par {$member->user->name})"
+                                          'detail' => "(Géré par {$member->user->name})",
+                                          'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($procheMatch ?? $proche) : []
                                       ]);
                     }
                 }
@@ -259,7 +265,8 @@ class Home extends Component
                                       'type' => 'user',
                                       'name' => $proche->name,
                                       'image' => null,
-                                      'detail' => "(Géré par {$circle->owner->name})"
+                                      'detail' => "(Géré par {$circle->owner->name})",
+                                      'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($procheMatch ?? $proche) : []
                                   ]);
                 }
             }
@@ -269,8 +276,10 @@ class Home extends Component
                 return $circle->setAttribute('matching_context', "Propriétaire")
                               ->setAttribute('matched_object', [
                                   'type' => 'user',
+                                  'id' => $circle->owner->id,
                                   'name' => $circle->owner->name,
-                                  'image' => $circle->owner->avatar
+                                  'image' => $circle->owner->avatar,
+                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($circle->owner) : []
                               ]);
             }
             
@@ -279,8 +288,10 @@ class Home extends Component
                 return $circle->setAttribute('matching_context', "Membre actif")
                               ->setAttribute('matched_object', [
                                   'type' => 'user',
+                                  'id' => $matchingMember->user->id,
                                   'name' => $matchingMember->user->name,
-                                  'image' => $matchingMember->user->avatar
+                                  'image' => $matchingMember->user->avatar,
+                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($matchingMember->user) : []
                               ]);
             }
 

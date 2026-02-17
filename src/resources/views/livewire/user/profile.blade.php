@@ -142,25 +142,84 @@
                 <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
                     
-                    <div class="relative z-10">
+                    <div class="relative z-10" x-data="{ 
+                        async updateLocation() {
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(async position => {
+                                    const lat = position.coords.latitude;
+                                    const lng = position.coords.longitude;
+                                    
+                                    try {
+                                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`);
+                                        const data = await response.json();
+                                        const city = data.address.city || data.address.town || data.address.village || data.address.municipality || 'Localisation inconnue';
+                                        const country = data.address.country;
+                                        const locationName = `${city}, ${country}`;
+                                        
+                                        $wire.call('setLocation', lat, lng, locationName);
+                                    } catch (error) {
+                                        console.error('Reverse geocoding error:', error);
+                                        $wire.call('setLocation', lat, lng, 'Localisation détectée');
+                                    }
+                                }, (error) => {
+                                    console.error('Geolocation error:', error);
+                                }, { enableHighAccuracy: true });
+                            }
+                        }
+                    }">
                         <div class="flex items-center justify-between mb-8">
                             <div>
-                                <h3 class="text-2xl font-black tracking-tight uppercase italic">Répertoire Réseau</h3>
-                                <p class="text-blue-400 text-[8px] font-black uppercase tracking-[0.3em] mt-1">Découverte 1er & 2ème Cercles</p>
+                                <h3 class="text-xl font-black text-white uppercase tracking-tighter">Répertoire Réseau</h3>
+                                <p class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Experts de 1er et 2ème degré</p>
                             </div>
                             <svg class="w-8 h-8 text-blue-500 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         </div>
 
-                        <!-- Mini Search Bar -->
+                        <!-- Premium Search Bar -->
                         <div class="mb-10 relative group">
-                            <input wire:model.live.debounce.250ms="search" type="text" 
-                                placeholder="Rechercher une expertise..." 
-                                class="w-full bg-white/5 border-white/10 focus:border-blue-500 focus:ring-0 rounded-2xl p-4 text-xs font-black uppercase tracking-widest placeholder:text-slate-600 transition-all">
-                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-500 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <div class="relative p-1.5 bg-white/5 backdrop-blur-3xl rounded-[2rem] border border-white/10 shadow-xl transition-all duration-500 hover:border-blue-500/50">
+                                <div class="relative flex items-center">
+                                    <div class="absolute left-4 text-blue-500">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    </div>
+                                    <input type="text" 
+                                        wire:model.live.debounce.300ms="search" 
+                                        placeholder="Sushi, Plombier, Laravel..." 
+                                        class="w-full bg-transparent border-none focus:ring-0 text-sm font-black placeholder:text-slate-600 py-4 pl-12 pr-4 text-white uppercase tracking-wide">
+                                    
+                                    <div wire:loading wire:target="search" class="absolute right-4">
+                                        <div class="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 flex items-center justify-between px-2">
+                                <div class="flex gap-4 text-[7px] font-black text-slate-600 uppercase tracking-widest">
+                                    <span class="flex items-center gap-1"><span class="w-1 h-1 bg-blue-500 rounded-full"></span> Proximité</span>
+                                    <span class="flex items-center gap-1"><span class="w-1 h-1 bg-indigo-500 rounded-full"></span> Réseau direct</span>
+                                </div>
+
+                                @if($locationName)
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex items-center gap-1 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                                            <svg class="w-2.5 h-2.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                            <span class="text-[7px] text-blue-400 font-extrabold uppercase tracking-widest">{{ $locationName }}</span>
+                                            <button wire:click="resetLocation" class="ml-1 text-slate-500 hover:text-red-500">
+                                                <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                        </div>
+                                        <button @click="updateLocation()" class="p-1 bg-white/5 rounded-full text-slate-400 hover:text-blue-500 hover:bg-white/10 transition-all">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        </button>
+                                    </div>
+                                @else
+                                    <button @click="updateLocation()" class="text-[7px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-1 hover:text-blue-400">
+                                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                        Autour de moi
+                                    </button>
+                                @endif
                             </div>
                         </div>
-
                         <div class="space-y-4">
                             @if($search === '')
                                 @forelse($networkExperts as $expert)
@@ -174,6 +233,7 @@
                                                 <a href="{{ route('users.show', $expert) }}" class="text-[11px] font-black text-white uppercase tracking-tight hover:text-blue-400 transition-colors truncate block">
                                                     {{ $expert->name }}
                                                 </a>
+                                                <x-user-skills-tags :user="$expert" limit="3" class="mt-2 scale-90 origin-left" />
                                             </div>
                                         </div>
                                     </div>
@@ -197,19 +257,16 @@
                                                         <span class="text-[8px] font-black text-blue-600 uppercase italic">{{ $result->matchReason }}</span>
                                                     </div>
                                                     <a href="{{ route('users.show', $result) }}" class="text-xs font-black text-slate-900 uppercase hover:text-blue-600 transition-colors truncate block mt-1">{{ $result->name }}</a>
+                                                    <x-user-skills-tags :user="$result" limit="4" class="mt-2 scale-90 origin-left" />
                                                 </div>
-                                            </div>
+                                           </div>
                                             
-                                            <div class="flex flex-wrap gap-1">
-                                                @foreach($result->achievements->pluck('skill')->unique('id')->take(3) as $skill)
-                                                    <span @class([
-                                                        'px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-tighter',
-                                                        'bg-blue-600 text-white' => str_contains(strtolower($skill->name), strtolower($search)),
-                                                        'bg-slate-50 text-slate-400' => !str_contains(strtolower($skill->name), strtolower($search)),
-                                                    ])>{{ $skill->name }}</span>
-                                                @endforeach
-                                            </div>
-
+                                            @if(isset($result->trustPath) && count($result->trustPath) > 0)
+                                                <div class="mt-4 pt-4 border-t border-slate-100">
+                                                    <x-user-trust-chain :path="$result->trustPath" />
+                                                </div>
+                                            @endif
+                                            
                                             <a href="{{ route('users.show', $result) }}" class="mt-4 w-full py-2 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2">
                                                 Voir Profil
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
@@ -621,7 +678,7 @@
                                     <img src="{{ $v->user->avatar }}" class="w-12 h-12 rounded-2xl object-cover ring-4 ring-white shadow-md">
                                 </a>
                                 <div class="flex-grow">
-                                    <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center justify-between mb-1">
                                         <a href="{{ route('users.show', $v->user) }}" class="text-sm font-black uppercase hover:text-blue-600 transition-colors">{{ $v->user->name }}</a>
                                         <span @class([
                                             'text-[8px] font-black uppercase px-2 py-0.5 rounded-full',
@@ -629,6 +686,7 @@
                                             'bg-red-600 text-white' => $v->type === 'reject',
                                         ])>{{ $v->type === 'validate' ? 'Validé' : 'Rejeté' }}</span>
                                     </div>
+                                    <x-user-skills-tags :user="$v->user" limit="3" class="mb-3 scale-90 origin-left" />
                                     @if($v->comment)
                                         <p class="text-xs font-semibold leading-relaxed">"{{ $v->comment }}"</p>
                                     @endif

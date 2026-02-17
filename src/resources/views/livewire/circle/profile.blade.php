@@ -103,14 +103,15 @@
                     <!-- Actions -->
                     <div class="lg:w-72 space-y-4">
                         <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white">
-                            <a href="{{ route('users.show', $circle->owner) }}" class="flex items-center gap-4 mb-6 group/owner transition-all">
+                            <a href="{{ route('users.show', $circle->owner) }}" class="flex items-center gap-4 mb-4 group/owner transition-all">
                                 <img src="{{ $circle->owner->avatar }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10 group-hover/owner:ring-blue-500 transition-all">
                                 <div>
-                                    <div class="text-xs font-black text-blue-400 uppercase tracking-widest">Fondateur</div>
-                                    <div class="font-bold group-hover/owner:text-blue-400 transition-colors">{{ $circle->owner->name }}</div>
+                                    <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Fondateur</div>
+                                    <div class="text-sm font-bold group-hover/owner:text-blue-400 transition-colors">{{ $circle->owner->name }}</div>
                                 </div>
                             </a>
-                            
+                            <x-user-skills-tags :user="$circle->owner" limit="3" class="mb-6 scale-90 origin-left" />
+                           
                             @auth
                                 @php 
                                     $isMember = $circle->members->contains('user_id', auth()->id()); 
@@ -225,24 +226,7 @@
                                 @endif
                             @endauth
                             
-                            <div class="flex flex-wrap gap-2">
-                                {{-- Direct Achievements --}}
-                                @foreach($expert->achievements->unique('skill_id') as $ach)
-                                    <span class="px-3 py-1.5 bg-slate-900/5 border border-slate-900/5 rounded-xl text-[9px] font-black text-slate-600 uppercase tracking-tight group-hover:bg-white group-hover:border-slate-100 transition-all">
-                                        {{ $ach->skill->name }}
-                                    </span>
-                                @endforeach
-
-                                {{-- Proche Achievements --}}
-                                @foreach($expert->proches as $proche)
-                                    @foreach($proche->achievements->unique('skill_id') as $ach)
-                                        <span class="px-3 py-1.5 bg-blue-50 border border-blue-100/50 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-tight group-hover:bg-white transition-all flex flex-col items-center gap-0.5">
-                                            <span>{{ $ach->skill->name }}</span>
-                                            <span class="text-[7px] opacity-40 leading-none">Proche: {{ $proche->name }}</span>
-                                        </span>
-                                    @endforeach
-                                @endforeach
-                            </div>
+                            <x-user-skills-tags :user="$expert" limit="6" />
                         </div>
                     @empty
                         <div class="col-span-full py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
