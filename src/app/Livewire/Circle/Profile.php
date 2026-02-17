@@ -94,62 +94,36 @@ class Profile extends Component
 
     public function render()
     {
-        // 1. Immediate Active Members (including owner)
+        // 1. Get Immediate Active Members (including owner)
         $memberIds = $this->circle->activeMembers()->pluck('user_id')->push($this->circle->owner_id)->unique();
 
-        // 2. Immediate Skills
-        $immediateAchievements = \App\Models\Achievement::whereIn('user_id', $memberIds)
-            ->where('title', '!=', '__SKELETON__')
-            ->with(['skill', 'user'])
-            ->get();
+        // 2. Immediate Experts & Skills
+        $memberExperts = \App\Models\User::whereIn('id', $memberIds)
+            ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
+            ->get()
+            ->filter(fn($u) => $u->achievements->count() > 0);
 
-        // 3. Extended Network (Proximity 2)
-        // Find other circles these members belong to (only active memberships)
+        // 3. Extended Network Experts (Proximity 2)
         $secondaryCircleIds = \App\Models\CircleMember::whereIn('user_id', $memberIds)
             ->where('status', 'active')
             ->where('circle_id', '!=', $this->circle->id)
             ->pluck('circle_id')
             ->unique();
 
-        // Find experts in those secondary circles who are NOT in the current circle
-        $extendedExperts = \App\Models\User::whereHas('circleMembers', function($q) use ($secondaryCircleIds) {
+        $networkExperts = \App\Models\User::whereHas('circleMembers', function($q) use ($secondaryCircleIds) {
                 $q->whereIn('circle_id', $secondaryCircleIds)
                   ->where('status', 'active');
             })
             ->whereNotIn('id', $memberIds)
-            ->with(['achievements.skill'])
-            ->get();
-
-        // 4. Map and Deduplicate
-        // Immediate first (priority)
-        $skills = $immediateAchievements->map(fn($a) => [
-            'skill' => $a->skill->name,
-            'expert' => $a->user->name,
-            'trust' => $a->user->trust_score,
-            'expert_id' => $a->user->id,
-            'is_extended' => false
-        ]);
-
-        // Extended second
-        $extendedSkills = $extendedExperts->flatMap(function($expert) {
-            return $expert->achievements
-                ->reject(fn($a) => $a->title === '__SKELETON__')
-                ->map(fn($a) => [
-                    'skill' => $a->skill->name,
-                    'expert' => $expert->name,
-                    'trust' => $expert->trust_score,
-                    'expert_id' => $expert->id,
-                    'is_extended' => true
-                ]);
-        });
-
-        $allSkills = $skills->concat($extendedSkills)
-            ->unique('skill') // Keep immediate if skill name matches
-            ->sortByDesc('trust')
-            ->take(60);
+            ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
+            ->get()
+            ->filter(fn($u) => $u->achievements->count() > 0)
+            ->sortByDesc('trust_score')
+            ->take(30);
 
         return view('livewire.circle.profile', [
-            'allSkills' => $allSkills
+            'memberExperts' => $memberExperts,
+            'networkExperts' => $networkExperts
         ]);
     }
 }

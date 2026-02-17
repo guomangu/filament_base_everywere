@@ -192,56 +192,76 @@
     <div class="max-w-7xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
         
         <!-- Main Content: Skill Directory -->
-        <div class="lg:col-span-2 space-y-12">
+        <div class="lg:col-span-2 space-y-16">
             <div>
-                <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        Répertoire des Compétences
-                        <span class="text-xs font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full">{{ $allSkills->count() }}</span>
+                <div class="flex items-center justify-between mb-10">
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">
+                        Le Vivier d'Expertises
+                        <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic">DIRECT</span>
                     </h2>
                 </div>
 
-                <div class="flex flex-wrap gap-3">
-                    @forelse($allSkills as $item)
-                        <a href="{{ route('users.show', $item['expert_id']) }}" @class([
-                            'group/tag flex items-center gap-2 px-4 py-2 rounded-2xl border transition-all shadow-sm',
-                            'bg-white border-slate-100 hover:border-blue-500 hover:shadow-md' => !$item['is_extended'],
-                            'bg-slate-50 border-dashed border-slate-200 hover:bg-white hover:border-blue-300' => $item['is_extended'],
-                        ])>
-                            <div @class([
-                                'w-2 h-2 rounded-full',
-                                'bg-blue-500' => !$item['is_extended'],
-                                'bg-slate-300 group-hover/tag:bg-blue-300' => $item['is_extended'],
-                            ])></div>
-                            <span class="text-xs font-black uppercase tracking-tight text-slate-900">{{ $item['skill'] }}</span>
-                            <span class="text-[9px] font-bold text-slate-400 group-hover/tag:text-blue-500 transition-colors italic">· {{ $item['expert'] }}</span>
-                            @if($item['is_extended'])
-                                <svg class="w-3 h-3 text-slate-300 group-hover/tag:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                            @endif
-                        </a>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    @forelse($memberExperts as $expert)
+                        <div class="bg-white/60 backdrop-blur-3xl border border-white/60 p-6 rounded-[2.5rem] hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 group">
+                            <div class="flex items-center gap-4 mb-6">
+                                <img src="{{ $expert->avatar }}" class="w-12 h-12 rounded-2xl object-cover shadow-lg group-hover:scale-110 transition-transform duration-500">
+                                <div class="min-w-0">
+                                    <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">{{ $expert->trust_score }}% Confiance</div>
+                                    <a href="{{ route('users.show', $expert) }}" class="text-sm font-black text-slate-900 uppercase tracking-tight hover:text-blue-500 transition-colors truncate block">
+                                        {{ $expert->name }}
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($expert->achievements->unique('skill_id') as $ach)
+                                    <span class="px-3 py-1.5 bg-slate-900/5 border border-slate-900/5 rounded-xl text-[9px] font-black text-slate-600 uppercase tracking-tight group-hover:bg-white group-hover:border-slate-100 transition-all">
+                                        {{ $ach->skill->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
                     @empty
-                        <div class="w-full py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
-                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm italic">Aucune expertise encore indexée.</p>
+                        <div class="col-span-full py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
+                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm italic">Aucune expertise directe identifiée.</p>
                         </div>
                     @endforelse
                 </div>
             </div>
 
-            <!-- Compact Members Section at Bottom -->
-            <div class="pt-12 border-t border-slate-100">
-                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Membres Actifs</h3>
-                <div class="flex flex-wrap gap-3">
-                    @foreach($circle->activeMembers as $member)
-                        <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-2 md:gap-3 bg-white/60 p-1.5 md:p-2 pr-3 md:pr-4 rounded-xl md:rounded-2xl border border-white/60 hover:border-blue-200 hover:bg-white transition-colors group">
-                            <img src="{{ $member->user->avatar }}" class="w-6 h-6 md:w-8 md:h-8 rounded-lg md:rounded-xl object-cover shadow-sm group-hover:scale-110 transition-transform">
-                            <div class="min-w-0">
-                                <div class="text-[9px] md:text-[10px] font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors max-w-[80px] md:max-w-none">{{ $member->user->name }}</div>
-                                <div class="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{{ $member->role }}</div>
+            @if($networkExperts->count() > 0)
+                <div class="pt-16 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-10">
+                        <h2 class="text-2xl font-black text-slate-400 tracking-tight flex items-center gap-3 italic uppercase">
+                            Réseau Étendu
+                            <span class="text-[10px] font-black text-slate-300 border border-slate-100 px-3 py-1 rounded-full not-italic">PROXIMITÉ 2</span>
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60 hover:opacity-100 transition-opacity duration-700">
+                        @foreach($networkExperts as $expert)
+                            <div class="bg-slate-50/50 border border-dashed border-slate-200 p-6 rounded-[2.5rem] group/n transition-all">
+                                <div class="flex items-center gap-4 mb-4">
+                                    <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover grayscale group-hover/n:grayscale-0 transition-all">
+                                    <div class="min-w-0">
+                                        <a href="{{ route('users.show', $expert) }}" class="text-xs font-black text-slate-500 uppercase tracking-tight group-hover/n:text-blue-500 transition-colors">
+                                            {{ $expert->name }}
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach($expert->achievements->unique('skill_id')->take(3) as $ach)
+                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-white border border-slate-100 px-2 py-1 rounded-lg">
+                                            {{ $ach->skill->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
                             </div>
-                        </a>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
-            </div>
+            @endif
         </div>
 
         <!-- Sidebar: Messaging & Logistics -->
@@ -307,29 +327,6 @@
                     @empty
                         <div class="py-12 text-center text-slate-600 font-black uppercase tracking-[0.3em] text-[10px]">Silence radio...</div>
                     @endforelse
-                </div>
-            </div>
-            
-            <!-- Information Grid -->
-            <div class="bg-white/60 backdrop-blur-xl border border-white/60 rounded-[3rem] p-10 space-y-8">
-                <div>
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Stack Verified</h3>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach($circle->achievements->pluck('skill.name')->unique() as $skill)
-                            <span class="px-4 py-2 bg-slate-100 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-wider">{{ $skill }}</span>
-                        @endforeach
-                    </div>
-                </div>
-                
-                <div class="pt-8 border-t border-slate-100">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Galerie Preuve</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        @foreach($circle->achievements->take(4) as $ach)
-                            <div class="relative group aspect-square overflow-hidden rounded-2xl bg-slate-100">
-                                <img src="{{ $ach->media_url ?? 'https://picsum.photos/seed/'.$ach->id.'/300/300' }}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700">
-                            </div>
-                        @endforeach
-                    </div>
                 </div>
             </div>
         </div>
