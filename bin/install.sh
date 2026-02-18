@@ -137,8 +137,17 @@ EOF
     if [ ! -f .env ]; then
         cp .env.example .env
         echo "Created .env file."
+    fi
+
+    # Ensure APP_KEY is set (even if .env existed but was empty of key)
+    if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=' -f2)" ]; then
+        echo "Generating application key..."
         "$PHP_BINARY" artisan key:generate
     fi
+
+    # Clear potentially stale cache
+    "$PHP_BINARY" artisan config:clear
+
 
     # Auto-configure .env using sed to avoid duplicates
     update_env() {
