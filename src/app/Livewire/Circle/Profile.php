@@ -8,6 +8,8 @@ class Profile extends Component
 {
     public \App\Models\Circle $circle;
     public string $message = '';
+    public $showInformationManager = false;
+    public $showMemberManager = false;
 
     protected $rules = [
         'message' => 'required|min:2|max:1000',
@@ -95,39 +97,61 @@ class Profile extends Component
 
     public function render()
     {
-        // 1. Get Immediate Active Members (including owner)
-        $memberIds = $this->circle->activeMembers()->pluck('user_id')->push($this->circle->owner_id)->unique();
+        try {
+            // 1. Get Immediate Active Members (including owner)
+            $memberIds = $this->circle->activeMembers()->pluck('user_id')->push($this->circle->owner_id)->unique();
 
-        // 2. Immediate Experts & Skills (including Proches)
-        $memberExperts = \App\Models\User::whereIn('id', $memberIds)
-            ->with([
-                'achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill'),
-                'proches.achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')
-            ])
-            ->get()
-            ->filter(fn($u) => $u->achievements->count() > 0 || $u->proches->flatMap->achievements->count() > 0);
+            // 2. Immediate Experts & Skills (including Proches)
+            $memberExperts = \App\Models\User::whereIn('id', $memberIds)
+                ->with([
+                    'achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill'),
+                    'proches.achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')
+                ])
+                ->get()
+                ->filter(fn($u) => $u->achievements->count() > 0 || $u->proches->flatMap->achievements->count() > 0);
 
-        // 3. Extended Network Experts (Proximity 2)
-        $secondaryCircleIds = \App\Models\CircleMember::whereIn('user_id', $memberIds)
-            ->where('status', 'active')
-            ->where('circle_id', '!=', $this->circle->id)
-            ->pluck('circle_id')
-            ->unique();
+            // 3. Extended Network Experts (Proximity 2)
+            $secondaryCircleIds = \App\Models\CircleMember::whereIn('user_id', $memberIds)
+                ->where('status', 'active')
+                ->where('circle_id', '!=', $this->circle->id)
+                ->pluck('circle_id')
+                ->unique();
 
-        $networkExperts = \App\Models\User::whereHas('circleMembers', function($q) use ($secondaryCircleIds) {
-                $q->whereIn('circle_id', $secondaryCircleIds)
-                  ->where('status', 'active');
+            $networkExperts = \App\Models\User::whereHas('circleMembers', function($q) use ($secondaryCircleIds) {
+                    $q->whereIn('circle_id', $secondaryCircleIds)
+                      ->where('status', 'active');
+                })
+                ->whereNotIn('id', $memberIds)
+                ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
+                ->get()
+                ->filter(fn($u) => $u->achievements->count() > 0)
+                ->sortByDesc('trust_score')
+                ->take(30);
+
+            // 4. Member Projects (owned or member of)
+            $memberProjects = \App\Models\Project::where(function($q) use ($memberIds) {
+                $q->whereIn('owner_id', $memberIds)
+                  ->orWhereHas('members', function($subQ) use ($memberIds) {
+                      $subQ->where('memberable_type', 'App\\Models\\User')
+                           ->whereIn('memberable_id', $memberIds)
+                           ->where('status', 'active');
+                  });
             })
-            ->whereNotIn('id', $memberIds)
-            ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
-            ->get()
-            ->filter(fn($u) => $u->achievements->count() > 0)
-            ->sortByDesc('trust_score')
-            ->take(30);
+            ->where('is_open', true)
+            ->with(['owner', 'offers', 'demands', 'reviews', 'activeMembers'])
+            ->latest()
+            ->get();
+        } catch (\Exception $e) {
+            // If anything fails, return empty collections
+            $memberExperts = collect([]);
+            $networkExperts = collect([]);
+            $memberProjects = collect([]);
+        }
 
         return view('livewire.circle.profile', [
-            'memberExperts' => $memberExperts,
-            'networkExperts' => $networkExperts
+            'memberExperts' => $memberExperts ?? collect([]),
+            'networkExperts' => $networkExperts ?? collect([]),
+            'memberProjects' => $memberProjects ?? collect([]),
         ]);
     }
 }

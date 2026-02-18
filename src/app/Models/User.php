@@ -7,6 +7,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -97,6 +98,26 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Circle::class, 'owner_id');
     }
 
+    public function ownedProjects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'owner_id');
+    }
+
+    public function projectMemberships(): MorphMany
+    {
+        return $this->morphMany(ProjectMember::class, 'memberable');
+    }
+
+    public function activeProjectMemberships(): MorphMany
+    {
+        return $this->morphMany(ProjectMember::class, 'memberable')->where('status', 'active');
+    }
+
+    public function projectReviews(): HasMany
+    {
+        return $this->hasMany(ProjectReview::class);
+    }
+
     public function achievements(): HasMany
     {
         return $this->hasMany(Achievement::class);
@@ -125,6 +146,20 @@ class User extends Authenticatable implements FilamentUser
             ->wherePivot('status', 'active')
             ->withPivot(['role', 'status', 'vouched_by_id', 'joined_at'])
             ->withTimestamps();
+    }
+
+    public function activeProject(): ?Project
+    {
+        // First check owned projects that are open
+        $owned = $this->ownedProjects()->where('is_open', true)->first();
+        if ($owned) return $owned;
+
+        // Then check memberships in open projects
+        return Project::whereHas('members', function($q) {
+            $q->where('memberable_type', User::class)
+              ->where('memberable_id', $this->id)
+              ->where('status', 'active');
+        })->where('is_open', true)->first();
     }
 
     public function circleMembers(): HasMany

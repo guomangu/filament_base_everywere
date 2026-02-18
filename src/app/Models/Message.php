@@ -12,6 +12,7 @@ class Message extends Model
 
     protected $fillable = [
         'circle_id',
+        'project_id',
         'sender_id',
         'title',
         'content',
@@ -24,6 +25,7 @@ class Message extends Model
         return [
             'id' => 'integer',
             'circle_id' => 'integer',
+            'project_id' => 'integer',
             'sender_id' => 'integer',
             'metadata' => 'array',
         ];

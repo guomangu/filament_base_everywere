@@ -42,4 +42,9 @@ class Skill extends Model
     {
         return $this->morphMany(Information::class, 'informable');
     }
+
+    public function projectOffers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(ProjectOffer::class, 'project_offer_skill');
+    }
 }

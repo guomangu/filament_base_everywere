@@ -16,6 +16,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/circles/{circle}/edit', CircleEdit::class)->name('circles.edit');
     Route::get('/achievements/create', AchievementCreate::class)->name('achievements.create');
     Route::get('/profile/edit', UserEdit::class)->name('profile.edit');
+    
+    // Project routes
+    Route::get('/projects', \App\Livewire\Project\Index::class)->name('projects.index');
+    Route::get('/projects/create', \App\Livewire\Project\Create::class)->name('projects.create');
+    Route::get('/projects/{project}', \App\Livewire\Project\Show::class)->name('projects.show');
 });
 
 Route::get('/proches/claim/{token}', \App\Livewire\User\Claim::class)->name('proches.claim');

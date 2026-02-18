@@ -2,6 +2,8 @@
 
 namespace App\Livewire\User;
 
+use App\Models\Project;
+use App\Models\ProjectMember;
 use Livewire\Component;
 
 class Profile extends Component
@@ -455,11 +457,36 @@ class Profile extends Component
                 ->sortBy('degree');
         }
 
+        // 4. User Projects (owned or active member)
+        try {
+            $memberProjectIds = ProjectMember::where('memberable_type', \App\Models\User::class)
+                ->where('memberable_id', $this->user->id)
+                ->where('status', 'active')
+                ->pluck('project_id');
+
+            $userProjects = Project::where('owner_id', $this->user->id)
+                ->orWhereIn('id', $memberProjectIds)
+                ->with(['owner', 'activeMembers', 'offers', 'demands', 'reviews'])
+                ->latest()
+                ->get();
+        } catch (\Exception $e) {
+            $userProjects = collect([]);
+        }
+
         return view('livewire.user.profile', [
             'groupedAchievements' => $allAchievements->groupBy(fn($ach) => $ach->skill->name),
             'networkExperts' => $networkExperts,
             'searchResults' => $searchResults,
-            'canEdit' => $this->canEdit()
+            'canEdit' => $this->canEdit(),
+            'userProjects' => $userProjects,
+            'activeProject' => $this->user->activeProject(),
         ]);
+    }
+
+    public function toggleProjectStatus(int $projectId)
+    {
+        $project = Project::findOrFail($projectId);
+        if (!$project->canManage(auth()->user())) return;
+        $project->toggleStatus();
     }
 }

@@ -19,6 +19,7 @@
                         </div>
                         <div class="flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 mb-6">
                             <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">{{ $user->name }}</h1>
+                            <x-project-transporter :project="$activeProject" />
                             <livewire:information.manager :model="$user" :key="'user-info-'.$user->id" />
                         </div>
                         <p class="text-slate-500 font-medium text-base md:text-xl max-w-2xl leading-relaxed italic px-4 md:px-0">
@@ -43,11 +44,17 @@
                                     </div>
                                 @else
                                     <div class="space-y-4">
-                                        <!-- Primary Platform Action -->
-                                        <a href="{{ route('circles.create') }}" class="block px-6 py-5 bg-slate-900 border-2 border-slate-900 text-white rounded-[2.5rem] font-black text-base tracking-[0.2em] uppercase hover:bg-blue-600 hover:border-blue-600 transition-all flex items-center justify-center gap-4 shadow-2xl shadow-blue-500/30 group/circle">
-                                            <svg class="w-6 h-6 group-hover/circle:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 20a10.003 10.003 0 006.235-2.197m-2.322-9.047a7.334 7.334 0 011.129 3.125m-1.282-3.125a10 10 0 11-14.703 0m14.703 0c-1.347-1.625-3.323-2.651-5.547-2.651-2.224 0-4.2 1.026-5.547 2.651"/></svg>
-                                            Lancer un nouveau Cercle
-                                        </a>
+                                        <!-- Primary Platform Actions -->
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <a href="{{ route('circles.create') }}" class="px-6 py-5 bg-slate-900 border-2 border-slate-900 text-white rounded-[2.5rem] font-black text-xs tracking-[0.2em] uppercase hover:bg-blue-600 hover:border-blue-600 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-blue-500/30 group/circle">
+                                                <svg class="w-5 h-5 group-hover/circle:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 20a10.003 10.003 0 006.235-2.197m-2.322-9.047a7.334 7.334 0 011.129 3.125m-1.282-3.125a10 10 0 11-14.703 0m14.703 0c-1.347-1.625-3.323-2.651-5.547-2.651-2.224 0-4.2 1.026-5.547 2.651"/></svg>
+                                                Nouveau Cercle
+                                            </a>
+                                            <a href="{{ route('projects.create') }}" class="px-6 py-5 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-[2.5rem] font-black text-xs tracking-[0.2em] uppercase hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-blue-500/30 group/proj">
+                                                <svg class="w-5 h-5 group-hover/proj:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                                Nouveau Projet
+                                            </a>
+                                        </div>
 
                                         <!-- Secondary Profile Actions -->
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -130,7 +137,112 @@
                     </a>
                 </div>
             </div>
- 
+
+            {{-- ===== MES PROJETS ===== --}}
+            @if($userProjects->count() > 0)
+                <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-10 shadow-2xl shadow-blue-500/5">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                Projets
+                                <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">{{ $userProjects->count() }}</span>
+                            </h3>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Offres & Demandes de services</p>
+                        </div>
+                        @auth
+                            @if(auth()->id() === $user->id)
+                                <a href="{{ route('projects.create') }}" class="w-10 h-10 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-all shadow-lg shadow-blue-500/20">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                </a>
+                            @endif
+                        @endauth
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($userProjects as $project)
+                            <div class="relative group">
+                                <a href="{{ route('projects.show', $project) }}" class="block bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="text-base font-black text-slate-900 uppercase tracking-tight truncate group-hover:text-blue-600 transition-colors">
+                                                {{ $project->title }}
+                                            </h4>
+                                            @if($project->description)
+                                                <p class="text-[10px] font-medium text-slate-500 mt-1 line-clamp-2">{{ $project->description }}</p>
+                                            @endif
+                                        </div>
+                                        <div class="ml-3 flex-shrink-0">
+                                            @if($project->is_open)
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-lg">
+                                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                                    <span class="text-[8px] font-black text-green-700 uppercase">Ouvert</span>
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+                                                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                                                    <span class="text-[8px] font-black text-slate-500 uppercase">Fermé</span>
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-4 gap-2 mb-4">
+                                        <div class="bg-white/60 rounded-xl p-2 text-center border border-slate-100">
+                                            <div class="text-xs font-black text-slate-900">{{ $project->activeMembers->count() }}</div>
+                                            <div class="text-[7px] font-black text-slate-400 uppercase">Membres</div>
+                                        </div>
+                                        <div class="bg-blue-50/60 rounded-xl p-2 text-center border border-blue-100">
+                                            <div class="text-xs font-black text-blue-600">{{ $project->offers->count() }}</div>
+                                            <div class="text-[7px] font-black text-blue-400 uppercase">Offres</div>
+                                        </div>
+                                        <div class="bg-purple-50/60 rounded-xl p-2 text-center border border-purple-100">
+                                            <div class="text-xs font-black text-purple-600">{{ $project->demands->count() }}</div>
+                                            <div class="text-[7px] font-black text-purple-400 uppercase">Demandes</div>
+                                        </div>
+                                        <div class="bg-green-50/60 rounded-xl p-2 text-center border border-green-100">
+                                            <div class="text-xs font-black text-green-600">+{{ $project->reviews->where('type', 'validate')->count() }}</div>
+                                            <div class="text-[7px] font-black text-green-400 uppercase">Avis</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
+                                        <img src="{{ $project->owner->avatar }}" class="w-6 h-6 rounded-lg object-cover border border-slate-200">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-[9px] font-black text-slate-900 uppercase truncate">{{ $project->owner->name }}</div>
+                                            <div class="text-[7px] font-black text-slate-400 uppercase">{{ $project->owner_id === $user->id ? 'Propriétaire' : 'Membre' }}</div>
+                                        </div>
+                                        <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    </div>
+                                </a>
+
+                                {{-- Toggle button for owner/admin --}}
+                                @auth
+                                    @if($project->canManage(auth()->user()))
+                                        <button wire:click="toggleProjectStatus({{ $project->id }})" 
+                                            class="absolute top-3 left-3 px-2 py-1 text-[7px] font-black uppercase tracking-widest rounded-lg transition-all {{ $project->is_open ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-slate-100 text-slate-500 hover:bg-green-100 hover:text-green-700' }}"
+                                            title="{{ $project->is_open ? 'Fermer le projet' : 'Ouvrir le projet' }}">
+                                            {{ $project->is_open ? '● Fermer' : '○ Ouvrir' }}
+                                        </button>
+                                    @endif
+                                @endauth
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @elseif(auth()->check() && auth()->id() === $user->id)
+                <div class="bg-white/40 backdrop-blur-3xl border-2 border-dashed border-slate-200 rounded-[3.5rem] p-10 text-center">
+                    <div class="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <p class="text-slate-400 font-black uppercase tracking-[0.3em] text-xs mb-4">Aucun projet encore lancé</p>
+                    <a href="{{ route('projects.create') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                        Créer mon premier projet
+                    </a>
+                </div>
+            @endif
+
             <!-- Répertoire Réseau (Dynamic & Searchable) -->
             @if(auth()->check() && auth()->id() === $user->id)
                 <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white relative overflow-hidden">

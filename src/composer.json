@@ -15,6 +15,7 @@
     "require-dev": {
         "calebporzio/sushi": "^2.5",
         "fakerphp/faker": "^1.23",
+        "innoge/laravel-mcp": "*",
         "laravel-shift/blueprint": "^2.12",
         "laravel/pail": "^1.1",
         "laravel/pint": "^1.13",
