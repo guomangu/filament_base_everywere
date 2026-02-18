@@ -69,7 +69,7 @@
                     <!-- Info -->
                     <div class="flex-grow">
                         <div class="flex flex-wrap items-center gap-4 mb-4">
-                            <span class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">{{ $circle->type }}</span>
+                            <span class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">CERCLE</span>
                         </div>
                         <div class="flex flex-col md:flex-row items-center gap-4 mb-4">
                             <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none text-center md:text-left">
@@ -194,17 +194,11 @@
                             </div>
                             @if($circle->address)
                                 <div class="flex flex-wrap gap-2 text-slate-900">
-                                    @if($circle->neighborhood)
-                                        <a href="{{ url('/?search=' . urlencode($circle->neighborhood)) }}" class="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-tight hover:bg-blue-600 hover:text-white transition-all">
-                                            {{ $circle->neighborhood }}
-                                        </a>
-                                    @endif
                                     @if($circle->city)
-                                        <a href="{{ url('/?search=' . urlencode($circle->city)) }}" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-tight hover:bg-slate-900 hover:text-white transition-all">
+                                        <a href="{{ url('/?search=' . urlencode($circle->city)) }}" class="px-3 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-tight hover:bg-blue-600 transition-all">
                                             {{ $circle->city }}
                                         </a>
-                                    @endif
-                                    @if(!$circle->neighborhood && !$circle->city)
+                                    @else
                                         <a href="{{ url('/?search=' . urlencode($circle->address)) }}" class="text-[10px] font-black uppercase hover:text-blue-600 transition-colors">
                                             {{ $circle->address }}
                                         </a>
@@ -379,7 +373,7 @@
                             @else
                                 <div class="flex flex-wrap gap-1.5">
                                     @foreach($skills as $skill)
-                                        <a href="{{ route('projects.index', ['selectedSkills' => [$skill['id']]]) }}" class="px-2 py-1 bg-slate-900/5 text-slate-600 border border-slate-900/5 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all hover:scale-105 hover:bg-white hover:border-slate-200 shadow-sm">
+                                        <a href="{{ url('/?search=' . urlencode($skill['name'])) }}" class="px-2 py-1 bg-slate-900/5 text-slate-600 border border-slate-900/5 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all hover:scale-105 hover:bg-white hover:border-slate-200 shadow-sm">
                                             {{ $skill['name'] }}
                                         </a>
                                     @endforeach

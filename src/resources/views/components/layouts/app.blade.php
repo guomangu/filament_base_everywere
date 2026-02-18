@@ -4,7 +4,30 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <title>{{ $title ?? 'God Stack' }}</title>
+        @php
+            $pageTitle = $title ?? 'TrustCircle | Réseau de Confiance & Projets de Proximité';
+            $metaDesc = $description ?? "Découvrez TrustCircle, le réseau social de confiance pour collaborer sur des projets locaux, valider des compétences et bâtir des cercles d'expertises vérifiés.";
+            $ogImage = $og_image ?? asset('images/og-default.jpg');
+            $ogType = $og_type ?? 'website';
+        @endphp
+
+        <title>{{ $pageTitle }}</title>
+        <meta name="description" content="{{ $metaDesc }}">
+        <meta name="keywords" content="réseau de confiance, projets locaux, entraide, expertises, cercles de confiance, collaboration, proximité">
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="{{ $ogType }}">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:title" content="{{ $pageTitle }}">
+        <meta property="og:description" content="{{ $metaDesc }}">
+        <meta property="og:image" content="{{ $ogImage }}">
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image">
+        <meta property="twitter:url" content="{{ url()->current() }}">
+        <meta property="twitter:title" content="{{ $pageTitle }}">
+        <meta property="twitter:description" content="{{ $metaDesc }}">
+        <meta property="twitter:image" content="{{ $ogImage }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

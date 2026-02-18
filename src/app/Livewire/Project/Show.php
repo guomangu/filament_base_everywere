@@ -620,6 +620,10 @@ class Show extends Component
 
     public function render()
     {
-        return view('livewire.project.show');
+        return view('livewire.project.show')->layoutData([
+            'title' => $this->project->title . ($this->project->city ? ' - ' . $this->project->city : '') . ' | Projet sur TrustCircle',
+            'description' => \Illuminate\Support\Str::limit(strip_tags($this->project->description), 160, '...'),
+            'og_image' => $this->project->owner->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->project->owner->name),
+        ]);
     }
 }

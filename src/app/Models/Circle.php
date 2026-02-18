@@ -58,6 +58,23 @@ class Circle extends Model
         return $this->hasMany(CircleMember::class)->where('status', 'active');
     }
 
+    public function addMember(User $user, string $role = 'member', string $status = 'active'): CircleMember
+    {
+        $member = $this->members()->where('user_id', $user->id)->first();
+
+        if ($member) {
+            $member->update(['status' => $status, 'role' => $role]);
+            return $member;
+        }
+
+        return $this->members()->create([
+            'user_id' => $user->id,
+            'role' => $role,
+            'status' => $status,
+            'joined_at' => now(),
+        ]);
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);

@@ -45,7 +45,8 @@ class Profile extends Component
     public function mount(\App\Models\User $user)
     {
         $this->user = $user->load([
-            'activeJoinedCircles.members.user.achievements.skill', 
+            'activeJoinedCircles.owner.achievements.skill',
+            'activeJoinedCircles.activeMembers.user.achievements.skill', 
             'achievements.skill', 
             'achievements.circle', 
             'achievements.validations.user.achievements.skill',
@@ -480,6 +481,11 @@ class Profile extends Component
             'canEdit' => $this->canEdit(),
             'userProjects' => $userProjects,
             'activeProject' => $this->user->activeProject(),
+            'allAchievements' => $allAchievements,
+        ])->layoutData([
+            'title' => $this->user->name . ' - Expertises et Réseau | TrustCircle',
+            'description' => \Illuminate\Support\Str::limit('Découvrez le profil de ' . $this->user->name . ' sur TrustCircle, ses compétences validées (' . $allAchievements->count() . ' preuves) et son réseau de confiance.', 160, '...'),
+            'og_image' => $this->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->user->name),
         ]);
     }
 

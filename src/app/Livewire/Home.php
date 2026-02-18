@@ -3,9 +3,11 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\Url;
 
 class Home extends Component
 {
+    #[Url]
     public $search = '';
     public $lat;
     public $lng;
@@ -41,7 +43,8 @@ class Home extends Component
 
     public function render()
     {
-        $circles = \App\Models\Circle::with([
+        // 1. Fetch Circles
+        $circleQuery = \App\Models\Circle::with([
             'owner.achievements.skill', 
             'owner.proches.achievements.skill',
             'members.user.achievements.skill', 
@@ -49,10 +52,9 @@ class Home extends Component
             'achievements.skill'
         ]);
 
-        // 1. Accessibility Logic: Public circles OR private circles where user has mutual members
-        $circles->where(function($q) {
+        // Circle Accessibility Logic
+        $circleQuery->where(function($q) {
             $q->where('is_public', true);
-            
             if (auth()->check()) {
                 $myCircleIds = auth()->user()->joinedCircles()->pluck('circles.id')->toArray();
                 $q->orWhereHas('members', function($mq) use ($myCircleIds) {
@@ -62,314 +64,125 @@ class Home extends Component
             }
         });
 
-        // 2. Search Logic (Universal Smart Search - Case Insensitive)
+        // 2. Fetch Projects
+        $projectQuery = \App\Models\Project::with(['owner', 'activeMembers', 'offers', 'demands', 'skills']);
+
+        // Project Accessibility (Open projects only for now, or owned/member)
+        $projectQuery->where(function($q) {
+            $q->where('is_open', true);
+            if (auth()->check()) {
+                $q->orWhere('owner_id', auth()->id())
+                  ->orWhereHas('activeMembers', fn($mq) => $mq->where('memberable_id', auth()->id())->where('memberable_type', \App\Models\User::class));
+            }
+        });
+
+        // 3. Search Logic (Universal Smart Search)
         if (!empty($this->search)) {
             $searchTerm = '%' . mb_strtolower($this->search) . '%';
-            $circles->where(function($q) use ($searchTerm) {
+            
+            // Filter Circles
+            $circleQuery->where(function($q) use ($searchTerm) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
                   ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
                   ->orWhereRaw('LOWER(address) LIKE ?', [$searchTerm])
-                  // 1. Search in Owner (Name + Profile Skills + Bio)
                   ->orWhereHas('owner', function($uq) use ($searchTerm) {
                       $uq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(bio) LIKE ?', [$searchTerm])
-                        ->orWhereHas('achievements', function($aq) use ($searchTerm) {
-                            $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                              ->orWhereHas('skill', function($sq) use ($searchTerm) {
-                                  $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                              });
-                        });
+                        ->orWhereHas('achievements.skill', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
                   })
-                  // 2. Search in Members (Name + Profile Skills)
-                  ->orWhereHas('members.user', function($uq) use ($searchTerm) {
-                      $uq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(bio) LIKE ?', [$searchTerm])
-                        ->orWhereHas('achievements', function($aq) use ($searchTerm) {
-                            $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                              ->orWhereHas('skill', function($sq) use ($searchTerm) {
-                                  $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                              });
-                        });
-                  })
-                  // 3. Search in Direct Circle Achievements
-                  ->orWhereHas('achievements', function($aq) use ($searchTerm) {
-                      $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                        ->orWhereHas('skill', function($sq) use ($searchTerm) {
-                            $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                        });
-                  })
-                  // 4. Search in Proches of Owner/Members
-                  ->orWhereHas('owner.proches', function($pq) use ($searchTerm) {
-                      $pq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                        ->orWhereHas('achievements', function($aq) use ($searchTerm) {
-                            $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                              ->orWhereHas('skill', function($sq) use ($searchTerm) {
-                                  $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                              });
-                        });
-                  })
-                  ->orWhereHas('members.user.proches', function($pq) use ($searchTerm) {
-                      $pq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                        ->orWhereHas('achievements', function($aq) use ($searchTerm) {
-                            $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                              ->orWhereHas('skill', function($sq) use ($searchTerm) {
-                                  $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                              });
-                        });
-                  })
-                   // 5. Search in Board Messages
-                  ->orWhereHas('messages', function($mq) use ($searchTerm) {
-                      $mq->whereRaw('LOWER(content) LIKE ?', [$searchTerm]);
-                  })
-                  // 6. Search in Projects (associated via Circle members)
-                  ->orWhereHas('members.user.ownedProjects', function($pq) use ($searchTerm) {
-                      $pq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(address) LIKE ?', [$searchTerm])
-                        ->orWhereHas('skills', function($sq) use ($searchTerm) {
-                            $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                        })
-                        ->orWhereHas('allOffers', function($oq) use ($searchTerm) {
-                            $oq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
-                        });
-                  })
-                  ->orWhereHas('owner.ownedProjects', function($pq) use ($searchTerm) {
-                    $pq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                      ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                      ->orWhereRaw('LOWER(address) LIKE ?', [$searchTerm])
-                      ->orWhereHas('skills', function($sq) use ($searchTerm) {
-                          $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                      })
-                      ->orWhereHas('allOffers', function($oq) use ($searchTerm) {
-                          $oq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                            ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
-                      });
-                });
+                  ->orWhereHas('members.user.achievements.skill', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
+                  ->orWhereHas('achievements.skill', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
+            });
+
+            // Filter Projects
+            $projectQuery->where(function($q) use ($searchTerm) {
+                $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                  ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
+                  ->orWhereRaw('LOWER(address) LIKE ?', [$searchTerm])
+                  ->orWhereHas('owner', fn($uq) => $uq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
+                  ->orWhereHas('skills', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
+                  ->orWhereHas('allOffers', function($oq) use ($searchTerm) {
+                      $oq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
+                  });
             });
         }
 
-        // 3. Proximity Logic
+        // 4. Proximity Logic
         if ($this->lat && $this->lng) {
-            $circles->selectRaw("*, (6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coordinates, '$.lat'))))) AS distance", [$this->lat, $this->lng, $this->lat])
-                    ->orderBy('distance');
-        } else {
-            $circles->latest();
+            $distanceRaw = "(6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coordinates, '$.lat')))))";
+            
+            $circleQuery->selectRaw("*, $distanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
+            $projectQuery->selectRaw("*, $distanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
         }
 
-        $results = $circles->take(10)->get();
+        // 5. Execute and Merge
+        $circles = $circleQuery->get();
+        $projects = $projectQuery->get();
 
-        // 4. Transform results with Smart Matching Context (Case Insensitive)
-        $formattedResults = $results->map(function($circle) {
+        $allResults = $circles->concat($projects);
+
+        // 6. Proximity Sorting
+        if ($this->lat && $this->lng) {
+            $allResults = $allResults->sortBy('distance');
+        } else {
+            $allResults = $allResults->sortByDesc('created_at');
+        }
+
+        // 7. Limit and Format
+        $formattedResults = $allResults->take(20)->map(function($entity) {
+            // Determine type
+            $entity->is_circle = $entity instanceof \App\Models\Circle;
+            $entity->is_project = $entity instanceof \App\Models\Project;
+
             // Smart Distance Label
-            if (!empty($circle->coordinates) && ($circle->coordinates['lat'] != 0 || $circle->coordinates['lng'] != 0)) {
-                if (isset($circle->distance)) {
-                    $dist = $circle->distance;
+            if (!empty($entity->coordinates) && (isset($entity->coordinates['lat']) && $entity->coordinates['lat'] != 0)) {
+                if (isset($entity->distance)) {
+                    $dist = $entity->distance;
                     if ($dist < 1) {
-                        $circle->smart_distance = "À " . round($dist * 1000) . "m";
+                        $entity->smart_distance = "À " . round($dist * 1000) . "m";
                     } elseif ($dist < 2) {
-                        $circle->smart_distance = "Tout proche";
+                        $entity->smart_distance = "Tout proche";
                     } else {
-                        $circle->smart_distance = round($dist, 1) . " km";
+                        $entity->smart_distance = round($dist, 1) . " km";
                     }
                     
-                    // Same City Logic
-                    if ($this->locationName && stripos(mb_strtolower($circle->address), mb_strtolower(explode(',', $this->locationName)[0])) !== false) {
-                        $circle->smart_distance = "Même ville • " . $circle->smart_distance;
+                    if ($this->locationName && stripos(mb_strtolower($entity->address), mb_strtolower(explode(',', $this->locationName)[0])) !== false) {
+                        $entity->smart_distance = "Même ville • " . $entity->smart_distance;
                     }
                 }
             } else {
-                $circle->smart_distance = "Remote / Dématérialisé";
+                $entity->smart_distance = "Remote / Dématérialisé";
             }
 
-            if (empty($this->search)) return $circle;
-
-            $search = mb_strtolower($this->search);
-            
-            // Priority 1: Circle Identity
-            if (stripos(mb_strtolower($circle->name), $search) !== false) {
-                return $circle->setAttribute('matching_context', "Cercle trouvé")
-                              ->setAttribute('matched_object', null);
-            }
-
-            // Priority 2: Direct Circle Skills/Achievements
-            $match = $circle->achievements->filter(fn($a) => 
-                stripos(mb_strtolower($a->title), $search) !== false || 
-                stripos(mb_strtolower($a->description), $search) !== false || 
-                stripos(mb_strtolower($a->skill->name), $search) !== false
-            )->first();
-
-            if ($match) {
-                return $circle->setAttribute('matching_context', "Activités & Preuves")
-                              ->setAttribute('matched_object', [
-                                  'type' => 'achievement',
-                                  'name' => $match->skill->name ?? $match->title,
-                                  'image' => null,
-                                  'icon' => 'sparkles',
-                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($match) : []
-                              ]);
-            }
-
-            // Priority 3: Owner Expertise
-            $ownerMatch = $circle->owner->achievements->filter(fn($a) => 
-                stripos(mb_strtolower($a->title), $search) !== false || 
-                stripos(mb_strtolower($a->description), $search) !== false || 
-                stripos(mb_strtolower($a->skill->name), $search) !== false
-            )->first();
-            
-            if ($ownerMatch || stripos(mb_strtolower($circle->owner->bio), $search) !== false) {
-                return $circle->setAttribute('matching_context', "Expertise Fondateur")
-                              ->setAttribute('matched_object', [
-                                  'type' => 'user',
-                                  'id' => $circle->owner->id,
-                                  'name' => $circle->owner->name,
-                                  'image' => $circle->owner->avatar,
-                                  'detail' => $ownerMatch ? ($ownerMatch->skill->name ?? $ownerMatch->title) : 'Profil vérifié',
-                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($ownerMatch ?? $circle->owner) : []
-                              ]);
-            }
-
-            // Priority 4: Member Expertise
-            foreach($circle->members as $member) {
-                // Member Direct Match
-                $memberMatch = $member->user->achievements->filter(fn($a) => 
-                    stripos(mb_strtolower($a->title), $search) !== false || 
-                    stripos(mb_strtolower($a->description), $search) !== false || 
-                    stripos(mb_strtolower($a->skill->name), $search) !== false
-                )->first();
-
-                if ($memberMatch || stripos(mb_strtolower($member->user->bio), $search) !== false) {
-                    return $circle->setAttribute('matching_context', "Expertise Membre")
-                                  ->setAttribute('matched_object', [
-                                      'type' => 'user',
-                                      'id' => $member->user->id,
-                                      'name' => $member->user->name,
-                                      'image' => $member->user->avatar,
-                                      'detail' => $memberMatch ? ($memberMatch->skill->name ?? $memberMatch->title) : 'Profil vérifié',
-                                      'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($memberMatch ?? $member->user) : []
-                                  ]);
-                }
-
-                // Member Proche Match
-                foreach($member->user->proches as $proche) {
-                    $procheMatch = $proche->achievements->filter(fn($a) => 
-                        stripos(mb_strtolower($a->title), $search) !== false || 
-                        stripos(mb_strtolower($a->description), $search) !== false || 
-                        stripos(mb_strtolower($a->skill->name), $search) !== false
-                    )->first();
-
-                    if ($procheMatch || stripos(mb_strtolower($proche->name), $search) !== false) {
-                        return $circle->setAttribute('matching_context', "Expertise Proche de Membre")
-                                      ->setAttribute('matched_object', [
-                                          'type' => 'user',
-                                          'name' => $proche->name,
-                                          'image' => null,
-                                          'detail' => "(Géré par {$member->user->name})",
-                                          'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($procheMatch ?? $proche) : []
-                                      ]);
-                    }
+            // Matching Context (Simplified for high speed merge)
+            if (!empty($this->search)) {
+                $search = mb_strtolower($this->search);
+                if ($entity->is_circle) {
+                    if (stripos(mb_strtolower($entity->name), $search) !== false) $entity->matching_context = "Cercle trouvé";
+                    else $entity->matching_context = "Expertise associée";
+                } else {
+                    if (stripos(mb_strtolower($entity->title), $search) !== false) $entity->matching_context = "Projet trouvé";
+                    else $entity->matching_context = "Besoins ou Offres";
                 }
             }
 
-            // Priority 5: Owner Proche Match
-            foreach($circle->owner->proches as $proche) {
-                $procheMatch = $proche->achievements->filter(fn($a) => 
-                    stripos(mb_strtolower($a->title), $search) !== false || 
-                    stripos(mb_strtolower($a->description), $search) !== false || 
-                    stripos(mb_strtolower($a->skill->name), $search) !== false
-                )->first();
-
-                if ($procheMatch || stripos(mb_strtolower($proche->name), $search) !== false) {
-                    return $circle->setAttribute('matching_context', "Expertise Proche de Fondateur")
-                                  ->setAttribute('matched_object', [
-                                      'type' => 'user',
-                                      'name' => $proche->name,
-                                      'image' => null,
-                                      'detail' => "(Géré par {$circle->owner->name})",
-                                      'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($procheMatch ?? $proche) : []
-                                  ]);
-                }
-            }
-
-            // Priority 5: User Names
-            if (stripos(mb_strtolower($circle->owner->name), $search) !== false) {
-                return $circle->setAttribute('matching_context', "Propriétaire")
-                              ->setAttribute('matched_object', [
-                                  'type' => 'user',
-                                  'id' => $circle->owner->id,
-                                  'name' => $circle->owner->name,
-                                  'image' => $circle->owner->avatar,
-                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($circle->owner) : []
-                              ]);
-            }
-            
-            $matchingMember = $circle->members->filter(fn($m) => stripos(mb_strtolower($m->user->name), $search) !== false)->first();
-            if ($matchingMember) {
-                return $circle->setAttribute('matching_context', "Membre actif")
-                              ->setAttribute('matched_object', [
-                                  'type' => 'user',
-                                  'id' => $matchingMember->user->id,
-                                  'name' => $matchingMember->user->name,
-                                  'image' => $matchingMember->user->avatar,
-                                  'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($matchingMember->user) : []
-                              ]);
-            }
-
-            // Priority 6: Project Match
-            $projectMatch = null;
-            
-            // Check owner projects
-            $projectMatch = $circle->owner->ownedProjects->filter(fn($p) => 
-                stripos(mb_strtolower($p->title), $search) !== false || 
-                stripos(mb_strtolower($p->description), $search) !== false ||
-                $p->skills->contains(fn($s) => stripos(mb_strtolower($s->name), $search) !== false) ||
-                $p->allOffers->contains(fn($o) => stripos(mb_strtolower($o->title), $search) !== false || stripos(mb_strtolower($o->description), $search) !== false)
-            )->first();
-
-            if ($projectMatch) {
-                return $circle->setAttribute('matching_context', "Projet du Fondateur")
-                              ->setAttribute('matched_object', [
-                                  'type' => 'project',
-                                  'id' => $projectMatch->id,
-                                  'name' => $projectMatch->title,
-                                  'detail' => "Regardez ce projet !",
-                                  'trustPath' => []
-                              ]);
-            }
-
-            // Check member projects
-            foreach($circle->members as $member) {
-                $projectMatch = $member->user->ownedProjects->filter(fn($p) => 
-                    stripos(mb_strtolower($p->title), $search) !== false || 
-                    stripos(mb_strtolower($p->description), $search) !== false ||
-                    $p->skills->contains(fn($s) => stripos(mb_strtolower($s->name), $search) !== false) ||
-                    $p->allOffers->contains(fn($o) => stripos(mb_strtolower($o->title), $search) !== false || stripos(mb_strtolower($o->description), $search) !== false)
-                )->first();
-
-                if ($projectMatch) {
-                    return $circle->setAttribute('matching_context', "Projet de Membre")
-                                  ->setAttribute('matched_object', [
-                                      'type' => 'project',
-                                      'id' => $projectMatch->id,
-                                      'name' => $projectMatch->title,
-                                      'detail' => "(Par {$member->user->name})",
-                                      'trustPath' => []
-                                  ]);
-                }
-            }
-
-            return $circle->setAttribute('matching_context', "Correspondance")
-                          ->setAttribute('matched_object', null);
+            return $entity;
         });
 
+        $dynamicTitle = 'TrustCircle | Découvrez les Cercles et Projets';
+        $dynamicDesc = 'Rejoignez TrustCircle pour découvrir des cercles d\'expertises et des projets locaux basés sur la confiance.';
+
+        if ($this->search) {
+            $dynamicTitle = 'Résultats pour "' . $this->search . '" | TrustCircle';
+            $dynamicDesc = 'Découvrez tous les cercles et projets correspondant à "' . $this->search . '" sur TrustCircle. Collaboration et proximité.';
+        }
+
         return view('livewire.home', [
-            'circles' => $formattedResults,
+            'results' => $formattedResults,
             'achievements' => \App\Models\Achievement::with(['user', 'skill', 'circle'])->where('is_verified', true)->latest()->take(6)->get(),
+        ])->layoutData([
+            'title' => $dynamicTitle,
+            'description' => $dynamicDesc,
         ]);
     }
 }

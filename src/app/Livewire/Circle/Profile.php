@@ -129,13 +129,37 @@ class Profile extends Component
                 ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill'), 'owner'])
                 ->get();
 
-            // 6. Merge for Vivier (Direct Users + All Organizations)
+            // 6. Merge for Vivier (Direct Users + All Organizations) with proximity levels
+            $memberExperts = $memberExperts->map(function($u) {
+                $u->proximity_level = 0; // Direct Circle Member
+                return $u;
+            });
+
+            $memberOwnedCircles = $memberOwnedCircles->map(function($c) {
+                $c->proximity_level = 1; // Direct Organization (Owned by member)
+                return $c;
+            });
+
+            $secondaryCircles = $secondaryCircles->map(function($c) {
+                $c->proximity_level = 2; // Secondary Organization (Member of member)
+                return $c;
+            });
+
             $allExperts = collect([])
-                ->merge($memberExperts)       // Direct Users
+                ->merge($memberExperts)       // Direct Users (P0)
                 ->merge($memberOwnedCircles) // Member Owned Circles (P1)
                 ->merge($secondaryCircles)    // Secondary Circles (P2)
                 ->unique(fn($item) => get_class($item) . $item->id)
-                ->sortByDesc(fn($item) => $item instanceof \App\Models\User ? $item->trust_score : $item->getAverageTrustScore());
+                ->sort(function($a, $b) {
+                    // Sort by proximity first (ASC: 0 < 1 < 2)
+                    if ($a->proximity_level !== $b->proximity_level) {
+                        return $a->proximity_level <=> $b->proximity_level;
+                    }
+                    // Then by trust score (DESC)
+                    $scoreA = $a instanceof \App\Models\User ? $a->trust_score : $a->getAverageTrustScore();
+                    $scoreB = $b instanceof \App\Models\User ? $b->trust_score : $b->getAverageTrustScore();
+                    return $scoreB <=> $scoreA;
+                });
 
             // 6. Member Projects (owned or member of)
             $memberProjects = \App\Models\Project::where(function($q) use ($memberIds) {
@@ -170,6 +194,10 @@ class Profile extends Component
             'networkExperts' => collect([]), // No longer needed as separate
             'memberProjects' => $memberProjects ?? collect([]),
             'memberOffers' => $memberOffers ?? collect([]),
+        ])->layoutData([
+            'title' => 'Cercle ' . $this->circle->name . ($this->circle->city ? ' - ' . $this->circle->city : '') . ' | TrustCircle',
+            'description' => \Illuminate\Support\Str::limit(strip_tags($this->circle->description), 160, '...'),
+            'og_image' => $this->circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->circle->owner->name),
         ]);
     }
 }

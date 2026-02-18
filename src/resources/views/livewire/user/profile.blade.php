@@ -390,15 +390,42 @@
                         <!-- Anchor Points -->
                         @if($user->activeJoinedCircles->count() > 0)
                             <div class="mt-8 pt-8 border-t border-white/5">
-                                <h4 class="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 italic">Points d'Ancrage</h4>
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] italic">Points d'Ancrage</h4>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
                                      @foreach($user->activeJoinedCircles as $circle)
-                                        <a href="{{ route('circles.show', $circle) }}" class="flex items-center gap-2 p-2 bg-white/5 border border-white/5 hover:bg-white/10 rounded-xl transition-all group/ca">
-                                            <div class="w-6 h-6 bg-blue-600/20 rounded-lg flex items-center justify-center text-blue-400 text-[10px] font-black group-hover/ca:scale-110 transition-transform">
-                                                {{ substr($circle->name, 0, 1) }}
+                                        @php
+                                            $allCircleUsers = collect([$circle->owner])->merge($circle->activeMembers->map->user)->unique('id')->filter();
+                                            $mCount = $allCircleUsers->count();
+                                            $allCircleAch = $allCircleUsers->flatMap->achievements;
+                                            $sCount = $allCircleAch->pluck('skill_id')->unique()->count();
+                                            $aCount = $allCircleAch->count();
+                                        @endphp
+                                        <a href="{{ route('circles.show', $circle) }}" class="flex flex-col p-4 bg-white/5 border border-white/10 hover:bg-white/15 rounded-3xl transition-all group/ca">
+                                            <div class="flex items-center gap-3 mb-3">
+                                                <div class="w-8 h-8 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 text-xs font-black group-hover/ca:scale-110 transition-transform">
+                                                    {{ substr($circle->name, 0, 1) }}
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <div class="text-[10px] font-black text-white uppercase truncate">{{ $circle->name }}</div>
+                                                    <div class="text-[7px] font-black text-slate-500 uppercase">Point d'ancrage actif</div>
+                                                </div>
                                             </div>
-                                            <div class="min-w-0">
-                                                <div class="text-[8px] font-black text-slate-300 truncate uppercase">{{ $circle->name }}</div>
+
+                                            <div class="flex items-center gap-4 pt-3 border-t border-white/5">
+                                                <div class="flex flex-col">
+                                                    <span class="text-[10px] font-black text-white leading-none">{{ $mCount }}</span>
+                                                    <span class="text-[6px] font-black text-slate-500 uppercase tracking-tighter">Membres</span>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-[10px] font-black text-blue-500 leading-none">{{ $sCount }}</span>
+                                                    <span class="text-[6px] font-black text-slate-500 uppercase tracking-tighter">Compétences</span>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-[10px] font-black text-white leading-none">{{ $aCount }}</span>
+                                                    <span class="text-[6px] font-black text-slate-500 uppercase tracking-tighter">Preuves</span>
+                                                </div>
                                             </div>
                                         </a>
                                      @endforeach
