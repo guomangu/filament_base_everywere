@@ -12,8 +12,8 @@ MYSQL_SOCKET="$MYSQL_DATA/mysql.sock"
 MYSQL_PID="$MYSQL_DATA/mariadb.pid"
 
 # Check for binaries
-if [ ! -f "$MARIADB_DIR/bin/mariadbd" ] || [ ! -f "$BIN_DIR/frankenphp" ]; then
-    echo "Binaries not found. Running installer..."
+if [ ! -f "$MARIADB_DIR/bin/mariadbd" ] || [ ! -f "$BIN_DIR/frankenphp" ] || [ ! -f "$SRC_DIR/.env" ]; then
+    echo "Environment not initialized. Running installer..."
     "$BIN_DIR/install.sh"
 fi
 
@@ -68,9 +68,9 @@ echo "MariaDB started."
 echo "Ensuring database exists..."
 "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"
 
-# Run Migrations automatically if needed
-echo "Running migrations..."
-cd "$SRC_DIR" && "$BIN_DIR/php" "$BIN_DIR/composer" run artisan migrate --force
+# Run Migrations automatically to keep DB sync with code
+echo "Updating database schema if needed..."
+"$BIN_DIR/artisan" migrate --force
 
 # Start Reverb (Background) - Disabled until configured
 # echo "Starting Reverb..."

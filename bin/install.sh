@@ -136,23 +136,71 @@ EOF
     cd "$SRC_DIR"
     if [ ! -f .env ]; then
         cp .env.example .env
-        echo "Created .env file. Please configure database path if needed."
-        # Auto-configure socket path
-        SOCK_PATH=$(readlink -f "$DATA_DIR/mysql/mysql.sock")
-        echo "DB_SOCKET=$SOCK_PATH" >> .env
-        echo "DB_CONNECTION=mariadb" >> .env
-        echo "DB_HOST=" >> .env
-        echo "DB_PORT=" >> .env
-        echo "DB_DATABASE=laravel" >> .env
-        echo "DB_USERNAME=$(whoami)" >> .env
-        echo "DB_PASSWORD=" >> .env
-        
+        echo "Created .env file."
         "$PHP_BINARY" artisan key:generate
     fi
-    
+
+    # Auto-configure .env using sed to avoid duplicates
+    update_env() {
+        local key=$1
+        local value=$2
+        if grep -q "^${key}=" .env; then
+            sed -i "s|^${key}=.*|${key}=${value}|" .env
+        else
+            echo "${key}=${value}" >> .env
+        fi
+    }
+
+    SOCK_PATH=$(readlink -f "$DATA_DIR/mysql/mysql.sock")
+    update_env "DB_CONNECTION" "mariadb"
+    update_env "DB_SOCKET" "$SOCK_PATH"
+    update_env "DB_HOST" ""
+    update_env "DB_PORT" ""
+    update_env "DB_DATABASE" "laravel"
+    update_env "DB_USERNAME" "$(whoami)"
+    update_env "DB_PASSWORD" ""
+
+    # PHP Dependencies
     "$BIN_DIR/composer" install
     
-    echo -e "${GREEN}Dependencies installed.${NC}"
+    # Node.js Dependencies
+    echo "Installing Node.js Dependencies..."
+    export PATH="$BIN_DIR/node/bin:$PATH"
+    npm install
+    npm run build
+
+    # Initial Database Setup (Seeding the scenario)
+    echo "Initializing MariaDB for first time..."
+    MARIADB_DIR="$BIN_DIR/mariadb"
+    MYSQL_DATA="$DATA_DIR/mysql"
+    MYSQL_SOCKET="$SOCK_PATH"
+    MYSQL_PID="$MYSQL_DATA/mariadb.pid"
+
+    mkdir -p "$MYSQL_DATA"
+    if [ -z "$(ls -A "$MYSQL_DATA")" ]; then
+        "$MARIADB_DIR/scripts/mariadb-install-db" --user=$(whoami) --datadir="$MYSQL_DATA" --basedir="$MARIADB_DIR" > /dev/null
+    fi
+
+    # Start temp MariaDB
+    "$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$MYSQL_SOCKET" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB &
+    TEMP_DB_PID=$!
+
+    # Wait for ready
+    echo "Waiting for MariaDB to initialize..."
+    for i in {1..30}; do
+        if [ -S "$MYSQL_SOCKET" ]; then break; fi
+        sleep 1
+    done
+
+    # Create DB, Migrate and Seed
+    "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"
+    "$PHP_BINARY" artisan migrate:fresh --seed --force
+
+    # Shutdown temp MariaDB
+    kill $TEMP_DB_PID
+    wait $TEMP_DB_PID 2>/dev/null
+    
+    echo -e "${GREEN}Dependencies installed and Database seeded.${NC}"
 fi
 
 echo -e "${GREEN}Installation Complete! You can now run ./bin/start.sh${NC}"
