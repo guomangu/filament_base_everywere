@@ -197,6 +197,96 @@ class Project extends Model
     }
 
     /**
+     * Calculate the average trust score of the project based on owner and active members
+     */
+    public function getAverageTrustScore(): int
+    {
+        $ownerScore = $this->owner->trust_score ?? 0;
+        
+        $memberScores = $this->activeMembers()
+            ->with('memberable')
+            ->get()
+            ->pluck('memberable.trust_score')
+            ->filter()
+            ->toArray();
+        
+        $allScores = array_merge([$ownerScore], $memberScores);
+        
+        if (empty($allScores)) {
+            return 0;
+        }
+        
+        return (int) round(array_sum($allScores) / count($allScores));
+    }
+
+    /**
+     * Get all achievements from owner and active members
+     */
+    public function getAllMemberAchievements()
+    {
+        $ownerAchievements = $this->owner->achievements()
+            ->where('title', '!=', '__SKELETON__')
+            ->with(['skill', 'validations.user'])
+            ->get();
+            
+        $memberAchievements = Achievement::whereHas('user.projectMemberships', function($q) {
+            $q->where('project_id', $this->id)
+              ->where('status', 'active');
+        })
+        ->where('title', '!=', '__SKELETON__')
+        ->with(['skill', 'validations.user'])
+        ->get();
+        
+        return $ownerAchievements->merge($memberAchievements)->unique('id');
+    }
+
+    /**
+     * Get all validations received by project members
+     */
+    public function getAllMemberValidations()
+    {
+        $memberUserIds = $this->activeMembers()
+            ->pluck('memberable_id')
+            ->push($this->owner_id)
+            ->unique();
+        
+        return \App\Models\AchievementValidation::whereHas('achievement', function($q) use ($memberUserIds) {
+            $q->whereIn('user_id', $memberUserIds);
+        })->get();
+    }
+
+    /**
+     * Get all information from owner and active members
+     */
+    public function getAllMemberInformation()
+    {
+        $projectInfo = $this->informations;
+        $ownerInfo = $this->owner->informations;
+        
+        $memberUserIds = $this->activeMembers()
+            ->where('memberable_type', User::class)
+            ->pluck('memberable_id');
+            
+        $memberInfo = \App\Models\Information::where('informable_type', User::class)
+            ->whereIn('informable_id', $memberUserIds)
+            ->get();
+        
+        return $projectInfo->merge($ownerInfo)->merge($memberInfo)->unique('id');
+    }
+
+    /**
+     * Count validated achievements across all members
+     */
+    public function getValidatedAchievementsCount(): int
+    {
+        return $this->getAllMemberAchievements()
+            ->filter(function($achievement) {
+                return $achievement->validations->where('type', 'validate')->count() > 0;
+            })
+            ->count();
+    }
+
+    /**
      * Get a shorter version of the address (usually just the city)
      */
     public function getShortAddressAttribute(): ?string

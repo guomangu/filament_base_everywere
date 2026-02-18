@@ -30,6 +30,7 @@ Route::get('/users/{user}', UserProfile::class)->name('users.show');
 
 Route::get('/cv/u/{user}', \App\Livewire\Cv\Viewer::class)->name('cv.user');
 Route::get('/cv/c/{circle}', \App\Livewire\Cv\Viewer::class)->name('cv.circle');
+Route::get('/cv/p/{project}', \App\Livewire\Cv\Viewer::class)->name('cv.project');
 
 Route::post('/logout', function () {
     auth()->logout();

@@ -119,7 +119,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4"/></svg>
             Imprimer / PDF
         </button>
-        <a href="{{ $this->type === 'user' ? route('users.show', $user) : route('circles.show', $circle) }}" class="p-4 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:text-slate-900 transition-all shadow-xl">
+        <a href="{{ $this->type === 'user' ? route('users.show', $user) : ($this->type === 'circle' ? route('circles.show', $circle) : route('projects.show', $project)) }}" class="p-4 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:text-slate-900 transition-all shadow-xl">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </a>
     </div>
@@ -132,25 +132,27 @@
         <header class="relative z-10 px-10 py-6 print-compact-header flex items-center justify-between border-b border-slate-50">
             <div class="flex items-center gap-4">
                 <div class="relative">
-                    <img src="{{ $type === 'user' ? $user->avatar : ($circle->owner->avatar ?? '') }}" class="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-lg">
+                    <img src="{{ $type === 'user' ? $user->avatar : ($type === 'circle' ? ($circle->owner->avatar ?? '') : ($project->owner->avatar ?? '')) }}" class="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-lg">
                     <div class="absolute -bottom-1 -right-1 w-9 h-9 bg-slate-900 rounded-lg flex flex-col items-center justify-center text-white border-2 border-white shadow-lg">
                         <span class="text-[5px] font-black uppercase opacity-60">Score</span>
-                        <span class="text-xs font-black">{{ $type === 'user' ? $user->trust_score : $circle->getAverageTrustScore() }}</span>
+                        <span class="text-xs font-black">{{ $type === 'user' ? $user->trust_score : ($type === 'circle' ? $circle->getAverageTrustScore() : $project->getAverageTrustScore()) }}</span>
                     </div>
                 </div>
                 <div>
                     <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-tight mb-1">
-                        {{ $type === 'user' ? $user->name : $circle->name }}
+                        {{ $type === 'user' ? $user->name : ($type === 'circle' ? $circle->name : $project->title) }}
                     </h1>
                     <div class="flex items-center gap-4">
                         @if($type === 'user')
                             <span class="text-xs font-black text-blue-600 uppercase tracking-widest py-1.5 px-3 bg-blue-50 rounded-lg">Bâtisseur Certifié</span>
-                        @else
+                        @elseif($type === 'circle')
                             <span class="text-xs font-black text-blue-600 uppercase tracking-widest py-1.5 px-3 bg-blue-50 rounded-lg">Cercle d'Experts</span>
+                        @else
+                            <span class="text-xs font-black text-blue-600 uppercase tracking-widest py-1.5 px-3 bg-blue-50 rounded-lg">Projet Innovant</span>
                         @endif
                         <span class="text-xs font-bold text-slate-400 flex items-center gap-2">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            {{ $type === 'user' ? ($user->location ?? 'Global') : ($circle->address ?? 'Global') }}
+                            {{ $type === 'user' ? ($user->location ?? 'Global') : ($type === 'circle' ? ($circle->address ?? 'Global') : ($project->address ?? 'Global')) }}
                         </span>
                     </div>
                 </div>
@@ -170,18 +172,22 @@
                 <section>
                     <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Résumé</h3>
                     <p class="text-[10px] text-slate-500 font-medium leading-relaxed italic">
-                        "{{ $type === 'user' ? ($user->bio ?? 'Aucune biographie disponible.') : ($circle->description ?? 'Ce cercle n\'a pas encore de description.') }}"
+                        "{{ $type === 'user' ? ($user->bio ?? 'Aucune biographie disponible.') : ($type === 'circle' ? ($circle->description ?? 'Ce cercle n\'a pas encore de description.') : ($project->description ?? 'Ce projet n\'a pas encore de description.')) }}"
                     </p>
                 </section>
 
                 <!-- Expertise Scores -->
                 <section>
-                    <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Expertise Certifiée</h3>
+                    <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
+                        {{ $type === 'project' ? 'Expertise Collective' : 'Expertise Certifiée' }}
+                    </h3>
                     <div class="space-y-3">
                         @php 
-                            $skills = $type === 'user' 
-                                ? $user->achievements->groupBy('skill_id') 
-                                : $circle->getAllMemberAchievements()->groupBy('skill_id');
+                            $skills = match($type) {
+                                'user' => $user->achievements->groupBy('skill_id'),
+                                'circle' => $circle->getAllMemberAchievements()->groupBy('skill_id'),
+                                'project' => $project->getAllMemberAchievements()->groupBy('skill_id'),
+                            };
                         @endphp
                         @foreach($skills->take(6) as $skillId => $proofs)
                             <div>
@@ -192,19 +198,21 @@
                                 <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                                     <div class="h-full bg-blue-600 rounded-full" style="width: {{ min(100, $proofs->count() * 20) }}%"></div>
                                 </div>
-                                @if($type === 'circle')
+                                @if($type === 'circle' || $type === 'project')
                                     <!-- Show members who have this skill -->
                                     <div class="flex flex-wrap gap-1 mt-1.5">
                                         @php
+                                            $model = $type === 'circle' ? $circle : $project;
                                             $skillMembers = collect();
                                             // Get owner if they have this skill
-                                            if($circle->owner->achievements->where('skill_id', $skillId)->count() > 0) {
-                                                $skillMembers->push($circle->owner);
+                                            if($model->owner->achievements->where('skill_id', $skillId)->count() > 0) {
+                                                $skillMembers->push($model->owner);
                                             }
                                             // Get active members with this skill
-                                            foreach($circle->activeMembers as $member) {
-                                                if($member->user->achievements->where('skill_id', $skillId)->count() > 0) {
-                                                    $skillMembers->push($member->user);
+                                            foreach($model->activeMembers as $member) {
+                                                $memberUser = $type === 'circle' ? $member->user : $member->memberable;
+                                                if($memberUser && $memberUser->achievements->where('skill_id', $skillId)->count() > 0) {
+                                                    $skillMembers->push($memberUser);
                                                 }
                                             }
                                             $skillMembers = $skillMembers->unique('id')->take(4);
@@ -228,11 +236,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div class="p-3 bg-white border border-slate-100 rounded-lg">
                             <span class="text-[6px] font-black text-slate-400 uppercase block mb-0.5">Validations</span>
-                            <span class="text-base font-black text-green-600">+{{ $type === 'user' ? $user->validationsReceived->where('type', 'validate')->count() : $circle->getAllMemberValidations()->where('type', 'validate')->count() }}</span>
+                            <span class="text-base font-black text-green-600">+{{ $type === 'user' ? $user->validationsReceived->where('type', 'validate')->count() : ($type === 'circle' ? $circle->getAllMemberValidations()->where('type', 'validate')->count() : $project->getAllMemberValidations()->where('type', 'validate')->count()) }}</span>
                         </div>
                         <div class="p-3 bg-white border border-slate-100 rounded-lg">
                             <span class="text-[6px] font-black text-slate-400 uppercase block mb-0.5">Réfutations</span>
-                            <span class="text-base font-black text-red-600">-{{ $type === 'user' ? $user->validationsReceived->where('type', 'reject')->count() : $circle->getAllMemberValidations()->where('type', 'reject')->count() }}</span>
+                            <span class="text-base font-black text-red-600">-{{ $type === 'user' ? $user->validationsReceived->where('type', 'reject')->count() : ($type === 'circle' ? $circle->getAllMemberValidations()->where('type', 'reject')->count() : $project->getAllMemberValidations()->where('type', 'reject')->count()) }}</span>
                         </div>
                     </div>
                 </section>
@@ -241,7 +249,14 @@
                 <section>
                     <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Contact & Liens</h3>
                     <div class="space-y-1.5">
-                        @foreach(($type === 'user' ? $user->informations : $circle->getAllMemberInformation()) as $info)
+                        @php
+                            $infos = match($type) {
+                                'user' => $user->informations,
+                                'circle' => $circle->getAllMemberInformation(),
+                                'project' => $project->getAllMemberInformation(),
+                            };
+                        @endphp
+                        @foreach($infos as $info)
                             <div class="flex items-center gap-1.5 text-[8px]">
                                 <svg class="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                                 <div class="flex-grow">
@@ -257,9 +272,11 @@
                 <section>
                     <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Vérification</h3>
                     @php
-                        $profileUrl = $type === 'user' 
-                            ? route('users.show', $user) 
-                            : route('circles.show', $circle);
+                        $profileUrl = match($type) {
+                            'user' => route('users.show', $user),
+                            'circle' => route('circles.show', $circle),
+                            'project' => route('projects.show', $project),
+                        };
                         $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode(url($profileUrl));
                     @endphp
                     <div class="bg-white p-2 rounded-xl border border-slate-200 inline-block">
@@ -270,55 +287,108 @@
             </div>
 
             <!-- Main Content -->
-            <div class="col-span-8 p-12 print-compact-main space-y-12 print-compact-spacing">
-                <!-- Achievements / Experience -->
-                <section>
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-4">
-                        Timeline des Réalisations
-                        <div class="h-px bg-slate-100 flex-grow"></div>
-                    </h3>
-
-                    <div class="space-y-8 print-compact-spacing">
-                        @php 
-                            $list = $type === 'user' 
-                                ? $user->achievements->sortByDesc('realized_at')
-                                : $circle->getAllMemberAchievements()->sortByDesc('realized_at');
-                        @endphp
-
-                        @foreach($list->take(8) as $ach)
-                            <div class="relative pl-6 before:absolute before:left-0 before:top-1 before:w-1.5 before:h-1.5 before:bg-blue-600 before:rounded-full before:z-10 after:absolute after:left-[2px] after:top-3 after:w-[1px] after:h-[calc(100%+1rem)] after:bg-slate-100 last:after:hidden">
-                                <div class="flex justify-between items-start mb-0.5">
-                                    <h4 class="text-xs font-black text-slate-900 uppercase tracking-tight">{{ $ach->title }}</h4>
-                                    <span class="text-[8px] font-black text-slate-400 uppercase">{{ $ach->realized_at ? \Carbon\Carbon::parse($ach->realized_at)->translatedFormat('M Y') : 'Date inconnue' }}</span>
-                                </div>
-                                <div class="text-[8px] font-bold text-blue-500 uppercase tracking-widest mb-1">{{ $ach->skill->name }}</div>
-                                <p class="text-[9px] text-slate-500 font-medium leading-relaxed">{{ $ach->description }}</p>
-                                
-                                @php
-                                    $positiveValidations = $ach->validations
-                                        ->where('type', 'validate')
-                                        ->filter(fn($v) => !empty($v->comment))
-                                        ->take(3);
-                                @endphp
-
-                                @if($positiveValidations->count() > 0)
-                                    <div class="mt-2 space-y-1.5">
-                                        @foreach($positiveValidations as $val)
-                                            <div class="bg-green-50/50 border border-green-100 rounded-lg p-2">
-                                                <div class="flex items-center gap-1.5 mb-1">
-                                                    <img src="{{ $val->user->avatar }}" class="w-3 h-3 rounded-full border border-green-200">
-                                                    <span class="text-[7px] font-black text-green-700 uppercase">{{ $val->user->name }}</span>
-                                                    <svg class="w-2.5 h-2.5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                                                </div>
-                                                <p class="text-[8px] text-slate-600 font-medium leading-relaxed italic">"{{ $val->comment }}"</p>
-                                            </div>
-                                        @endforeach
+            <div class="col-span-8 p-12 print-compact-main space-y-8 print-compact-spacing">
+                @if($type === 'project')
+                    <!-- Project Offers -->
+                    <section>
+                        <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-4 flex items-center gap-4">
+                            Ce que nous offrons
+                            <div class="h-px bg-blue-100 flex-grow"></div>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            @forelse($project->offers as $offer)
+                                <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-3 flex gap-4 items-start">
+                                    @if($offer->images && count($offer->images) > 0)
+                                        <img src="{{ Storage::url($offer->images[0]) }}" class="w-12 h-12 rounded-xl object-cover shadow-sm bg-white border border-blue-100 shrink-0">
+                                    @else
+                                        <div class="w-12 h-12 rounded-xl bg-white border border-blue-100 flex items-center justify-center text-blue-200 shrink-0">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                        </div>
+                                    @endif
+                                    <div class="min-w-0">
+                                        <h4 class="text-[10px] font-black text-slate-900 uppercase tracking-tight mb-0.5 truncate">{{ $offer->title }}</h4>
+                                        <p class="text-[8px] text-slate-600 font-medium leading-tight line-clamp-3">{{ $offer->description }}</p>
                                     </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </section>
+                                </div>
+                            @empty
+                                <p class="text-[10px] items-center italic text-slate-400 uppercase tracking-widest text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">Aucune offre active pour le moment</p>
+                            @endforelse
+                        </div>
+                    </section>
+
+                    <!-- Project Demands -->
+                    <section>
+                        <h3 class="text-[10px] font-black text-purple-600 uppercase tracking-[0.3em] mb-4 flex items-center gap-4">
+                            Nos Besoins & Demandes
+                            <div class="h-px bg-purple-100 flex-grow"></div>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            @forelse($project->demands as $demand)
+                                <div class="bg-purple-50/50 border border-purple-100 rounded-2xl p-3 flex gap-4 items-start">
+                                    <div class="w-12 h-12 rounded-xl bg-white border border-purple-100 flex items-center justify-center text-purple-200 shrink-0">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h4 class="text-[10px] font-black text-slate-900 uppercase tracking-tight mb-0.5 truncate">{{ $demand->title }}</h4>
+                                        <p class="text-[8px] text-slate-600 font-medium leading-tight line-clamp-3">{{ $demand->description }}</p>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-[10px] items-center italic text-slate-400 uppercase tracking-widest text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">Aucune demande active pour le moment</p>
+                            @endforelse
+                        </div>
+                    </section>
+                @else
+                    <!-- Achievements / Experience (For Users and Circles) -->
+                    <section>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-4">
+                            Timeline des Réalisations
+                            <div class="h-px bg-slate-100 flex-grow"></div>
+                        </h3>
+
+                        <div class="space-y-8 print-compact-spacing">
+                            @php 
+                                $list = match($type) {
+                                    'user' => $user->achievements->sortByDesc('realized_at'),
+                                    'circle' => $circle->getAllMemberAchievements()->sortByDesc('realized_at'),
+                                };
+                            @endphp
+
+                            @foreach($list->take(8) as $ach)
+                                <div class="relative pl-6 before:absolute before:left-0 before:top-1 before:w-1.5 before:h-1.5 before:bg-blue-600 before:rounded-full before:z-10 after:absolute after:left-[2px] after:top-3 after:w-[1px] after:h-[calc(100%+1rem)] after:bg-slate-100 last:after:hidden">
+                                    <div class="flex justify-between items-start mb-0.5">
+                                        <h4 class="text-xs font-black text-slate-900 uppercase tracking-tight">{{ $ach->title }}</h4>
+                                        <span class="text-[8px] font-black text-slate-400 uppercase">{{ $ach->realized_at ? \Carbon\Carbon::parse($ach->realized_at)->translatedFormat('M Y') : 'Date inconnue' }}</span>
+                                    </div>
+                                    <div class="text-[8px] font-bold text-blue-500 uppercase tracking-widest mb-1">{{ $ach->skill->name }}</div>
+                                    <p class="text-[9px] text-slate-500 font-medium leading-relaxed">{{ $ach->description }}</p>
+                                    
+                                    @php
+                                        $positiveValidations = $ach->validations
+                                            ->where('type', 'validate')
+                                            ->filter(fn($v) => !empty($v->comment))
+                                            ->take(3);
+                                    @endphp
+
+                                    @if($positiveValidations->count() > 0)
+                                        <div class="mt-2 space-y-1.5">
+                                            @foreach($positiveValidations as $val)
+                                                <div class="bg-green-50/50 border border-green-100 rounded-lg p-2">
+                                                    <div class="flex items-center gap-1.5 mb-1">
+                                                        <img src="{{ $val->user->avatar }}" class="w-3 h-3 rounded-full border border-green-200">
+                                                        <span class="text-[7px] font-black text-green-700 uppercase">{{ $val->user->name }}</span>
+                                                        <svg class="w-2.5 h-2.5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                                    </div>
+                                                    <p class="text-[8px] text-slate-600 font-medium leading-relaxed italic">"{{ $val->comment }}"</p>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
 
             </div>
         </main>

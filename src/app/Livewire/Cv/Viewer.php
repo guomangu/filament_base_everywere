@@ -10,9 +10,10 @@ class Viewer extends Component
 {
     public ?User $user = null;
     public ?Circle $circle = null;
-    public string $type = 'user'; // 'user' or 'circle'
+    public ?\App\Models\Project $project = null;
+    public string $type = 'user'; // 'user', 'circle', or 'project'
 
-    public function mount($user = null, $circle = null)
+    public function mount($user = null, $circle = null, $project = null)
     {
         if ($user) {
             $this->type = 'user';
@@ -29,6 +30,13 @@ class Viewer extends Component
             $this->circle->load([
                 'owner',
                 'activeMembers.user'
+            ]);
+        } elseif ($project) {
+            $this->type = 'project';
+            $this->project = $project instanceof \App\Models\Project ? $project : \App\Models\Project::findOrFail($project);
+            $this->project->load([
+                'owner',
+                'activeMembers.memberable'
             ]);
         } else {
             abort(404);
