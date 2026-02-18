@@ -29,6 +29,20 @@ class Circle extends Model
         ];
     }
 
+    public function getTrustScoreAttribute(): int
+    {
+        return $this->getAverageTrustScore();
+    }
+
+    public function activeProject(): ?Project
+    {
+        return Project::whereHas('members', function($q) {
+            $q->where('memberable_type', Circle::class)
+              ->where('memberable_id', $this->id)
+              ->where('status', 'active');
+        })->where('is_open', true)->first();
+    }
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');

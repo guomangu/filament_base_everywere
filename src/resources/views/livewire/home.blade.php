@@ -26,7 +26,7 @@
 x-init="if (!$wire.lat) updateLocation()"
 class="min-h-screen bg-slate-50/50">
     <!-- Hero Section / Search -->
-    <div class="relative pt-32 pb-20 px-6 overflow-hidden">
+    <div class="relative pt-20 pb-12 px-6 overflow-hidden">
         <!-- Floating Circles Background -->
         <div class="absolute inset-0 -z-10 overflow-hidden">
             <div class="absolute top-[-10%] left-[-5%] w-[40%] aspect-square bg-blue-400/10 rounded-full blur-[120px] animate-pulse"></div>
@@ -39,8 +39,8 @@ class="min-h-screen bg-slate-50/50">
                 <span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-800 bg-clip-text text-transparent">DE CONFIANCE.</span>
             </h1>
             
-            <div class="max-w-3xl mx-auto mt-12 group">
-                <div class="relative p-2 bg-white/40 backdrop-blur-3xl rounded-[3rem] border border-white/60 shadow-2xl shadow-blue-500/10 transition-all duration-500 hover:shadow-blue-500/20 hover:border-blue-200">
+            <div class="max-w-3xl mx-auto mt-8 group">
+                <div class="relative p-1.5 bg-white/40 backdrop-blur-3xl rounded-[3rem] border border-white/60 shadow-2xl shadow-blue-500/10 transition-all duration-500 hover:shadow-blue-500/20 hover:border-blue-200">
                     <div class="relative flex items-center">
                         <div class="absolute left-6 text-blue-600">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -48,14 +48,14 @@ class="min-h-screen bg-slate-50/50">
                         <input type="text" 
                             wire:model.live.debounce.300ms="search" 
                             placeholder="Sushi, Plombier, Laravel..." 
-                            class="w-full bg-transparent border-none focus:ring-0 text-xl md:text-2xl font-black placeholder:text-slate-300 py-6 md:py-8 pl-18 pr-8 text-slate-900">
+                            class="w-full bg-transparent border-none focus:ring-0 text-xl md:text-2xl font-black placeholder:text-slate-300 py-4 md:py-6 pl-18 pr-8 text-slate-900">
                         
                         <div wire:loading wire:target="search" class="absolute right-8">
                             <div class="w-6 h-6 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
                         </div>
                     </div>
                 </div>
-                <div class="mt-6 flex justify-center gap-4 text-sm font-bold text-slate-400 uppercase tracking-widest">
+                <div class="mt-4 flex justify-center gap-4 text-sm font-bold text-slate-400 uppercase tracking-widest">
                     <span>Proximité active</span>
                     <span class="text-blue-600 animate-pulse">•</span>
                     <span>Confiance vérifiée</span>
@@ -65,8 +65,8 @@ class="min-h-screen bg-slate-50/50">
     </div>
 
     <!-- Results Section -->
-    <div class="max-w-7xl mx-auto px-6 pb-32">
-        <div class="flex items-center justify-between mb-12">
+    <div class="max-w-7xl mx-auto px-6 pb-20">
+        <div class="flex items-center justify-between mb-8">
             <div>
                 <h2 class="text-3xl font-black text-slate-900 tracking-tight">
                     {{ $search ? 'Résultats de recherche' : 'Mur de Cercles Proches' }}
@@ -102,7 +102,7 @@ class="min-h-screen bg-slate-50/50">
             @endif
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-12">
+        <div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-8">
             @forelse ($circles as $circle)
                 <div class="relative group">
                     <!-- Circle Entity Aesthetic -->
@@ -112,9 +112,9 @@ class="min-h-screen bg-slate-50/50">
                         <!-- Full Card Link Overlay -->
                         <a href="{{ route('circles.show', $circle) }}" class="absolute inset-0 z-0"></a>
 
-                        <div class="flex-grow p-8 md:p-10 relative z-10 pointer-events-none">
+                        <div class="flex-grow p-6 md:p-8 relative z-10 pointer-events-none">
                             <!-- Header -->
-                            <div class="flex items-start justify-between mb-8">
+                            <div class="flex items-start justify-between mb-6">
                                 <div class="w-16 h-16 md:w-20 md:h-20 bg-slate-50 rounded-[1.8rem] md:rounded-[2.2rem] flex items-center justify-center text-slate-400 group-hover/card:bg-blue-600 group-hover/card:text-white transition-all duration-500 group-hover/card:rotate-6 shadow-sm">
                                     <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         @if($circle->type === 'business')
@@ -137,7 +137,7 @@ class="min-h-screen bg-slate-50/50">
                             </div>
 
                             <!-- Title & Location -->
-                            <div class="mb-6">
+                            <div class="mb-4">
                                 <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-1 leading-tight group-hover/card:text-blue-600 transition-colors">
                                     {{ $circle->name }}
                                 </h3>
@@ -160,7 +160,7 @@ class="min-h-screen bg-slate-50/50">
                             </div>
 
                             @if($circle->matching_context)
-                                <div class="relative z-10 p-4 bg-slate-50 border border-slate-100 rounded-3xl mb-6 group/highlight hover:border-blue-200 transition-colors pointer-events-auto">
+                                <div class="relative z-10 p-4 bg-slate-50 border border-slate-100 rounded-3xl mb-4 group/highlight hover:border-blue-200 transition-colors pointer-events-auto">
                                     <div class="flex items-center gap-3 mb-3">
                                         @if($circle->matched_object && isset($circle->matched_object['image']))
                                             <a href="{{ route('users.show', $circle->matched_object['id']) }}" class="flex-shrink-0">
@@ -195,7 +195,7 @@ class="min-h-screen bg-slate-50/50">
                                 </div>
                             @endif
 
-                            <p class="text-slate-500 font-medium text-sm md:text-base leading-relaxed line-clamp-3 mb-8">
+                            <p class="text-slate-500 font-medium text-sm md:text-base leading-relaxed line-clamp-3 mb-6">
                                 {{ $circle->description }}
                             </p>
 

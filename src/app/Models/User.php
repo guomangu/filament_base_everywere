@@ -238,6 +238,47 @@ class User extends Authenticatable implements FilamentUser
             return $findUserPath($other);
         }
 
+        if ($other instanceof Circle) {
+            // 1. Direct: I am a member
+            if ($this->activeJoinedCircles->contains('id', $other->id)) {
+                return array_merge($path, [
+                    ['type' => 'circle', 'id' => $other->id, 'name' => $other->name]
+                ]);
+            }
+
+            // 2. Intermediary: Path through a friend who is a member of this Circle
+            $myCircleIds = $this->activeJoinedCircles->pluck('id');
+            $interMember = CircleMember::whereIn('circle_id', $myCircleIds)
+                ->where('status', 'active')
+                ->where('user_id', '!=', $this->id)
+                ->whereHas('user.circleMembers', function($q) use ($other) {
+                    $q->where('circle_id', $other->id)->where('status', 'active');
+                })
+                ->with(['user', 'circle'])
+                ->first();
+
+            if ($interMember) {
+                 return array_merge($path, [
+                    ['type' => 'circle', 'id' => $interMember->circle_id, 'name' => $interMember->circle->name],
+                    ['type' => 'user', 'id' => $interMember->user_id, 'name' => $interMember->user->name, 'avatar' => $interMember->user->avatar],
+                    ['type' => 'circle', 'id' => $other->id, 'name' => $other->name]
+                ]);
+            }
+
+            // 3. Indirect: Path to owner, then Circle
+            $ownerPath = $this->getTrustPathTo($other->owner);
+            if (empty($ownerPath)) return [];
+            
+            // Check if last element is already this circle
+            if (end($ownerPath)['type'] === 'circle' && end($ownerPath)['id'] === $other->id) {
+                return $ownerPath;
+            }
+
+            return array_merge($ownerPath, [
+                ['type' => 'circle', 'id' => $other->id, 'name' => $other->name]
+            ]);
+        }
+
         if ($other instanceof Proche) {
             $userPath = $findUserPath($other->parent);
             if (empty($userPath)) return [];

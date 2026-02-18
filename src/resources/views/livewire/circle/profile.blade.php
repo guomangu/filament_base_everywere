@@ -9,7 +9,7 @@
     }" 
     x-on:circle-updated.window="showIndicator = true; playNotify(); setTimeout(() => showIndicator = false, 3000)"
     wire:poll.5s.visible="refresh" 
-    class="min-h-screen bg-slate-50/50 pb-20"
+    class="min-h-screen bg-slate-50/50 pb-12"
 >
     <!-- Top-right Loading Indicator (Only on change detection) -->
     <div x-show="showIndicator" 
@@ -30,7 +30,7 @@
         </div>
     </div>
     <!-- Circle Hero Header -->
-    <div class="relative pt-10 pb-16 overflow-hidden">
+    <div class="relative pt-6 pb-12 overflow-hidden">
         <!-- Background Accents -->
         <div class="absolute inset-0 -z-10">
             <div class="absolute top-[-20%] right-[-10%] w-[50%] aspect-square bg-blue-500/5 rounded-full blur-[140px]"></div>
@@ -38,7 +38,7 @@
         </div>
 
         <div class="max-w-7xl mx-auto px-6">
-            <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[3rem] md:rounded-[4rem] p-8 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
+            <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[3rem] md:rounded-[4rem] p-6 md:p-10 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
                 <!-- Top Badge Status -->
                 <div class="flex flex-wrap items-center gap-2 md:gap-3 mb-8 md:absolute md:top-10 md:right-10 md:mb-0">
                     <span class="px-3 md:px-4 py-1.5 bg-green-50 text-green-600 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-2">
@@ -69,22 +69,20 @@
                     <!-- Info -->
                     <div class="flex-grow">
                         <div class="flex flex-wrap items-center gap-4 mb-4">
-                            <span class="text-xs font-black text-blue-600 uppercase tracking-[0.3em]">Cercle de confiance</span>
-                            <span class="text-slate-200">/</span>
                             <span class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">{{ $circle->type }}</span>
                         </div>
-                        <div class="flex flex-col md:flex-row items-center gap-4 mb-6">
+                        <div class="flex flex-col md:flex-row items-center gap-4 mb-4">
                             <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none text-center md:text-left">
                                 {{ $circle->name }}
                             </h1>
                             <livewire:information.manager :model="$circle" :key="'circle-info-'.$circle->id" />
                         </div>
-                        <p class="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed mb-8">
+                        <p class="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed mb-6">
                             {{ $circle->description }}
                         </p>
 
                         <!-- Stats Bar -->
-                        <div class="grid grid-cols-3 gap-4 md:gap-8 py-8 border-t border-slate-100">
+                        <div class="grid grid-cols-3 gap-4 md:gap-8 py-6 border-t border-slate-100">
                             <div class="text-center md:text-left">
                                 <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $circle->activeMembers->count() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres</div>
@@ -103,14 +101,14 @@
                     <!-- Actions -->
                     <div class="lg:w-72 space-y-4">
                         <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white">
-                            <a href="{{ route('users.show', $circle->owner) }}" class="flex items-center gap-4 mb-4 group/owner transition-all">
+                            <a href="{{ route('users.show', $circle->owner) }}" class="flex items-center gap-4 mb-3 group/owner transition-all">
                                 <img src="{{ $circle->owner->avatar }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10 group-hover/owner:ring-blue-500 transition-all">
                                 <div>
                                     <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Fondateur</div>
                                     <div class="text-sm font-bold group-hover/owner:text-blue-400 transition-colors">{{ $circle->owner->name }}</div>
                                 </div>
                             </a>
-                            <x-user-skills-tags :user="$circle->owner" limit="3" class="mb-6 scale-90 origin-left" />
+                            <x-user-skills-tags :user="$circle->owner" limit="3" class="mb-4 scale-90 origin-left" />
 
                             <!-- CV Component Action -->
                             <div class="mt-6 pt-6 border-t border-white/10">
@@ -228,127 +226,141 @@
             <div>
                 
 
-                {{-- Member Projects Section --}}
-                @if(isset($memberProjects) && $memberProjects->count() > 0)
-                    <div class="pt-12 border-t border-slate-100">
-                        <h3 class="text-xl font-black text-slate-900 tracking-tight mb-6 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            Projets Actifs
-                            <span class="text-xs font-black text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">{{ $memberProjects->count() }}</span>
-                        </h3>
 
-                        <div class="space-y-12">
-                            @foreach($memberProjects as $project)
-                                <div class="space-y-6">
-                                    {{-- Project Header in Grid --}}
-                                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                                        <div class="flex items-center gap-4">
-                                            <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                            </div>
-                                            <div>
-                                                <h4 class="text-sm font-black text-slate-900 uppercase tracking-tight leading-none mb-1 flex flex-wrap items-center gap-2">
-                                                    {{ $project->title }}
-                                                    @if($project->neighborhood)
-                                                        <a href="{{ url('/?search=' . urlencode($project->neighborhood)) }}" class="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded hover:bg-blue-600 hover:text-white transition-all">
-                                                            {{ $project->neighborhood }}
-                                                        </a>
-                                                    @endif
-                                                    @if($project->city)
-                                                        <a href="{{ url('/?search=' . urlencode($project->city)) }}" class="text-[8px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded hover:bg-slate-900 hover:text-white transition-all">
-                                                            {{ $project->city }}
-                                                        </a>
-                                                    @endif
-                                                </h4>
-                                                <div class="flex items-center gap-2">
-                                                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Fondateur : {{ $project->owner->name }}</span>
-                                                    <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
-                                                    <a href="{{ route('projects.show', $project) }}" class="text-[8px] font-black text-blue-600 uppercase tracking-widest hover:underline">Voir le projet →</a>
-                                                </div>
+                {{-- ===== OFFRES DE SERVICES AGREGÉES ===== --}}
+                @if($memberOffers->count() > 0)
+                    <div class="mb-12">
+                        <div class="flex items-center justify-between mb-8">
+                            <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">
+                                Offre et Recrutement
+                                <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic uppercase">AGRÉGÉS</span>
+                            </h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            @foreach($memberOffers as $offer)
+                                <div class="bg-white/60 backdrop-blur-3xl border border-white/60 p-5 rounded-[2.5rem] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 group">
+                                    @if($offer->images && count($offer->images) > 0)
+                                        <div class="relative h-40 mb-4 overflow-hidden rounded-[2rem]">
+                                            <img src="{{ Storage::url($offer->images[0]) }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                                            <div class="absolute top-4 left-4">
+                                                @if($offer->isOffer())
+                                                    <span class="px-3 py-1 bg-white/90 backdrop-blur-sm text-[8px] font-black uppercase tracking-widest text-blue-600 rounded-lg shadow-sm">Offre</span>
+                                                @else
+                                                    <span class="px-3 py-1 bg-white/90 backdrop-blur-sm text-[8px] font-black uppercase tracking-widest text-purple-600 rounded-lg shadow-sm font-black italic">Demande</span>
+                                                @endif
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {{-- Offers Grid (Full Cards) --}}
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        @foreach($project->offers as $offer)
-                                            <a href="{{ route('projects.show', $project) }}" class="block bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all group/item">
-                                                <div class="relative h-48 bg-slate-50">
-                                                    @if($offer->images && count($offer->images) > 0)
-                                                        <div class="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar">
-                                                            @foreach($offer->images as $img)
-                                                                 <div class="min-w-full h-full snap-start">
-                                                                     <img src="{{ Storage::url($img) }}" class="w-full h-full object-cover">
-                                                                 </div>
-                                                            @endforeach
-                                                        </div>
-                                                    @else
-                                                        <div class="w-full h-full flex items-center justify-center text-slate-200">
-                                                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                                                        </div>
-                                                    @endif
-                                                    <div class="absolute top-4 left-4">
-                                                        <span class="px-2 py-1 bg-blue-600 text-white text-[7px] font-black uppercase tracking-widest rounded-lg shadow-lg">Offre</span>
-                                                    </div>
-                                                </div>
-                                                <div class="p-6">
-                                                    <h5 class="text-sm font-black text-slate-900 uppercase tracking-tight mb-2 truncate">{{ $offer->title }}</h5>
-                                                    @if($offer->informations->count() > 0)
-                                                        <div class="flex flex-wrap gap-1.5 pt-4 border-t border-slate-50">
-                                                            @foreach($offer->informations as $info)
-                                                                <div class="flex items-center gap-1 bg-blue-50/50 border border-blue-100/50 px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest">
-                                                                    @if($info->label)
-                                                                        <span class="text-blue-400 italic">{{ $info->label }}:</span>
-                                                                    @endif
-                                                                    <span class="text-blue-600">{{ $info->title }}</span>
-                                                                </div>
-                                                            @endforeach
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </a>
-                                        @endforeach
-                                    </div>
-
-                                    {{-- Demands (Tag Cloud Style) --}}
-                                    @if($project->demands->count() > 0)
-                                        <div class="flex flex-wrap gap-2 pt-4">
-                                            @foreach($project->demands as $demand)
-                                                <a href="{{ route('projects.show', $project) }}" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50/50 border border-purple-100/50 rounded-xl hover:bg-purple-600 hover:text-white hover:shadow-lg hover:shadow-purple-500/20 transition-all group/demand">
-                                                    <svg class="w-3 h-3 text-purple-400 group-hover/demand:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                                    <span class="text-[9px] font-black uppercase tracking-tight">{{ $demand->title }}</span>
-                                                </a>
-                                            @endforeach
+                                    @else
+                                        <div class="h-40 mb-4 bg-slate-50 flex items-center justify-center rounded-[2rem] border border-slate-100 group-hover:bg-blue-50 transition-colors duration-500 relative">
+                                            <div class="absolute top-4 left-4">
+                                                @if($offer->isOffer())
+                                                    <span class="px-3 py-1 bg-white text-[8px] font-black uppercase tracking-widest text-blue-600 rounded-lg shadow-sm border border-slate-100">Offre</span>
+                                                @else
+                                                    <span class="px-3 py-1 bg-white text-[8px] font-black uppercase tracking-widest text-purple-600 rounded-lg shadow-sm border border-slate-100 font-black italic">Demande</span>
+                                                @endif
+                                            </div>
+                                            <svg class="w-12 h-12 text-slate-200 group-hover:text-blue-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                @if($offer->isOffer())
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                                @else
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                                @endif
+                                            </svg>
                                         </div>
                                     @endif
+
+                                    <div class="px-2">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <a href="{{ route('projects.show', $offer->project) }}" class="text-[8px] font-black text-blue-500 uppercase tracking-widest hover:underline">{{ $offer->project->title }}</a>
+                                        </div>
+                                        <h4 class="text-sm font-black text-slate-900 uppercase tracking-tight mb-2 group-hover:text-blue-600 transition-colors">
+                                            {{ $offer->title }}
+                                        </h4>
+                                        <p class="text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-2 mb-4">
+                                            {{ $offer->description }}
+                                        </p>
+
+                                        @if($offer->informations->count() > 0)
+                                            <div class="flex flex-wrap gap-1.5 pt-4 border-t border-slate-100">
+                                                @foreach($offer->informations as $info)
+                                                    <div class="flex items-center gap-1.5 px-2 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-tight">
+                                                        @if($info->icon)
+                                                             <div class="w-2.5 h-2.5">
+                                                                {!! $info->icon !!}
+                                                             </div>
+                                                        @endif
+                                                        @if($info->label)
+                                                            <span class="opacity-40 italic">{{ $info->label }}:</span>
+                                                        @endif
+                                                        <span>{{ $info->title }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
                         </div>
                     </div>
                 @endif
-            
                 <div class="flex items-center justify-between mb-10">
                     <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">
                         Le Vivier d'Expertises
-                        <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic">DIRECT</span>
+                        <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic">RÉSEAU CONCENTRÉ</span>
                     </h2>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     @forelse($memberExperts as $expert)
+                        @php
+                            $isUser = $expert instanceof \App\Models\User;
+                            $name = $expert->name;
+                            $trustScore = $expert->trust_score;
+                            $activeProject = $expert->activeProject();
+                            $url = $isUser ? route('users.show', $expert) : route('circles.show', $expert);
+                            
+                            // Skills logic for Circle: Aggregate from all members
+                            if (!$isUser) {
+                                $skills = $expert->getAllMemberAchievements()
+                                    ->filter(fn($a) => $a->skill !== null)
+                                    ->unique('skill_id')
+                                    ->map(fn($a) => [
+                                        'id' => $a->skill->id,
+                                        'name' => $a->skill->name,
+                                    ])->sort(fn($a, $b) => mb_strlen($b['name']) <=> mb_strlen($a['name'])) // Prefer longer names or some logic
+                                    ->take(8);
+                            }
+                        @endphp
                         <div class="bg-white/60 backdrop-blur-3xl border border-white/60 p-6 rounded-[2.5rem] hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 group">
                             <div class="flex items-center gap-4 mb-6">
-                                <a href="{{ route('users.show', $expert) }}" class="flex-shrink-0 group/av">
-                                    <img src="{{ $expert->avatar }}" class="w-12 h-12 rounded-2xl object-cover shadow-lg group-hover/av:scale-110 transition-transform duration-500">
+                                <a href="{{ $url }}" class="flex-shrink-0 group/av">
+                                    @if($isUser)
+                                        <img src="{{ $expert->avatar }}" class="w-12 h-12 rounded-2xl object-cover shadow-lg group-hover/av:scale-110 transition-transform duration-500">
+                                    @else
+                                        <div class="w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover/av:scale-110 transition-transform duration-500">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                @if($expert->type === 'business')
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                                @else
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                @endif
+                                            </svg>
+                                        </div>
+                                    @endif
                                 </a>
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest">{{ $expert->trust_score }}% Confiance</div>
-                                        <x-project-transporter :project="$expert->activeProject()" />
+                                        <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest">{{ $trustScore }}% Confiance</div>
+                                        @if($activeProject)
+                                            <x-project-transporter :project="$activeProject" />
+                                        @endif
                                     </div>
-                                    <a href="{{ route('users.show', $expert) }}" class="text-sm font-black text-slate-900 uppercase tracking-tight hover:text-blue-500 transition-colors truncate block">
-                                        {{ $expert->name }}
+                                    <a href="{{ $url }}" class="text-sm font-black text-slate-900 uppercase tracking-tight hover:text-blue-500 transition-colors truncate block">
+                                        {{ $name }}
+                                        @if(!$isUser)
+                                            <span class="ml-1 text-[8px] px-1.5 py-0.5 bg-slate-900 text-white rounded-md tracking-widest leading-none align-middle">CERCLE</span>
+                                        @endif
                                     </a>
                                 </div>
                             </div>
@@ -356,13 +368,27 @@
                             @auth
                                 @php $trustPath = auth()->user()->getTrustPathTo($expert); @endphp
                                 @if(count($trustPath) > 0)
-                                    <div class="mb-6 p-3 bg-slate-50 rounded-2xl border border-slate-100 scale-90 origin-left">
+                                    <div class="mb-6 p-3 bg-slate-50 rounded-2xl border border-slate-100 scale-90 origin-left overflow-hidden">
                                         <x-user-trust-chain :path="$trustPath" />
                                     </div>
                                 @endif
                             @endauth
                             
-                            <x-user-skills-tags :user="$expert" limit="6" />
+                            @if($isUser)
+                                <x-user-skills-tags :user="$expert" limit="6" />
+                            @else
+                                <div class="flex flex-wrap gap-1.5">
+                                    @foreach($skills as $skill)
+                                        <a href="{{ route('projects.index', ['selectedSkills' => [$skill['id']]]) }}" class="px-2 py-1 bg-slate-900/5 text-slate-600 border border-slate-900/5 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all hover:scale-105 hover:bg-white hover:border-slate-200 shadow-sm">
+                                            {{ $skill['name'] }}
+                                        </a>
+                                    @endforeach
+                                    @php $totalSkills = $expert->getAllMemberAchievements()->unique('skill_id')->count(); @endphp
+                                    @if($totalSkills > 8)
+                                        <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest self-center">+{{ $totalSkills - 8 }}</span>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     @empty
                         <div class="col-span-full py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
@@ -373,40 +399,7 @@
             
             </div>
 
-            @if($networkExperts->count() > 0)
-                <div class="pt-16 border-t border-slate-100">
-                    <div class="flex items-center justify-between mb-10">
-                        <h2 class="text-2xl font-black text-slate-400 tracking-tight flex items-center gap-3 italic uppercase">
-                            Réseau Étendu
-                            <span class="text-[10px] font-black text-slate-300 border border-slate-100 px-3 py-1 rounded-full not-italic">PROXIMITÉ 2</span>
-                        </h2>
-                    </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-60 hover:opacity-100 transition-opacity duration-700">
-                        @foreach($networkExperts as $expert)
-                            <div class="bg-slate-50/50 border border-dashed border-slate-200 p-6 rounded-[2.5rem] group/n transition-all">
-                                <div class="flex items-center gap-4 mb-4">
-                                    <a href="{{ route('users.show', $expert) }}" class="flex-shrink-0">
-                                        <img src="{{ $expert->avatar }}" class="w-10 h-10 rounded-xl object-cover grayscale group-hover/n:grayscale-0 group-hover/n:scale-110 transition-all">
-                                    </a>
-                                    <div class="min-w-0">
-                                        <a href="{{ route('users.show', $expert) }}" class="text-xs font-black text-slate-500 uppercase tracking-tight group-hover/n:text-blue-500 transition-colors">
-                                            {{ $expert->name }}
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach($expert->achievements->unique('skill_id')->take(3) as $ach)
-                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-white border border-slate-100 px-2 py-1 rounded-lg">
-                                            {{ $ach->skill->name }}
-                                        </span>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
         </div>
 
         <!-- Sidebar: Messaging & Logistics -->

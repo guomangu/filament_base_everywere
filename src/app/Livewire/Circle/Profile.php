@@ -110,25 +110,34 @@ class Profile extends Component
                 ->get()
                 ->filter(fn($u) => $u->achievements->count() > 0 || $u->proches->flatMap->achievements->count() > 0);
 
-            // 3. Extended Network Experts (Proximity 2)
+            // 3. Distance 2 Circle Identifiers
             $secondaryCircleIds = \App\Models\CircleMember::whereIn('user_id', $memberIds)
                 ->where('status', 'active')
                 ->where('circle_id', '!=', $this->circle->id)
                 ->pluck('circle_id')
                 ->unique();
 
-            $networkExperts = \App\Models\User::whereHas('circleMembers', function($q) use ($secondaryCircleIds) {
-                    $q->whereIn('circle_id', $secondaryCircleIds)
-                      ->where('status', 'active');
-                })
-                ->whereNotIn('id', $memberIds)
-                ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill')])
-                ->get()
-                ->filter(fn($u) => $u->achievements->count() > 0)
-                ->sortByDesc('trust_score')
-                ->take(30);
+            // 4. Member owned Circles (Organizations - Proximity 1)
+            $memberOwnedCircles = \App\Models\Circle::whereIn('owner_id', $memberIds)
+                ->where('id', '!=', $this->circle->id)
+                ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill'), 'owner'])
+                ->get();
 
-            // 4. Member Projects (owned or member of)
+            // 5. Secondary Circles (Organizations - Proximity 2)
+            $secondaryCircles = \App\Models\Circle::whereIn('id', $secondaryCircleIds)
+                ->whereNotIn('owner_id', $memberIds) // Avoid duplicates with direct
+                ->with(['achievements' => fn($q) => $q->where('title', '!=', '__SKELETON__')->with('skill'), 'owner'])
+                ->get();
+
+            // 6. Merge for Vivier (Direct Users + All Organizations)
+            $allExperts = collect([])
+                ->merge($memberExperts)       // Direct Users
+                ->merge($memberOwnedCircles) // Member Owned Circles (P1)
+                ->merge($secondaryCircles)    // Secondary Circles (P2)
+                ->unique(fn($item) => get_class($item) . $item->id)
+                ->sortByDesc(fn($item) => $item instanceof \App\Models\User ? $item->trust_score : $item->getAverageTrustScore());
+
+            // 6. Member Projects (owned or member of)
             $memberProjects = \App\Models\Project::where(function($q) use ($memberIds) {
                 $q->whereIn('owner_id', $memberIds)
                   ->orWhereHas('members', function($subQ) use ($memberIds) {
@@ -138,20 +147,29 @@ class Profile extends Component
                   });
             })
             ->where('is_open', true)
-            ->with(['owner', 'offers.informations', 'demands.informations', 'reviews', 'activeMembers'])
+            ->with(['owner', 'activeMembers'])
             ->latest()
             ->get();
+
+            // 7. Aggregate all offers & demands from these projects
+            $memberOffers = \App\Models\ProjectOffer::whereIn('project_id', $memberProjects->pluck('id'))
+                ->with(['project', 'informations'])
+                ->latest()
+                ->get()
+                ->sortByDesc(fn($o) => $o->type === 'offer');
         } catch (\Exception $e) {
             // If anything fails, return empty collections
-            $memberExperts = collect([]);
+            $allExperts = collect([]);
             $networkExperts = collect([]);
             $memberProjects = collect([]);
+            $memberOffers = collect([]);
         }
 
         return view('livewire.circle.profile', [
-            'memberExperts' => $memberExperts ?? collect([]),
-            'networkExperts' => $networkExperts ?? collect([]),
+            'memberExperts' => $allExperts ?? collect([]),
+            'networkExperts' => collect([]), // No longer needed as separate
             'memberProjects' => $memberProjects ?? collect([]),
+            'memberOffers' => $memberOffers ?? collect([]),
         ]);
     }
 }

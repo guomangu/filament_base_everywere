@@ -2,7 +2,7 @@
     x-data="projectShowData(@entangle('activeTab'))"
     x-on:project-updated.window="showIndicator = true; playNotify(); setTimeout(function() { showIndicator = false }, 3000)"
     wire:poll.5s.visible="refresh" 
-    class="min-h-screen bg-slate-50/50 pb-20"
+    class="min-h-screen bg-slate-50/50 pb-12"
 >
     <!-- Top-right Loading Indicator (Only on change detection) -->
     <div x-show="showIndicator" 
@@ -23,14 +23,14 @@
         </div>
     </div>
     {{-- ===== PROJECT HERO HEADER ===== --}}
-    <div class="relative pt-10 pb-16 overflow-hidden">
+    <div class="relative pt-6 pb-12 overflow-hidden">
         <div class="absolute inset-0 -z-10">
             <div class="absolute top-[-20%] right-[-10%] w-[50%] aspect-square bg-blue-500/5 rounded-full blur-[140px]"></div>
             <div class="absolute bottom-0 left-0 w-[40%] aspect-square bg-indigo-500/5 rounded-full blur-[120px]"></div>
         </div>
 
         <div class="max-w-7xl mx-auto px-6">
-            <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[3rem] md:rounded-[4rem] p-8 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
+            <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[3rem] md:rounded-[4rem] p-6 md:p-10 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
 
                 {{-- Status badges --}}
                 <div class="flex flex-wrap items-center gap-2 md:gap-3 mb-8 md:absolute md:top-10 md:right-10 md:mb-0">
@@ -59,23 +59,23 @@
 
                     {{-- Info --}}
                     <div class="flex-grow">
-                        <div class="flex flex-wrap items-center gap-4 mb-4">
+                        <div class="flex flex-wrap items-center gap-4 mb-2">
                             <span class="text-xs font-black text-blue-600 uppercase tracking-[0.3em]">Projet</span>
                             <span class="text-slate-200">/</span>
                             <a href="{{ route('users.show', $project->owner) }}" class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] hover:text-blue-600 transition-colors">{{ $project->owner->name }}</a>
                         </div>
-                        <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-6 text-center md:text-left">
+                        <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-4 text-center md:text-left">
                             {{ $project->title }}
                         </h1>
                         @if($project->description)
-                            <p class="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed mb-6">
+                            <p class="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed mb-4">
                                 {{ $project->description }}
                             </p>
                         @endif
 
                         {{-- Project Expertise (Skills) --}}
-                        <div class="mb-8 p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100/50 relative group/skills">
-                            <div class="flex items-center justify-between mb-4">
+                        <div class="mb-6 p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100/50 relative group/skills">
+                            <div class="flex items-center justify-between mb-3">
                                 <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] flex items-center gap-2">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                                     Expertise du Projet
@@ -145,7 +145,7 @@
                         </div>
 
                         {{-- Stats Bar --}}
-                        <div class="grid grid-cols-4 gap-4 md:gap-8 py-8 border-t border-slate-100" id="project-stats-bar">
+                        <div class="grid grid-cols-4 gap-4 md:gap-8 py-6 border-t border-slate-100" id="project-stats-bar">
                             <button @click="switchTab('team')" class="text-center md:text-left hover:opacity-80 transition-opacity">
                                 <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $project->activeMembers->count() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres</div>
@@ -169,7 +169,7 @@
                     <div class="lg:w-72 space-y-4">
                         <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white">
                             {{-- Owner --}}
-                            <a href="{{ route('users.show', $project->owner) }}" class="flex items-center gap-4 mb-4 group/owner transition-all">
+                            <a href="{{ route('users.show', $project->owner) }}" class="flex items-center gap-4 mb-3 group/owner transition-all">
                                 <img src="{{ $project->owner->avatar }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10 group-hover/owner:ring-blue-500 transition-all">
                                 <div>
                                     <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Fondateur</div>
@@ -179,7 +179,7 @@
 
                             {{-- Members avatars --}}
                             @if($project->activeMembers->count() > 0)
-                                <div class="flex flex-wrap gap-2 mb-6 pt-4 border-t border-white/10">
+                                <div class="flex flex-wrap gap-2 mb-4 pt-4 border-t border-white/10">
                                     @foreach($project->activeMembers->take(8) as $member)
                                         @if($member->memberable)
                                             <a href="{{ $member->memberable instanceof \App\Models\User ? route('users.show', $member->memberable) : ($member->memberable instanceof \App\Models\Circle ? route('circles.show', $member->memberable) : '#') }}" class="hover:scale-110 transition-transform">

@@ -1,7 +1,7 @@
-<div class="min-h-screen bg-slate-50/50 pb-20 pt-10">
+<div class="min-h-screen bg-slate-50/50 pb-12 pt-6">
     <!-- User Header Portfolio -->
-    <div class="max-w-7xl mx-auto px-6 mb-16">
-        <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[4rem] p-10 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
+    <div class="max-w-7xl mx-auto px-6 mb-12">
+        <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[4rem] p-8 md:p-12 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
             <div class="relative z-10">
                 <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12">
                     <div class="relative flex-shrink-0">
@@ -14,15 +14,15 @@
                     </div>
 
                     <div class="flex-grow text-center md:text-left">
-                        <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6 border border-blue-100">
+                        <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-blue-100">
                             Profil Vérifié
                         </div>
-                        <div class="flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 mb-6">
+                        <div class="flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 mb-4">
                             <h1 class="text-3xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">{{ $user->name }}</h1>
                             <x-project-transporter :project="$activeProject" />
                             <livewire:information.manager :model="$user" :key="'user-info-'.$user->id" />
                         </div>
-                        <p class="text-slate-500 font-medium text-base md:text-xl max-w-2xl leading-relaxed italic px-4 md:px-0">
+                        <p class="text-slate-500 font-medium text-base md:text-xl max-w-2xl leading-relaxed italic px-4 md:px-0 mb-6">
                             "{{ $user->bio ?? 'Ce bâtisseur de confiance n\'a pas encore rédigé sa bio.' }}"
                         </p>
                         @auth
@@ -34,7 +34,7 @@
                             @endif
                         @endauth
                         
-                        <div class="mt-10">
+                        <div class="mt-8">
                             @auth
                                 @if(auth()->id() !== $user->id)
                                     <div class="flex gap-4">
@@ -91,10 +91,10 @@
 
     <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
         <!-- Sidebar -->
-        <div class="lg:col-span-10 space-y-12">
+        <div class="lg:col-span-10 space-y-8">
             <!-- Stats -->
-            <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-10 shadow-2xl shadow-blue-500/5">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Métriques de Confiance</h3>
+            <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-8 shadow-2xl shadow-blue-500/5">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Métriques de Confiance</h3>
                 <div class="space-y-8">
                     <div>
                         <div class="flex justify-between items-end mb-4">
@@ -140,7 +140,7 @@
 
             {{-- ===== MES PROJETS ===== --}}
             @if($userProjects->count() > 0)
-                <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-10 shadow-2xl shadow-blue-500/5">
+                <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-8 shadow-2xl shadow-blue-500/5">
                     <div class="flex items-center justify-between mb-8">
                         <div>
                             <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
