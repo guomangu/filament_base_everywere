@@ -138,7 +138,7 @@ class Profile extends Component
                   });
             })
             ->where('is_open', true)
-            ->with(['owner', 'offers', 'demands', 'reviews', 'activeMembers'])
+            ->with(['owner', 'offers.informations', 'demands.informations', 'reviews', 'activeMembers'])
             ->latest()
             ->get();
         } catch (\Exception $e) {

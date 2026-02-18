@@ -16,6 +16,7 @@ class ProjectOffer extends Model
         'project_id',
         'title',
         'description',
+        'images',
         'type',
     ];
 
@@ -24,6 +25,7 @@ class ProjectOffer extends Model
         return [
             'id' => 'integer',
             'project_id' => 'integer',
+            'images' => 'array',
         ];
     }
 
@@ -31,11 +33,6 @@ class ProjectOffer extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
-    }
-
-    public function skills(): BelongsToMany
-    {
-        return $this->belongsToMany(Skill::class, 'project_offer_skill');
     }
 
     public function informations(): MorphMany

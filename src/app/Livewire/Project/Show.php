@@ -5,10 +5,13 @@ namespace App\Livewire\Project;
 use App\Models\Project;
 use App\Models\ProjectReview;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
 
 class Show extends Component
 {
+    use WithFileUploads;
+
     public Project $project;
     public $activeTab = 'overview'; // overview, offers, demands, reviews, messages
     
@@ -31,22 +34,29 @@ class Show extends Component
     public $showDemandForm = false;
     public $offerTitle = '';
     public $offerDescription = '';
+    public $offerImages = [];
+    public $offerInfos = [['label' => '', 'title' => '']];
+    
     public $demandTitle = '';
     public $demandDescription = '';
+    public $demandImages = [];
+    public $demandInfos = [['label' => '', 'title' => '']];
     
     // Editing states
     public $editingOfferId = null;
     public $editingDemandId = null;
     
-    // Smart Skill Selector
+    // Smart Skill Selector (Now for Project)
     public $selectedSkills = []; // Format: ['Skill name 1', 'Skill name 2']
     public $skillSearch = '';
+    public $showProjectSkillForm = false;
 
     public function mount(Project $project)
     {
         $this->project = $project;
         $this->refresh();
         $this->lastMessageCount = $this->project->messages->count();
+        $this->selectedSkills = $this->project->skills->pluck('name')->toArray();
     }
 
     public function refresh()
@@ -56,8 +66,9 @@ class Show extends Component
                 'owner',
                 'activeMembers.memberable',
                 'members.memberable',
-                'offers.skills',
-                'demands.skills',
+                'offers',
+                'demands',
+                'skills',
                 'reviews.user',
                 'reviews.replies.user',
                 'messages' => fn($q) => $q->with('sender')->latest()->take(30),
@@ -83,7 +94,11 @@ class Show extends Component
         if (empty($name)) return;
         
         $name = mb_convert_case(trim($name), MB_CASE_TITLE, "UTF-8");
-        if (!in_array($name, $this->selectedSkills)) {
+        
+        // Prevent duplicates (case-insensitive check)
+        $existing = collect($this->selectedSkills)->map(fn($s) => mb_strtolower($s))->contains(mb_strtolower($name));
+        
+        if (!$existing) {
             $this->selectedSkills[] = $name;
         }
         $this->skillSearch = '';
@@ -94,28 +109,55 @@ class Show extends Component
         $this->selectedSkills = array_filter($this->selectedSkills, fn($s) => $s !== $name);
     }
 
-    protected function attachSkillsToOffer($offer)
+    public function saveProjectSkills()
     {
+        if (!$this->project->canManage(Auth::user())) return;
+
+        $skillIds = [];
         foreach ($this->selectedSkills as $name) {
             $skill = \App\Models\Skill::firstOrCreate(
                 ['name' => $name],
                 ['slug' => \Illuminate\Support\Str::slug($name)]
             );
-            $offer->skills()->syncWithoutDetaching([$skill->id]);
+            $skillIds[] = $skill->id;
         }
+
+        $this->project->skills()->sync($skillIds);
+        $this->showProjectSkillForm = false;
+        $this->project->refresh();
+        session()->flash('success', 'Compétences du projet mises à jour.');
     }
 
     public function editOffer($id)
     {
-        $offer = \App\Models\ProjectOffer::findOrFail($id);
+        $offer = \App\Models\ProjectOffer::with('informations')->findOrFail($id);
         if (!$this->project->canManage(Auth::user())) return;
 
         $this->editingOfferId = $id;
         $this->offerTitle = $offer->title;
         $this->offerDescription = $offer->description;
-        $this->selectedSkills = $offer->skills->pluck('name')->toArray();
+        
+        $this->offerInfos = $offer->informations->map(fn($info) => [
+            'label' => $info->label,
+            'title' => $info->title
+        ])->toArray();
+        
+        if (empty($this->offerInfos)) {
+            $this->offerInfos = [['label' => '', 'title' => '']];
+        }
+
         $this->showOfferForm = true;
-        // Scroll adjustment usually handled by JS or simple UI placement
+    }
+
+    public function addOfferInfo()
+    {
+        $this->offerInfos[] = ['label' => '', 'title' => ''];
+    }
+
+    public function removeOfferInfo($index)
+    {
+        unset($this->offerInfos[$index]);
+        $this->offerInfos = array_values($this->offerInfos);
     }
 
     public function deleteOffer($id)
@@ -135,7 +177,17 @@ class Show extends Component
         $this->validate([
             'offerTitle' => 'required|min:3',
             'offerDescription' => 'nullable',
+            'offerImages.*' => 'image|max:2048',
+            'offerInfos.*.label' => 'nullable|string|max:50',
+            'offerInfos.*.title' => 'required_with:offerInfos.*.label|string|max:255',
         ]);
+
+        $imagePaths = [];
+        if (!empty($this->offerImages)) {
+            foreach ($this->offerImages as $image) {
+                $imagePaths[] = $image->store('project-offers', 'public');
+            }
+        }
 
         $data = [
             'title' => $this->offerTitle,
@@ -143,20 +195,37 @@ class Show extends Component
             'type' => 'offer',
         ];
 
+        if (!empty($imagePaths)) {
+            $data['images'] = $imagePaths;
+        }
+
         $isUpdate = (bool)$this->editingOfferId;
         if ($this->editingOfferId) {
             $projectOffer = \App\Models\ProjectOffer::findOrFail($this->editingOfferId);
+            if (!isset($data['images']) && $projectOffer->images) {
+                unset($data['images']); 
+            }
             $projectOffer->update($data);
-            $projectOffer->skills()->detach(); // Refresh skills
         } else {
             $projectOffer = $this->project->allOffers()->create($data);
         }
-        
-        $this->attachSkillsToOffer($projectOffer);
 
+        // Sync Information
+        $projectOffer->informations()->delete();
+        foreach ($this->offerInfos as $info) {
+            if (!empty($info['title'])) {
+                $projectOffer->informations()->create([
+                    'label' => $info['label'],
+                    'title' => $info['title'],
+                    'author_id' => Auth::id(),
+                ]);
+            }
+        }
+        
         $this->offerTitle = '';
         $this->offerDescription = '';
-        $this->selectedSkills = [];
+        $this->offerInfos = [['label' => '', 'title' => '']];
+        $this->offerImages = [];
         $this->showOfferForm = false;
         $this->editingOfferId = null;
         $this->project->refresh();
@@ -165,14 +234,34 @@ class Show extends Component
 
     public function editDemand($id)
     {
-        $demand = \App\Models\ProjectOffer::findOrFail($id);
+        $demand = \App\Models\ProjectOffer::with('informations')->findOrFail($id);
         if (!$this->project->canManage(Auth::user())) return;
 
         $this->editingDemandId = $id;
         $this->demandTitle = $demand->title;
         $this->demandDescription = $demand->description;
-        $this->selectedSkills = $demand->skills->pluck('name')->toArray();
+        
+        $this->demandInfos = $demand->informations->map(fn($info) => [
+            'label' => $info->label,
+            'title' => $info->title
+        ])->toArray();
+
+        if (empty($this->demandInfos)) {
+            $this->demandInfos = [['label' => '', 'title' => '']];
+        }
+
         $this->showDemandForm = true;
+    }
+
+    public function addDemandInfo()
+    {
+        $this->demandInfos[] = ['label' => '', 'title' => ''];
+    }
+
+    public function removeDemandInfo($index)
+    {
+        unset($this->demandInfos[$index]);
+        $this->demandInfos = array_values($this->demandInfos);
     }
 
     public function deleteDemand($id)
@@ -192,7 +281,17 @@ class Show extends Component
         $this->validate([
             'demandTitle' => 'required|min:3',
             'demandDescription' => 'nullable',
+            'demandImages.*' => 'image|max:2048',
+            'demandInfos.*.label' => 'nullable|string|max:50',
+            'demandInfos.*.title' => 'required_with:demandInfos.*.label|string|max:255',
         ]);
+
+        $imagePaths = [];
+        if (!empty($this->demandImages)) {
+            foreach ($this->demandImages as $image) {
+                $imagePaths[] = $image->store('project-demands', 'public');
+            }
+        }
 
         $data = [
             'title' => $this->demandTitle,
@@ -200,20 +299,37 @@ class Show extends Component
             'type' => 'demand',
         ];
 
+        if (!empty($imagePaths)) {
+            $data['images'] = $imagePaths;
+        }
+
         $isUpdate = (bool)$this->editingDemandId;
         if ($this->editingDemandId) {
             $projectDemand = \App\Models\ProjectOffer::findOrFail($this->editingDemandId);
+            if (!isset($data['images']) && $projectDemand->images) {
+                unset($data['images']);
+            }
             $projectDemand->update($data);
-            $projectDemand->skills()->detach(); // Refresh skills
         } else {
             $projectDemand = $this->project->allOffers()->create($data);
         }
-        
-        $this->attachSkillsToOffer($projectDemand);
 
+        // Sync Information
+        $projectDemand->informations()->delete();
+        foreach ($this->demandInfos as $info) {
+            if (!empty($info['title'])) {
+                $projectDemand->informations()->create([
+                    'label' => $info['label'],
+                    'title' => $info['title'],
+                    'author_id' => Auth::id(),
+                ]);
+            }
+        }
+        
         $this->demandTitle = '';
         $this->demandDescription = '';
-        $this->selectedSkills = [];
+        $this->demandInfos = [['label' => '', 'title' => '']];
+        $this->demandImages = [];
         $this->showDemandForm = false;
         $this->editingDemandId = null;
         $this->project->refresh();
@@ -393,6 +509,25 @@ class Show extends Component
             'reviewComment' => 'required|min:10',
         ]);
 
+        // If it's a new review (not a reply)
+        if (!$this->replyTo) {
+            $hasAlreadyReviewed = $this->project->reviews()
+                ->where('user_id', Auth::id())
+                ->whereNull('parent_id')
+                ->exists();
+
+            if ($hasAlreadyReviewed) {
+                session()->flash('error', 'Vous avez déjà laissé un avis sur ce projet.');
+                return;
+            }
+        } else {
+            // If it's a reply, only admins can reply
+            if (!$this->project->canManage(Auth::user())) {
+                session()->flash('error', 'Seuls les administrateurs du projet peuvent répondre aux avis.');
+                return;
+            }
+        }
+
         ProjectReview::create([
             'project_id' => $this->project->id,
             'user_id' => Auth::id(),
@@ -403,7 +538,28 @@ class Show extends Component
 
         $this->reviewComment = '';
         $this->replyTo = null;
-        session()->flash('success', 'Avis publié !');
+        session()->flash('success', $this->replyTo ? 'Réponse publiée !' : 'Avis publié !');
+        $this->project->refresh();
+    }
+
+    public function deleteReview($reviewId)
+    {
+        $review = ProjectReview::findOrFail($reviewId);
+        
+        // Only owner or project admin can delete
+        if ($review->user_id !== Auth::id() && !$this->project->canManage(Auth::user())) {
+            session()->flash('error', 'Action non autorisée.');
+            return;
+        }
+
+        // Lock check: if it's a top-level review and has replies, it's locked
+        if ($review->isTopLevel() && $review->replies()->exists()) {
+            session()->flash('error', 'Cet avis est verrouillé car un administrateur y a répondu.');
+            return;
+        }
+
+        $review->delete();
+        session()->flash('success', 'Avis supprimé.');
         $this->project->refresh();
     }
 
@@ -429,10 +585,19 @@ class Show extends Component
         $this->project->load('messages.sender');
     }
 
+    public function getSkillSuggestionsProperty()
+    {
+        if (strlen($this->skillSearch) < 1) return collect();
+
+        return \App\Models\Skill::where('name', 'like', $this->skillSearch . '%')
+            ->whereNotIn('name', $this->selectedSkills)
+            ->orderBy('name')
+            ->take(5)
+            ->get();
+    }
+
     public function render()
     {
-        return view('livewire.project.show', [
-            'skills' => \App\Models\Skill::orderBy('name')->get()
-        ]);
+        return view('livewire.project.show');
     }
 }

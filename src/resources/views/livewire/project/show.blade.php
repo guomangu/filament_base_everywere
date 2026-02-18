@@ -68,10 +68,81 @@
                             {{ $project->title }}
                         </h1>
                         @if($project->description)
-                            <p class="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed mb-8">
+                            <p class="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed mb-6">
                                 {{ $project->description }}
                             </p>
                         @endif
+
+                        {{-- Project Expertise (Skills) --}}
+                        <div class="mb-8 p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100/50 relative group/skills">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                    Expertise du Projet
+                                </h3>
+                                @if($project->canManage(auth()->user()))
+                                    <button wire:click="$toggle('showProjectSkillForm')" class="p-2 hover:bg-blue-100 rounded-xl transition-colors text-blue-600">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                    </button>
+                                @endif
+                            </div>
+
+                            @if($showProjectSkillForm)
+                                <div class="mb-6 animate-fadeIn">
+                                    <div class="relative" x-data="{ open: true }">
+                                        <div class="flex gap-2 mb-4">
+                                            <input 
+                                                wire:model.live="skillSearch" 
+                                                wire:keydown.enter.prevent="addSkill" 
+                                                @focus="open = true"
+                                                type="text" 
+                                                placeholder="Rechercher ou créer une expertise..." 
+                                                class="flex-grow bg-white border border-blue-100 px-5 py-3 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                                            >
+                                        </div>
+
+                                        {{-- Suggestions Dropdown --}}
+                                        @if($this->skillSuggestions->count() > 0)
+                                            <div x-show="open" @click.away="open = false" class="absolute z-50 w-full mt-[-10px] mb-4 bg-white border border-blue-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                                @foreach($this->skillSuggestions as $suggestion)
+                                                    <button 
+                                                        wire:click="addSkill('{{ $suggestion->name }}')" 
+                                                        @click="open = false"
+                                                        class="w-full text-left px-5 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center justify-between group"
+                                                    >
+                                                        <span>{{ $suggestion->name }}</span>
+                                                        <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        @endif
+
+                                        <div class="flex flex-wrap gap-2 mb-6">
+                                            @foreach($selectedSkills as $skillName)
+                                                <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/10">
+                                                    {{ $skillName }}
+                                                    <button wire:click="removeSkill('{{ $skillName }}')" class="hover:text-red-200"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button wire:click="saveProjectSkills" class="flex-grow py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all">Enregistrer l'expertise</button>
+                                        <button wire:click="$set('showProjectSkillForm', false)" class="px-5 py-3 bg-slate-100 text-slate-500 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="flex flex-wrap gap-2">
+                                @forelse($project->skills as $skill)
+                                    <a href="{{ route('projects.index', ['selectedSkills' => [$skill->id]]) }}" class="px-4 py-2 bg-white border border-blue-100 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-500/20 transition-all">
+                                        {{ $skill->name }}
+                                    </a>
+                                @empty
+                                    <p class="text-[10px] font-black text-slate-300 uppercase italic">Aucune compétence d'expertise définie pour ce projet.</p>
+                                @endforelse
+                            </div>
+                        </div>
 
                         {{-- Stats Bar --}}
                         <div class="grid grid-cols-4 gap-4 md:gap-8 py-8 border-t border-slate-100" id="project-stats-bar">
@@ -193,20 +264,20 @@
                         <svg class="w-4 h-4 text-slate-300 group-hover/card:text-blue-500 group-hover/card:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
                     </div>
                     @forelse($project->offers->take(3) as $offer)
-                        <div class="mb-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
-                            <div class="font-black text-sm text-slate-900 uppercase tracking-tight mb-1">{{ $offer->title }}</div>
-                            @if($offer->description)
-                                <p class="text-[10px] text-slate-500 font-medium leading-relaxed">{{ $offer->description }}</p>
-                            @endif
-                            @if($offer->skills->count() > 0)
-                                <div class="flex flex-wrap gap-1 mt-2">
-                                    @foreach($offer->skills as $skill)
-                                        <a href="{{ route('projects.index', ['selectedSkills' => [$skill->id]]) }}" class="text-[8px] font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded-lg uppercase hover:bg-blue-600 hover:text-white transition-all">
-                                            {{ $skill->name }}
-                                        </a>
-                                    @endforeach
+                        <div class="mb-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex gap-4 items-center">
+                            @if($offer->images && count($offer->images) > 0)
+                                <img src="{{ Storage::url($offer->images[0]) }}" class="w-12 h-12 rounded-xl object-cover shadow-sm bg-white">
+                            @else
+                                <div class="w-12 h-12 rounded-xl bg-white border border-blue-100 flex items-center justify-center text-blue-200">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 </div>
                             @endif
+                            <div class="flex-grow">
+                                <div class="font-black text-sm text-slate-900 uppercase tracking-tight mb-0.5">{{ $offer->title }}</div>
+                                @if($offer->description)
+                                    <p class="text-[9px] text-slate-500 font-medium leading-relaxed line-clamp-1">{{ $offer->description }}</p>
+                                @endif
+                            </div>
                         </div>
                     @empty
                         <p class="text-[10px] font-black text-slate-300 uppercase text-center py-8">Aucune offre définie</p>
@@ -228,20 +299,20 @@
                         <svg class="w-4 h-4 text-slate-300 group-hover/card:text-purple-500 group-hover/card:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
                     </div>
                     @forelse($project->demands->take(3) as $demand)
-                        <div class="mb-4 p-4 bg-purple-50/50 rounded-2xl border border-purple-100">
-                            <div class="font-black text-sm text-slate-900 uppercase tracking-tight mb-1">{{ $demand->title }}</div>
-                            @if($demand->description)
-                                <p class="text-[10px] text-slate-500 font-medium leading-relaxed">{{ $demand->description }}</p>
-                            @endif
-                            @if($demand->skills->count() > 0)
-                                <div class="flex flex-wrap gap-1 mt-2">
-                                    @foreach($demand->skills as $skill)
-                                        <a href="{{ route('projects.index', ['selectedSkills' => [$skill->id]]) }}" class="text-[8px] font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-lg uppercase hover:bg-purple-600 hover:text-white transition-all">
-                                            {{ $skill->name }}
-                                        </a>
-                                    @endforeach
+                        <div class="mb-4 p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex gap-4 items-center">
+                            @if($demand->images && count($demand->images) > 0)
+                                <img src="{{ Storage::url($demand->images[0]) }}" class="w-12 h-12 rounded-xl object-cover shadow-sm bg-white">
+                            @else
+                                <div class="w-12 h-12 rounded-xl bg-white border border-purple-100 flex items-center justify-center text-purple-200">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 </div>
                             @endif
+                            <div class="flex-grow">
+                                <div class="font-black text-sm text-slate-900 uppercase tracking-tight mb-0.5">{{ $demand->title }}</div>
+                                @if($demand->description)
+                                    <p class="text-[9px] text-slate-500 font-medium leading-relaxed line-clamp-1">{{ $demand->description }}</p>
+                                @endif
+                            </div>
                         </div>
                     @empty
                         <p class="text-[10px] font-black text-slate-300 uppercase text-center py-8">Aucune demande définie</p>
@@ -318,109 +389,151 @@
                 Retour à l'aperçu
             </button>
             @if($project->canManage(auth()->user()))
-                <div class="mb-8">
+                <div class="mb-12">
                     @if(!$showOfferForm)
-                        <button wire:click="$set('showOfferForm', true)" class="w-full py-6 bg-white border-2 border-dashed border-blue-200 text-blue-600 rounded-[2.5rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-blue-50 transition-all flex items-center justify-center gap-4 group">
-                            <span class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">+</span>
-                            Ajouter une Offre (Petit à Petit)
+                        <button wire:click="$set('showOfferForm', true)" class="w-full py-10 bg-white border-2 border-dashed border-blue-200 text-blue-600 rounded-[3rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-blue-50 transition-all flex items-center justify-center gap-6 group">
+                            <span class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-12 transition-all shadow-lg shadow-blue-500/5">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            </span>
+                            Nouvel Article en Boutique
                         </button>
                     @else
-                        <div class="bg-slate-900 rounded-[3rem] p-8 text-white shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 relative overflow-hidden">
-                             <div class="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl"></div>
-                             <h4 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-blue-400 relative z-10 flex items-center justify-between">
-                                 <span>{{ $editingOfferId ? '🚀 Modifier l\'Offre' : '🚀 Nouvelle Offre' }}</span>
+                        <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white shadow-3xl animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden group/form">
+                             <div class="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px]"></div>
+                             <h4 class="text-sm font-black uppercase tracking-[0.3em] mb-10 text-blue-400 relative z-10 flex items-center justify-between">
+                                 <span class="flex items-center gap-3">
+                                     <span class="w-2 h-8 bg-blue-500 rounded-full"></span>
+                                     {{ $editingOfferId ? 'Éditer l\'Article' : 'Ajouter à la Boutique' }}
+                                 </span>
                                  @if($editingOfferId)
-                                     <button wire:click="$set('editingOfferId', null); $set('showOfferForm', false)" class="text-[9px] text-slate-500 hover:text-white transition-colors">Annuler</button>
+                                     <button wire:click="$set('editingOfferId', null); $set('showOfferForm', false)" class="text-[10px] text-slate-500 hover:text-white transition-colors uppercase tracking-widest bg-white/5 px-4 py-2 rounded-xl">Annuler</button>
                                  @endif
                              </h4>
-                             <div class="space-y-6 relative z-10">
-                                 <input wire:model="offerTitle" type="text" placeholder="Titre de l'offre (ex: Maintenance logicielle...)" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm font-bold placeholder:text-slate-600 focus:border-blue-500 transition-all uppercase tracking-tight">
-                                 <textarea wire:model="offerDescription" rows="3" placeholder="Description détaillée..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-medium placeholder:text-slate-600 focus:border-blue-500 transition-all italic"></textarea>
-                                 
-                                 <div x-data="{ 
-                                     open: false,
-                                     search: @entangle('skillSearch')
-                                 }" class="relative">
-                                     <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block italic">Compétences (Saisie intelligente)</label>
-                                     <div class="flex flex-wrap gap-2 p-4 bg-white/5 border border-white/10 rounded-2xl min-h-[60px] focus-within:border-blue-500 transition-all">
-                                         @foreach($selectedSkills as $skillName)
-                                             <span class="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest animate-in scale-in-center duration-200">
-                                                 {{ $skillName }}
-                                                 <button wire:click="removeSkill('{{ $skillName }}')" class="hover:text-red-200">
-                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                 </button>
-                                             </span>
-                                         @endforeach
-                                         <input 
-                                             type="text" 
-                                             wire:model.live="skillSearch" 
-                                             placeholder="{{ empty($selectedSkills) ? 'Ex: Marketing, SEO...' : 'Ajouter...' }}"
-                                             @keydown.enter.prevent="$wire.addSkill()"
-                                             @focus="open = true"
-                                             class="flex-grow bg-transparent border-none focus:ring-0 text-xs font-black text-white p-0 uppercase placeholder:text-slate-700"
-                                         >
+                             
+                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 relative z-10">
+                                 <div class="space-y-6">
+                                     <div class="space-y-2">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Nom de l'article</label>
+                                         <input wire:model="offerTitle" type="text" placeholder="Titre attractif..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-sm font-bold placeholder:text-slate-600 focus:border-blue-500 transition-all outline-none">
                                      </div>
+                                     <div class="space-y-2">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Description principale</label>
+                                         <textarea wire:model="offerDescription" rows="4" placeholder="Décrivez votre offre de manière concise..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-xs font-medium placeholder:text-slate-600 focus:border-blue-500 transition-all italic outline-none"></textarea>
+                                     </div>
+                                 </div>
 
-                                     {{-- Suggestions dropdown --}}
-                                     @if($skillSearch && count($skills->filter(fn($s) => str_contains(strtolower($s->name), strtolower($skillSearch)))))
-                                         <div x-show="open" @click.away="open = false" class="absolute z-50 w-full mt-2 bg-slate-800 border border-white/10 rounded-2xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar">
-                                             @foreach($skills->filter(fn($s) => str_contains(strtolower($s->name), strtolower($skillSearch))) as $s)
-                                                 <button wire:click="addSkill('{{ $s->name }}')" class="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all">
-                                                     {{ $s->name }}
-                                                 </button>
-                                             @endforeach
+                                 <div class="space-y-6">
+                                     <div class="space-y-2">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Galerie Photos (Plusieurs possibles)</label>
+                                         <div class="relative group/upload">
+                                             <input type="file" wire:model="offerImages" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                                             <div class="w-full py-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white/5 group-hover/upload:border-blue-500/50 transition-all">
+                                                 <svg class="w-8 h-8 text-slate-600 group-hover/upload:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                 <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Cliquez ou glissez vos images</span>
+                                             </div>
                                          </div>
-                                     @endif
+                                         @if($offerImages)
+                                             <div class="flex flex-wrap gap-2 mt-2">
+                                                 @foreach($offerImages as $image)
+                                                     <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+                                                         <img src="{{ $image->temporaryUrl() }}" class="w-full h-full object-cover">
+                                                     </div>
+                                                 @endforeach
+                                             </div>
+                                         @endif
+                                     </div>
+                                     <div class="space-y-4">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Informations (Label : Détail)</label>
+                                         @foreach($offerInfos as $index => $info)
+                                             <div class="flex gap-2 animate-in slide-in-from-left-2 duration-200">
+                                                 <input wire:model="offerInfos.{{ $index }}.label" type="text" placeholder="Ex: Prix" class="w-1/3 bg-white/5 border border-white/10 rounded-xl p-3 text-[10px] font-bold text-blue-300 placeholder:text-slate-700 focus:border-blue-500 outline-none">
+                                                 <input wire:model="offerInfos.{{ $index }}.title" type="text" placeholder="Ex: 5 euros" class="flex-grow bg-white/5 border border-white/10 rounded-xl p-3 text-[10px] font-bold text-white placeholder:text-slate-700 focus:border-blue-500 outline-none">
+                                                 @if(count($offerInfos) > 1)
+                                                     <button wire:click="removeOfferInfo({{ $index }})" class="p-3 text-red-400 hover:text-red-300 transition-colors">
+                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                     </button>
+                                                 @endif
+                                             </div>
+                                         @endforeach
+                                         <button wire:click="addOfferInfo" class="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors ml-2">+ Ajouter une info</button>
+                                     </div>
                                  </div>
+                             </div>
 
-                                 <div class="flex gap-4">
-                                     <button wire:click="addOffer" class="flex-grow py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">Enregistrer l'offre</button>
-                                     <button wire:click="$set('showOfferForm', false)" class="px-8 py-4 bg-white/10 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all">Annuler</button>
-                                 </div>
+                             <div class="flex gap-4 mt-10 pt-10 border-t border-white/5 relative z-10">
+                                 <button wire:click="addOffer" wire:loading.attr="disabled" class="flex-grow py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:from-blue-500 hover:to-indigo-500 shadow-2xl shadow-blue-500/20 transition-all disabled:opacity-50">
+                                     <span wire:loading.remove>📦 Valider l'article</span>
+                                     <span wire:loading>Traitement...</span>
+                                 </button>
+                                 <button wire:click="$set('showOfferForm', false)" class="px-10 py-5 bg-white/5 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-white/10 transition-all">Annuler</button>
                              </div>
                         </div>
                     @endif
                 </div>
             @endif
-            <div class="space-y-4">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse($project->offers as $offer)
-                    <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] p-8 shadow-xl shadow-blue-500/5 hover:shadow-2xl hover:shadow-blue-500/10 transition-all">
-                        <div class="flex items-start gap-6">
-                            <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl flex-shrink-0">
-                                {{ substr($offer->title, 0, 1) }}
-                            </div>
-                            <div class="flex-grow">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight">{{ $offer->title }}</h3>
-                                    @if($project->canManage(auth()->user()))
-                                        <div class="flex gap-2">
-                                            <button wire:click="editOffer({{ $offer->id }})" class="p-2 bg-slate-100 rounded-xl hover:bg-blue-600 hover:text-white transition-all">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            </button>
-                                            <button wire:click="deleteOffer({{ $offer->id }})" wire:confirm="Supprimer cette offre ?" class="p-2 bg-slate-100 rounded-xl hover:bg-red-600 hover:text-white transition-all text-red-500">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
+                    <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] overflow-hidden shadow-xl shadow-blue-500/5 hover:shadow-2xl hover:shadow-blue-500/10 hover:translate-y-[-4px] transition-all group/item">
+                        {{-- Photo Gallery --}}
+                        <div class="relative h-64 bg-slate-100 overflow-hidden">
+                            @if($offer->images && count($offer->images) > 0)
+                                <div class="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar custom-scrollbar-h">
+                                    @foreach($offer->images as $img)
+                                        <div class="min-w-full h-full snap-start">
+                                            <img src="{{ Storage::url($img) }}" class="w-full h-full object-cover">
                                         </div>
-                                    @endif
+                                    @endforeach
                                 </div>
-                                @if($offer->description)
-                                    <p class="text-slate-500 font-medium leading-relaxed mb-4">{{ $offer->description }}</p>
-                                @endif
-                                @if($offer->skills->count() > 0)
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($offer->skills as $skill)
-                                            <a href="{{ route('projects.index', ['selectedSkills' => [$skill->id]]) }}" class="text-[9px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-xl uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all">
-                                                {{ $skill->name }}
-                                            </a>
-                                        @endforeach
+                                @if(count($offer->images) > 1)
+                                    <div class="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[8px] font-black text-white uppercase tracking-widest pointer-events-none">
+                                        {{ count($offer->images) }} Photos
                                     </div>
                                 @endif
-                            </div>
+                            @else
+                                <div class="w-full h-full flex items-center justify-center bg-slate-50 text-slate-200">
+                                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                            @endif
+
+                            @if($project->canManage(auth()->user()))
+                                <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                    <button wire:click="editOffer({{ $offer->id }})" class="p-3 bg-white/90 backdrop-blur shadow-lg rounded-xl text-blue-600 hover:bg-blue-600 hover:text-white transition-all">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    </button>
+                                    <button wire:click="deleteOffer({{ $offer->id }})" wire:confirm="Supprimer cette offre ?" class="p-3 bg-white/90 backdrop-blur shadow-lg rounded-xl text-red-600 hover:bg-red-600 hover:text-white transition-all">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="p-8">
+                            <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-4 group-hover/item:text-blue-600 transition-colors">{{ $offer->title }}</h3>
+                            @if($offer->description)
+                                <p class="text-xs text-slate-500 font-medium leading-relaxed mb-6 line-clamp-3 italic">"{{ $offer->description }}"</p>
+                            @endif
+
+                            @if($offer->informations->count() > 0)
+                                <div class="pt-6 border-t border-slate-100 flex flex-wrap gap-2">
+                                    @foreach($offer->informations as $info)
+                                        <div class="flex items-center gap-1.5 bg-blue-50/50 border border-blue-100/50 px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm shadow-blue-500/5">
+                                            @if($info->label)
+                                                <span class="text-blue-400 italic">{{ $info->label }}:</span>
+                                            @endif
+                                            <span class="text-blue-600">{{ $info->title }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @empty
-                    <div class="py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
-                        <p class="text-slate-400 font-black uppercase tracking-[0.3em] text-sm italic">Aucune offre définie pour ce projet.</p>
+                    <div class="col-span-full py-32 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[4rem]">
+                        <div class="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-200">
+                             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        </div>
+                        <p class="text-slate-400 font-black uppercase tracking-[0.4em] text-xs italic">La boutique est vide pour le moment.</p>
                     </div>
                 @endforelse
             </div>
@@ -434,109 +547,151 @@
                 Retour à l'aperçu
             </button>
             @if($project->canManage(auth()->user()))
-                <div class="mb-8">
+                <div class="mb-12">
                     @if(!$showDemandForm)
-                        <button wire:click="$set('showDemandForm', true)" class="w-full py-6 bg-white border-2 border-dashed border-purple-200 text-purple-600 rounded-[2.5rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-purple-50 transition-all flex items-center justify-center gap-4 group">
-                            <span class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all">+</span>
-                            Ajouter une Demande (Petit à Petit)
+                        <button wire:click="$set('showDemandForm', true)" class="w-full py-10 bg-white border-2 border-dashed border-purple-200 text-purple-600 rounded-[3rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-purple-50 transition-all flex items-center justify-center gap-6 group">
+                            <span class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white group-hover:rotate-12 transition-all shadow-lg shadow-purple-500/5">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </span>
+                            Nouvelle Demande d'Expertise
                         </button>
                     @else
-                        <div class="bg-slate-900 rounded-[3rem] p-8 text-white shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 relative overflow-hidden">
-                             <div class="absolute top-0 right-0 w-32 h-32 bg-purple-600/10 rounded-full blur-3xl"></div>
-                             <h4 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-purple-400 relative z-10 flex items-center justify-between">
-                                 <span>{{ $editingDemandId ? '🔍 Modifier la Demande' : '🔍 Nouvelle Demande' }}</span>
+                        <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white shadow-3xl animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden group/form">
+                             <div class="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full blur-[100px]"></div>
+                             <h4 class="text-sm font-black uppercase tracking-[0.3em] mb-10 text-purple-400 relative z-10 flex items-center justify-between">
+                                 <span class="flex items-center gap-3">
+                                     <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                                     {{ $editingDemandId ? 'Éditer la Demande' : 'Rechercher une Expertise' }}
+                                 </span>
                                  @if($editingDemandId)
-                                     <button wire:click="$set('editingDemandId', null); $set('showDemandForm', false)" class="text-[9px] text-slate-500 hover:text-white transition-colors">Annuler</button>
+                                     <button wire:click="$set('editingDemandId', null); $set('showDemandForm', false)" class="text-[10px] text-slate-500 hover:text-white transition-colors uppercase tracking-widest bg-white/5 px-4 py-2 rounded-xl">Annuler</button>
                                  @endif
                              </h4>
-                             <div class="space-y-6 relative z-10">
-                                 <input wire:model="demandTitle" type="text" placeholder="Ce que vous cherchez..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm font-bold placeholder:text-slate-600 focus:border-purple-500 transition-all uppercase tracking-tight">
-                                 <textarea wire:model="demandDescription" rows="3" placeholder="Détails de la demande..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-medium placeholder:text-slate-600 focus:border-purple-500 transition-all italic"></textarea>
-                                 
-                                 <div x-data="{ 
-                                     open: false,
-                                     search: @entangle('skillSearch')
-                                 }" class="relative">
-                                     <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block italic">Compétences recherchées (Saisie intelligente)</label>
-                                     <div class="flex flex-wrap gap-2 p-4 bg-white/5 border border-white/10 rounded-2xl min-h-[60px] focus-within:border-purple-500 transition-all">
-                                         @foreach($selectedSkills as $skillName)
-                                             <span class="inline-flex items-center gap-2 bg-purple-600 text-white px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest animate-in scale-in-center duration-200">
-                                                 {{ $skillName }}
-                                                 <button wire:click="removeSkill('{{ $skillName }}')" class="hover:text-red-200">
-                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                 </button>
-                                             </span>
-                                         @endforeach
-                                         <input 
-                                             type="text" 
-                                             wire:model.live="skillSearch" 
-                                             placeholder="{{ empty($selectedSkills) ? 'Ex: React, Design UI...' : 'Ajouter...' }}"
-                                             @keydown.enter.prevent="$wire.addSkill()"
-                                             @focus="open = true"
-                                             class="flex-grow bg-transparent border-none focus:ring-0 text-xs font-black text-white p-0 uppercase placeholder:text-slate-700"
-                                         >
+                             
+                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 relative z-10">
+                                 <div class="space-y-6">
+                                     <div class="space-y-2">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Objet de la recherche</label>
+                                         <input wire:model="demandTitle" type="text" placeholder="Ex: Développeur Senior React..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-sm font-bold placeholder:text-slate-600 focus:border-purple-500 transition-all outline-none">
                                      </div>
+                                     <div class="space-y-2">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Détails de la mission</label>
+                                         <textarea wire:model="demandDescription" rows="4" placeholder="Décrivez le besoin technique ou créatif..." class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-xs font-medium placeholder:text-slate-600 focus:border-purple-500 transition-all italic outline-none"></textarea>
+                                     </div>
+                                 </div>
 
-                                     {{-- Suggestions dropdown --}}
-                                     @if($skillSearch && count($skills->filter(fn($s) => str_contains(strtolower($s->name), strtolower($skillSearch)))))
-                                         <div x-show="open" @click.away="open = false" class="absolute z-50 w-full mt-2 bg-slate-800 border border-white/10 rounded-2xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar">
-                                             @foreach($skills->filter(fn($s) => str_contains(strtolower($s->name), strtolower($skillSearch))) as $s)
-                                                 <button wire:click="addSkill('{{ $s->name }}')" class="w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all">
-                                                     {{ $s->name }}
-                                                 </button>
-                                             @endforeach
+                                 <div class="space-y-6">
+                                     <div class="space-y-2">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Images de référence (Optionnel)</label>
+                                         <div class="relative group/upload">
+                                             <input type="file" wire:model="demandImages" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                                             <div class="w-full py-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white/5 group-hover/upload:border-purple-500/50 transition-all">
+                                                 <svg class="w-8 h-8 text-slate-600 group-hover/upload:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                 <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Illustrer le besoin</span>
+                                             </div>
                                          </div>
-                                     @endif
+                                         @if($demandImages)
+                                             <div class="flex flex-wrap gap-2 mt-2">
+                                                 @foreach($demandImages as $image)
+                                                     <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+                                                         <img src="{{ $image->temporaryUrl() }}" class="w-full h-full object-cover">
+                                                     </div>
+                                                 @endforeach
+                                             </div>
+                                         @endif
+                                     </div>
+                                     <div class="space-y-4">
+                                         <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest italic ml-2">Informations cruciales (Label : Détail)</label>
+                                         @foreach($demandInfos as $index => $info)
+                                             <div class="flex gap-2 animate-in slide-in-from-left-2 duration-200">
+                                                 <input wire:model="demandInfos.{{ $index }}.label" type="text" placeholder="Ex: Budget" class="w-1/3 bg-white/5 border border-white/10 rounded-xl p-3 text-[10px] font-bold text-purple-300 placeholder:text-slate-700 focus:border-purple-500 outline-none">
+                                                 <input wire:model="demandInfos.{{ $index }}.title" type="text" placeholder="Ex: 500€" class="flex-grow bg-white/5 border border-white/10 rounded-xl p-3 text-[10px] font-bold text-white placeholder:text-slate-700 focus:border-purple-500 outline-none">
+                                                 @if(count($demandInfos) > 1)
+                                                     <button wire:click="removeDemandInfo({{ $index }})" class="p-3 text-red-400 hover:text-red-300 transition-colors">
+                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                     </button>
+                                                 @endif
+                                             </div>
+                                         @endforeach
+                                         <button wire:click="addDemandInfo" class="text-[9px] font-black text-purple-500 uppercase tracking-widest hover:text-purple-400 transition-colors ml-2">+ Ajouter une info</button>
+                                     </div>
                                  </div>
+                             </div>
 
-                                 <div class="flex gap-4">
-                                     <button wire:click="addDemand" class="flex-grow py-4 bg-purple-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-700 shadow-lg shadow-purple-500/20 transition-all">Enregistrer la demande</button>
-                                     <button wire:click="$set('showDemandForm', false)" class="px-8 py-4 bg-white/10 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all">Annuler</button>
-                                 </div>
+                             <div class="flex gap-4 mt-10 pt-10 border-t border-white/5 relative z-10">
+                                 <button wire:click="addDemand" wire:loading.attr="disabled" class="flex-grow py-5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:from-purple-500 hover:to-fuchsia-500 shadow-2xl shadow-purple-500/20 transition-all disabled:opacity-50">
+                                     <span wire:loading.remove>🔮 Publier la demande</span>
+                                     <span wire:loading>Traitement...</span>
+                                 </button>
+                                 <button wire:click="$set('showDemandForm', false)" class="px-10 py-5 bg-white/5 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-white/10 transition-all">Annuler</button>
                              </div>
                         </div>
                     @endif
                 </div>
             @endif
-            <div class="space-y-4">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse($project->demands as $demand)
-                    <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] p-8 shadow-xl shadow-purple-500/5 hover:shadow-2xl hover:shadow-purple-500/10 transition-all">
-                        <div class="flex items-start gap-6">
-                            <div class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-xl flex-shrink-0">
-                                {{ substr($demand->title, 0, 1) }}
-                            </div>
-                            <div class="flex-grow">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight">{{ $demand->title }}</h3>
-                                    @if($project->canManage(auth()->user()))
-                                        <div class="flex gap-2">
-                                            <button wire:click="editDemand({{ $demand->id }})" class="p-2 bg-slate-100 rounded-xl hover:bg-purple-600 hover:text-white transition-all">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            </button>
-                                            <button wire:click="deleteDemand({{ $demand->id }})" wire:confirm="Supprimer cette demande ?" class="p-2 bg-slate-100 rounded-xl hover:bg-red-600 hover:text-white transition-all text-red-500">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
+                    <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] overflow-hidden shadow-xl shadow-purple-500/5 hover:shadow-2xl hover:shadow-purple-500/10 hover:translate-y-[-4px] transition-all group/item">
+                        {{-- Photo Gallery --}}
+                        <div class="relative h-64 bg-slate-100 overflow-hidden">
+                            @if($demand->images && count($demand->images) > 0)
+                                <div class="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar custom-scrollbar-h">
+                                    @foreach($demand->images as $img)
+                                        <div class="min-w-full h-full snap-start">
+                                            <img src="{{ Storage::url($img) }}" class="w-full h-full object-cover">
                                         </div>
-                                    @endif
+                                    @endforeach
                                 </div>
-                                @if($demand->description)
-                                    <p class="text-slate-500 font-medium leading-relaxed mb-4">{{ $demand->description }}</p>
-                                @endif
-                                @if($demand->skills->count() > 0)
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($demand->skills as $skill)
-                                            <a href="{{ route('projects.index', ['selectedSkills' => [$skill->id]]) }}" class="text-[9px] font-black text-purple-600 bg-purple-50 border border-purple-100 px-3 py-1 rounded-xl uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all">
-                                                {{ $skill->name }}
-                                            </a>
-                                        @endforeach
+                                @if(count($demand->images) > 1)
+                                    <div class="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[8px] font-black text-white uppercase tracking-widest pointer-events-none">
+                                        {{ count($demand->images) }} Photos
                                     </div>
                                 @endif
-                            </div>
+                            @else
+                                <div class="w-full h-full flex items-center justify-center bg-slate-50 text-slate-200">
+                                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                </div>
+                            @endif
+
+                            @if($project->canManage(auth()->user()))
+                                <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                    <button wire:click="editDemand({{ $demand->id }})" class="p-3 bg-white/90 backdrop-blur shadow-lg rounded-xl text-purple-600 hover:bg-purple-600 hover:text-white transition-all">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    </button>
+                                    <button wire:click="deleteDemand({{ $demand->id }})" wire:confirm="Supprimer cette demande ?" class="p-3 bg-white/90 backdrop-blur shadow-lg rounded-xl text-red-600 hover:bg-red-600 hover:text-white transition-all">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="p-8">
+                            <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-4 group-hover/item:text-purple-600 transition-colors">{{ $demand->title }}</h3>
+                            @if($demand->description)
+                                <p class="text-xs text-slate-500 font-medium leading-relaxed mb-6 line-clamp-3 italic">"{{ $demand->description }}"</p>
+                            @endif
+
+                            @if($demand->informations->count() > 0)
+                                <div class="pt-6 border-t border-slate-100 flex flex-wrap gap-2">
+                                    @foreach($demand->informations as $info)
+                                        <div class="flex items-center gap-1.5 bg-purple-50/50 border border-purple-100/50 px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm shadow-purple-500/5">
+                                            @if($info->label)
+                                                <span class="text-purple-400 italic">{{ $info->label }}:</span>
+                                            @endif
+                                            <span class="text-purple-600">{{ $info->title }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @empty
-                    <div class="py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
-                        <p class="text-slate-400 font-black uppercase tracking-[0.3em] text-sm italic">Aucune demande définie pour ce projet.</p>
+                    <div class="col-span-full py-32 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[4rem]">
+                        <div class="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-200">
+                             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <p class="text-slate-400 font-black uppercase tracking-[0.4em] text-xs italic">Aucune expertise n'est recherchée pour le moment.</p>
                     </div>
                 @endforelse
             </div>
@@ -552,33 +707,43 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {{-- Review Form --}}
                 @auth
-                    <div class="bg-slate-900 rounded-[3rem] p-8 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
-                        <div class="relative z-10">
-                            <h3 class="text-xl font-black uppercase tracking-tight mb-6">Laisser un Avis</h3>
+                    @if(!$project->reviews()->where('user_id', auth()->id())->whereNull('parent_id')->exists())
+                        <div class="bg-slate-900 rounded-[3rem] p-8 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
+                            <div class="relative z-10">
+                                <h3 class="text-xl font-black uppercase tracking-tight mb-6">Laisser un Avis</h3>
 
-                            {{-- Type selector --}}
-                            <div class="flex gap-3 mb-6">
-                                <button wire:click="$set('reviewType', 'validate')" @class(['flex-1 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all', 'bg-green-600 text-white shadow-lg shadow-green-500/20' => $reviewType === 'validate', 'bg-white/10 text-slate-400 hover:bg-white/20' => $reviewType !== 'validate'])>
-                                    ✓ Valider
-                                </button>
-                                <button wire:click="$set('reviewType', 'reject')" @class(['flex-1 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all', 'bg-red-600 text-white shadow-lg shadow-red-500/20' => $reviewType === 'reject', 'bg-white/10 text-slate-400 hover:bg-white/20' => $reviewType !== 'reject'])>
-                                    ✗ Rejeter
+                                {{-- Type selector --}}
+                                <div class="flex gap-3 mb-6">
+                                    <button wire:click="$set('reviewType', 'validate')" @class(['flex-1 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all', 'bg-green-600 text-white shadow-lg shadow-green-500/20' => $reviewType === 'validate', 'bg-white/10 text-slate-400 hover:bg-white/20' => $reviewType !== 'validate'])>
+                                        ✓ Valider
+                                    </button>
+                                    <button wire:click="$set('reviewType', 'reject')" @class(['flex-1 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all', 'bg-red-600 text-white shadow-lg shadow-red-500/20' => $reviewType === 'reject', 'bg-white/10 text-slate-400 hover:bg-white/20' => $reviewType !== 'reject'])>
+                                        ✗ Rejeter
+                                    </button>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Votre retour (un seul avis possible)</label>
+                                    <textarea wire:model="reviewComment" rows="4" placeholder="Partagez votre expérience avec ce projet..."
+                                        class="w-full bg-white/5 border border-white/10 focus:border-blue-500 focus:ring-0 rounded-2xl p-4 text-sm text-slate-200 placeholder:text-slate-600 resize-none"></textarea>
+                                    @error('reviewComment') <span class="text-red-400 text-[9px] font-black uppercase mt-1 block">{{ $message }}</span> @enderror
+                                </div>
+
+                                <button wire:click="submitReview" @class(['w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg', 'bg-green-600 hover:bg-green-700 shadow-green-500/20' => $reviewType === 'validate', 'bg-red-600 hover:bg-red-700 shadow-red-500/20' => $reviewType === 'reject'])>
+                                    Publier mon avis
                                 </button>
                             </div>
-
-                            <div class="mb-4">
-                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Votre retour (min. 10 caractères)</label>
-                                <textarea wire:model="reviewComment" rows="4" placeholder="Partagez votre expérience avec ce projet..."
-                                    class="w-full bg-white/5 border border-white/10 focus:border-blue-500 focus:ring-0 rounded-2xl p-4 text-sm text-slate-200 placeholder:text-slate-600 resize-none"></textarea>
-                                @error('reviewComment') <span class="text-red-400 text-[9px] font-black uppercase mt-1 block">{{ $message }}</span> @enderror
-                            </div>
-
-                            <button wire:click="submitReview" @class(['w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg', 'bg-green-600 hover:bg-green-700 shadow-green-500/20' => $reviewType === 'validate', 'bg-red-600 hover:bg-red-700 shadow-red-500/20' => $reviewType === 'reject'])>
-                                Publier mon avis
-                            </button>
                         </div>
-                    </div>
+                    @else
+                        <div class="bg-blue-900/20 backdrop-blur-xl border border-blue-500/20 rounded-[3rem] p-10 text-center flex flex-col items-center justify-center">
+                            <div class="w-20 h-20 bg-blue-600/20 rounded-3xl flex items-center justify-center mb-6 ring-1 ring-blue-500/30 shadow-2xl shadow-blue-500/10">
+                                <svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <h3 class="text-xl font-black uppercase tracking-tight text-white mb-2">Avis Enregistré</h3>
+                            <p class="text-[9px] text-blue-300 font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px]">Merci pour votre retour ! L'avis est désormais ancré dans l'ADN du projet.</p>
+                        </div>
+                    @endif
                 @endauth
 
                 {{-- Reviews List --}}
@@ -589,34 +754,50 @@
                                 <a href="{{ route('users.show', $review->user) }}" class="hover:scale-110 transition-transform">
                                     <img src="{{ $review->user->avatar }}" class="w-12 h-12 rounded-2xl object-cover ring-4 ring-white shadow-md">
                                 </a>
-                                <div class="flex-grow">
                                     <div class="flex items-center gap-3">
                                         <a href="{{ route('users.show', $review->user) }}" class="text-sm font-black text-slate-900 uppercase hover:text-blue-600 transition-colors">{{ $review->user->name }}</a>
                                         <span @class(['text-[8px] font-black uppercase px-2 py-0.5 rounded-full', 'bg-green-600 text-white' => $review->type === 'validate', 'bg-red-600 text-white' => $review->type === 'reject'])>
                                             {{ $review->type === 'validate' ? '✓ Validé' : '✗ Rejeté' }}
                                         </span>
+                                        @if($review->replies->count() > 0)
+                                            <span class="bg-slate-900 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg shadow-slate-900/10">
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                                Verrouillé
+                                            </span>
+                                        @endif
                                     </div>
                                     <div class="text-[9px] font-black text-slate-400 uppercase mt-1">{{ $review->created_at->diffForHumans() }}</div>
                                 </div>
-                            </div>
+                                
+                                {{-- Delete button --}}
+                                @auth
+                                    @if(($review->user_id === auth()->id() || $project->canManage(auth()->user())) && $review->replies->count() === 0)
+                                        <button wire:click="deleteReview({{ $review->id }})" wire:confirm="Supprimer cet avis ?" class="text-slate-300 hover:text-red-500 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    @endif
+                                @endauth
+
                             @if($review->comment)
-                                <p class="text-sm font-medium text-slate-700 italic leading-relaxed">"{{ $review->comment }}"</p>
+                                <p @class(['text-sm font-medium leading-relaxed italic', 'text-slate-700' => $review->replies->count() === 0, 'text-slate-400' => $review->replies->count() > 0])>"{{ $review->comment }}"</p>
                             @endif
 
                             {{-- Replies --}}
                             @if($review->replies->count() > 0)
-                                <div class="mt-4 pl-6 border-l-2 border-white/80 space-y-3">
+                                <div class="mt-4 pl-6 border-l-2 border-white space-y-3">
                                     @foreach($review->replies as $reply)
-                                        <div class="p-4 bg-white/60 rounded-2xl">
+                                        <div class="p-4 bg-white/80 rounded-2xl shadow-sm border border-slate-100 animate-in slide-in-from-top-2 duration-300">
                                             <div class="flex items-center gap-2 mb-2">
-                                                <a href="{{ route('users.show', $reply->user) }}" class="flex items-center gap-2 group/reply hover:opacity-80 transition-all">
-                                                    <img src="{{ $reply->user->avatar }}" class="w-6 h-6 rounded-lg object-cover ring-1 ring-white/20 group-hover/reply:ring-blue-500 transition-all">
-                                                    <span class="text-[9px] font-black text-slate-900 uppercase group-hover/reply:text-blue-600 transition-colors">{{ $reply->user->name }}</span>
-                                                    <span class="text-[7px] font-black text-blue-600 uppercase tracking-widest">Réponse</span>
-                                                </a>
+                                                <div class="flex items-center gap-2 group/reply">
+                                                    <img src="{{ $reply->user->avatar }}" class="w-6 h-6 rounded-lg object-cover ring-2 ring-blue-500/20 shadow-sm">
+                                                    <div>
+                                                        <span class="text-[9px] font-black text-slate-900 uppercase">{{ $reply->user->name }}</span>
+                                                        <span class="text-[7px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest ml-1">Réponse Officielle</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                             @if($reply->comment)
-                                                <p class="text-[10px] font-medium text-slate-600 italic">"{{ $reply->comment }}"</p>
+                                                <p class="text-[10px] font-bold text-slate-700">"{{ $reply->comment }}"</p>
                                             @endif
                                         </div>
                                     @endforeach

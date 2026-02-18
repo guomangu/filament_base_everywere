@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Project extends Model
 {
@@ -57,6 +58,11 @@ class Project extends Model
     public function allOffers(): HasMany
     {
         return $this->hasMany(ProjectOffer::class);
+    }
+
+    public function skills(): BelongsToMany
+    {
+        return $this->belongsToMany(Skill::class, 'project_skill');
     }
 
     public function reviews(): HasMany
@@ -184,14 +190,6 @@ class Project extends Model
 
     public function allSkills()
     {
-        if ($this->relationLoaded('offers') && $this->relationLoaded('demands')) {
-            return $this->offers->flatMap->skills
-                ->concat($this->demands->flatMap->skills)
-                ->unique('id');
-        }
-
-        return \App\Models\Skill::whereHas('projectOffers', function($q) {
-            $q->where('project_id', $this->id);
-        })->get();
+        return $this->skills;
     }
 }
