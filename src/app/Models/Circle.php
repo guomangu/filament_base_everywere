@@ -157,4 +157,44 @@ class Circle extends Model
             })
             ->count();
     }
+
+    /**
+     * Get a shorter version of the address (usually just the city)
+     */
+    public function getShortAddressAttribute(): ?string
+    {
+        $neighborhood = $this->neighborhood;
+        $city = $this->city;
+
+        if ($neighborhood && $city) {
+            return $neighborhood . ', ' . $city;
+        }
+        
+        return $city ?: $this->address;
+    }
+
+    /**
+     * Get the neighborhood part of the address
+     */
+    public function getNeighborhoodAttribute(): ?string
+    {
+        if (!$this->address) return null;
+        $parts = array_map('trim', explode(',', $this->address));
+        return (count($parts) >= 4) ? $parts[1] : null;
+    }
+
+    /**
+     * Get the city part of the address
+     */
+    public function getCityAttribute(): ?string
+    {
+        if (!$this->address) return null;
+        $parts = array_map('trim', explode(',', $this->address));
+        $count = count($parts);
+
+        if ($count >= 4) return $parts[2];
+        if ($count === 3) return $parts[1];
+        if ($count === 2) return $parts[0];
+        
+    }
 }

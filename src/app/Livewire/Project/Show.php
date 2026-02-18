@@ -50,6 +50,10 @@ class Show extends Component
     public $selectedSkills = []; // Format: ['Skill name 1', 'Skill name 2']
     public $skillSearch = '';
     public $showProjectSkillForm = false;
+    
+    // Address Management
+    public $address = '';
+    public $isEditingAddress = false;
 
     public function mount(Project $project)
     {
@@ -57,6 +61,7 @@ class Show extends Component
         $this->refresh();
         $this->lastMessageCount = $this->project->messages->count();
         $this->selectedSkills = $this->project->skills->pluck('name')->toArray();
+        $this->address = $this->project->address;
     }
 
     public function refresh()
@@ -414,6 +419,23 @@ class Show extends Component
         $this->project->toggleStatus();
         session()->flash('success', 'Statut du projet mis à jour.');
         $this->project->refresh();
+    }
+
+    public function updateAddress()
+    {
+        if (!$this->project->canManage(Auth::user())) return;
+
+        $this->validate([
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        $this->project->update([
+            'address' => $this->address,
+        ]);
+
+        $this->isEditingAddress = false;
+        $this->project->refresh();
+        session()->flash('success', 'Localisation mise à jour.');
     }
 
     public function joinProject()

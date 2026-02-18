@@ -49,13 +49,28 @@ class Index extends Component
 
     public function render()
     {
-        $query = Project::with(['owner', 'activeMembers', 'offers.skills', 'demands.skills']);
+        $query = Project::with(['owner', 'activeMembers', 'offers', 'demands']);
 
         // Search filter
         if ($this->search) {
-            $query->where(function($q) {
-                $q->where('title', 'like', '%' . $this->search . '%')
-                  ->orWhere('description', 'like', '%' . $this->search . '%');
+            $searchTerm = '%' . $this->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('title', 'like', $searchTerm)
+                  ->orWhere('description', 'like', $searchTerm)
+                  ->orWhere('address', 'like', $searchTerm)
+                  // Search in owner
+                  ->orWhereHas('owner', function($uq) use ($searchTerm) {
+                      $uq->where('name', 'like', $searchTerm);
+                  })
+                  // Search in skills
+                  ->orWhereHas('skills', function($sq) use ($searchTerm) {
+                      $sq->where('name', 'like', $searchTerm);
+                  })
+                  // Search in offers & demands
+                  ->orWhereHas('allOffers', function($oq) use ($searchTerm) {
+                      $oq->where('title', 'like', $searchTerm)
+                        ->orWhere('description', 'like', $searchTerm);
+                  });
             });
         }
 
@@ -73,10 +88,9 @@ class Index extends Component
             $query->whereHas('demands');
         }
 
-        // Skill filter
         if (!empty($this->selectedSkills)) {
-            $query->whereHas('allOffers.skills', function($q) {
-                $q->whereIn('skills.id', $this->selectedSkills);
+            $query->whereHas('skills', function($sq) {
+                $sq->whereIn('skills.id', $this->selectedSkills);
             });
         }
 

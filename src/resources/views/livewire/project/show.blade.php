@@ -193,6 +193,62 @@
                                 </div>
                             @endif
 
+                            {{-- Address --}}
+                            <div class="mb-6 pt-4 border-t border-white/10">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">Localisation</span>
+                                    @if($project->canManage(auth()->user()))
+                                        <button wire:click="$toggle('isEditingAddress')" class="text-[8px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors">
+                                            {{ $isEditingAddress ? 'Annuler' : 'Modifier' }}
+                                        </button>
+                                    @endif
+                                </div>
+                                
+                                @if($isEditingAddress)
+                                    <div class="space-y-2">
+                                        <input 
+                                            type="text" 
+                                            wire:model="address" 
+                                            wire:keydown.enter="updateAddress"
+                                            placeholder="Ex: Paris, France"
+                                            class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:ring-0 transition-all uppercase font-bold"
+                                        >
+                                        <button wire:click="updateAddress" class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-[9px] font-black uppercase tracking-widest text-white transition-all">
+                                            Enregistrer
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="flex items-start gap-2">
+                                        <svg class="w-3.5 h-3.5 text-slate-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                        @if($project->address)
+                                            <div class="flex flex-col gap-1">
+                                                <div class="flex flex-wrap items-center gap-1.5">
+                                                    @if($project->neighborhood)
+                                                        <a href="{{ url('/?search=' . urlencode($project->neighborhood)) }}" class="text-xs font-black text-blue-400 hover:text-white transition-colors uppercase tracking-tight">
+                                                            {{ $project->neighborhood }}
+                                                        </a>
+                                                        <span class="text-slate-600 text-[10px]">•</span>
+                                                    @endif
+                                                    @if($project->city)
+                                                        <a href="{{ url('/?search=' . urlencode($project->city)) }}" class="text-xs font-black text-slate-200 hover:text-blue-400 transition-colors uppercase tracking-tight">
+                                                            {{ $project->city }}
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                                <span class="text-[10px] font-bold text-slate-600 uppercase tracking-tight leading-tight">
+                                                    {{ $project->address }}
+                                                </span>
+                                            </div>
+                                        @else
+                                            <span class="text-xs font-bold text-slate-600 italic uppercase tracking-tight">
+                                                Non définie
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+
+
                             {{-- Auth actions --}}
                             @auth
                                 <div class="space-y-3">

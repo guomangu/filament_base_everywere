@@ -131,10 +131,6 @@ class Create extends Component
                 'description' => $offer['description'],
                 'type' => 'offer',
             ]);
-            
-            if (!empty($offer['skills'])) {
-                $projectOffer->skills()->attach($offer['skills']);
-            }
         }
 
         // Create demands
@@ -144,10 +140,19 @@ class Create extends Component
                 'description' => $demand['description'],
                 'type' => 'demand',
             ]);
-            
-            if (!empty($demand['skills'])) {
-                $projectDemand->skills()->attach($demand['skills']);
-            }
+        }
+
+        // Attach all unique skills to the project level (Expertise)
+        $allSkillIds = [];
+        foreach ($this->offers as $o) {
+            if (!empty($o['skills'])) $allSkillIds = array_merge($allSkillIds, $o['skills']);
+        }
+        foreach ($this->demands as $d) {
+            if (!empty($d['skills'])) $allSkillIds = array_merge($allSkillIds, $d['skills']);
+        }
+        
+        if (!empty($allSkillIds)) {
+            $project->skills()->sync(array_unique($allSkillIds));
         }
 
         session()->flash('success', 'Projet créé avec succès !');

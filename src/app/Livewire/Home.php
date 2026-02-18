@@ -122,10 +122,35 @@ class Home extends Component
                               });
                         });
                   })
-                  // 5. Search in Board Messages
+                   // 5. Search in Board Messages
                   ->orWhereHas('messages', function($mq) use ($searchTerm) {
                       $mq->whereRaw('LOWER(content) LIKE ?', [$searchTerm]);
-                  });
+                  })
+                  // 6. Search in Projects (associated via Circle members)
+                  ->orWhereHas('members.user.ownedProjects', function($pq) use ($searchTerm) {
+                      $pq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(address) LIKE ?', [$searchTerm])
+                        ->orWhereHas('skills', function($sq) use ($searchTerm) {
+                            $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
+                        })
+                        ->orWhereHas('allOffers', function($oq) use ($searchTerm) {
+                            $oq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                              ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
+                        });
+                  })
+                  ->orWhereHas('owner.ownedProjects', function($pq) use ($searchTerm) {
+                    $pq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                      ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
+                      ->orWhereRaw('LOWER(address) LIKE ?', [$searchTerm])
+                      ->orWhereHas('skills', function($sq) use ($searchTerm) {
+                          $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
+                      })
+                      ->orWhereHas('allOffers', function($oq) use ($searchTerm) {
+                          $oq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
+                      });
+                });
             });
         }
 
@@ -293,6 +318,49 @@ class Home extends Component
                                   'image' => $matchingMember->user->avatar,
                                   'trustPath' => auth()->check() ? auth()->user()->getTrustPathTo($matchingMember->user) : []
                               ]);
+            }
+
+            // Priority 6: Project Match
+            $projectMatch = null;
+            
+            // Check owner projects
+            $projectMatch = $circle->owner->ownedProjects->filter(fn($p) => 
+                stripos(mb_strtolower($p->title), $search) !== false || 
+                stripos(mb_strtolower($p->description), $search) !== false ||
+                $p->skills->contains(fn($s) => stripos(mb_strtolower($s->name), $search) !== false) ||
+                $p->allOffers->contains(fn($o) => stripos(mb_strtolower($o->title), $search) !== false || stripos(mb_strtolower($o->description), $search) !== false)
+            )->first();
+
+            if ($projectMatch) {
+                return $circle->setAttribute('matching_context', "Projet du Fondateur")
+                              ->setAttribute('matched_object', [
+                                  'type' => 'project',
+                                  'id' => $projectMatch->id,
+                                  'name' => $projectMatch->title,
+                                  'detail' => "Regardez ce projet !",
+                                  'trustPath' => []
+                              ]);
+            }
+
+            // Check member projects
+            foreach($circle->members as $member) {
+                $projectMatch = $member->user->ownedProjects->filter(fn($p) => 
+                    stripos(mb_strtolower($p->title), $search) !== false || 
+                    stripos(mb_strtolower($p->description), $search) !== false ||
+                    $p->skills->contains(fn($s) => stripos(mb_strtolower($s->name), $search) !== false) ||
+                    $p->allOffers->contains(fn($o) => stripos(mb_strtolower($o->title), $search) !== false || stripos(mb_strtolower($o->description), $search) !== false)
+                )->first();
+
+                if ($projectMatch) {
+                    return $circle->setAttribute('matching_context', "Projet de Membre")
+                                  ->setAttribute('matched_object', [
+                                      'type' => 'project',
+                                      'id' => $projectMatch->id,
+                                      'name' => $projectMatch->title,
+                                      'detail' => "(Par {$member->user->name})",
+                                      'trustPath' => []
+                                  ]);
+                }
             }
 
             return $circle->setAttribute('matching_context', "Correspondance")

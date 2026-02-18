@@ -141,9 +141,21 @@ class="min-h-screen bg-slate-50/50">
                                 <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-1 leading-tight group-hover/card:text-blue-600 transition-colors">
                                     {{ $circle->name }}
                                 </h3>
-                                <div class="flex items-center gap-1.5 text-slate-400 overflow-hidden">
+                                <div class="flex flex-wrap items-center gap-2 text-slate-400 relative z-10 pointer-events-auto">
                                     <svg class="w-1.5 h-1.5 text-blue-500 animate-pulse flex-shrink-0" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                    <span class="text-[10px] md:text-xs font-bold truncate italic">{{ $circle->address }}</span>
+                                    @if($circle->neighborhood)
+                                        <a href="{{ url('/?search=' . urlencode($circle->neighborhood)) }}" class="text-[8px] md:text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded hover:bg-blue-600 hover:text-white transition-all uppercase tracking-tight">
+                                            {{ $circle->neighborhood }}
+                                        </a>
+                                    @endif
+                                    @if($circle->city)
+                                        <a href="{{ url('/?search=' . urlencode($circle->city)) }}" class="text-[8px] md:text-[9px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded hover:bg-slate-900 hover:text-white transition-all uppercase tracking-tight">
+                                            {{ $circle->city }}
+                                        </a>
+                                    @endif
+                                    @if(!$circle->neighborhood && !$circle->city)
+                                        <span class="text-[10px] md:text-xs font-bold truncate italic">{{ $circle->address }}</span>
+                                    @endif
                                 </div>
                             </div>
 
