@@ -203,52 +203,11 @@
         <!-- Main Content: Skill Directory -->
         <div class="lg:col-span-2 space-y-16">
             <div>
-                <div class="flex items-center justify-between mb-10">
-                    <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">
-                        Le Vivier d'Expertises
-                        <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic">DIRECT</span>
-                    </h2>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    @forelse($memberExperts as $expert)
-                        <div class="bg-white/60 backdrop-blur-3xl border border-white/60 p-6 rounded-[2.5rem] hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 group">
-                            <div class="flex items-center gap-4 mb-6">
-                                <a href="{{ route('users.show', $expert) }}" class="flex-shrink-0 group/av">
-                                    <img src="{{ $expert->avatar }}" class="w-12 h-12 rounded-2xl object-cover shadow-lg group-hover/av:scale-110 transition-transform duration-500">
-                                </a>
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest">{{ $expert->trust_score }}% Confiance</div>
-                                        <x-project-transporter :project="$expert->activeProject()" />
-                                    </div>
-                                    <a href="{{ route('users.show', $expert) }}" class="text-sm font-black text-slate-900 uppercase tracking-tight hover:text-blue-500 transition-colors truncate block">
-                                        {{ $expert->name }}
-                                    </a>
-                                </div>
-                            </div>
-                            
-                            @auth
-                                @php $trustPath = auth()->user()->getTrustPathTo($expert); @endphp
-                                @if(count($trustPath) > 0)
-                                    <div class="mb-6 p-3 bg-slate-50 rounded-2xl border border-slate-100 scale-90 origin-left">
-                                        <x-user-trust-chain :path="$trustPath" />
-                                    </div>
-                                @endif
-                            @endauth
-                            
-                            <x-user-skills-tags :user="$expert" limit="6" />
-                        </div>
-                    @empty
-                        <div class="col-span-full py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
-                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm italic">Aucune expertise directe identifiée.</p>
-                        </div>
-                    @endforelse
-                </div>
+                
 
                 {{-- Member Projects Section --}}
                 @if(isset($memberProjects) && $memberProjects->count() > 0)
-                    <div class="mt-12 pt-12 border-t border-slate-100">
+                    <div class="pt-12 border-t border-slate-100">
                         <h3 class="text-xl font-black text-slate-900 tracking-tight mb-6 flex items-center gap-2">
                             <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             Projets Actifs
@@ -323,6 +282,50 @@
                         </div>
                     </div>
                 @endif
+            
+                <div class="flex items-center justify-between mb-10">
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">
+                        Le Vivier d'Expertises
+                        <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic">DIRECT</span>
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    @forelse($memberExperts as $expert)
+                        <div class="bg-white/60 backdrop-blur-3xl border border-white/60 p-6 rounded-[2.5rem] hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 group">
+                            <div class="flex items-center gap-4 mb-6">
+                                <a href="{{ route('users.show', $expert) }}" class="flex-shrink-0 group/av">
+                                    <img src="{{ $expert->avatar }}" class="w-12 h-12 rounded-2xl object-cover shadow-lg group-hover/av:scale-110 transition-transform duration-500">
+                                </a>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest">{{ $expert->trust_score }}% Confiance</div>
+                                        <x-project-transporter :project="$expert->activeProject()" />
+                                    </div>
+                                    <a href="{{ route('users.show', $expert) }}" class="text-sm font-black text-slate-900 uppercase tracking-tight hover:text-blue-500 transition-colors truncate block">
+                                        {{ $expert->name }}
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            @auth
+                                @php $trustPath = auth()->user()->getTrustPathTo($expert); @endphp
+                                @if(count($trustPath) > 0)
+                                    <div class="mb-6 p-3 bg-slate-50 rounded-2xl border border-slate-100 scale-90 origin-left">
+                                        <x-user-trust-chain :path="$trustPath" />
+                                    </div>
+                                @endif
+                            @endauth
+                            
+                            <x-user-skills-tags :user="$expert" limit="6" />
+                        </div>
+                    @empty
+                        <div class="col-span-full py-20 text-center bg-white/40 border-2 border-dashed border-slate-200 rounded-[3rem]">
+                            <p class="text-slate-400 font-black uppercase tracking-[0.2em] text-sm italic">Aucune expertise directe identifiée.</p>
+                        </div>
+                    @endforelse
+                </div>
+            
             </div>
 
             @if($networkExperts->count() > 0)

@@ -1,14 +1,6 @@
 <div 
-    x-data="{ 
-        activeTab: @entangle('activeTab'),
-        showIndicator: false,
-        playNotify() {
-            let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-            audio.volume = 0.2;
-            audio.play().catch(e => console.log('Audio play failed:', e));
-        }
-    }" 
-    x-on:project-updated.window="showIndicator = true; playNotify(); setTimeout(() => showIndicator = false, 3000)"
+    x-data="projectShowData(@entangle('activeTab'))"
+    x-on:project-updated.window="showIndicator = true; playNotify(); setTimeout(function() { showIndicator = false }, 3000)"
     wire:poll.5s.visible="refresh" 
     class="min-h-screen bg-slate-50/50 pb-20"
 >
@@ -82,20 +74,20 @@
                         @endif
 
                         {{-- Stats Bar --}}
-                        <div class="grid grid-cols-4 gap-4 md:gap-8 py-8 border-t border-slate-100">
-                            <button @click="activeTab = 'team'" class="text-center md:text-left hover:opacity-80 transition-opacity">
+                        <div class="grid grid-cols-4 gap-4 md:gap-8 py-8 border-t border-slate-100" id="project-stats-bar">
+                            <button @click="switchTab('team')" class="text-center md:text-left hover:opacity-80 transition-opacity">
                                 <div class="text-xl md:text-3xl font-black text-slate-900 leading-none mb-1">{{ $project->activeMembers->count() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres</div>
                             </button>
-                            <button @click="activeTab = 'offers'" class="text-center md:text-left hover:opacity-80 transition-opacity">
+                            <button @click="switchTab('offers')" class="text-center md:text-left hover:opacity-80 transition-opacity">
                                 <div class="text-xl md:text-3xl font-black text-blue-600 leading-none mb-1">{{ $project->offers->count() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-blue-400 uppercase tracking-widest">Offres</div>
                             </button>
-                            <button @click="activeTab = 'demands'" class="text-center md:text-left hover:opacity-80 transition-opacity">
+                            <button @click="switchTab('demands')" class="text-center md:text-left hover:opacity-80 transition-opacity">
                                 <div class="text-xl md:text-3xl font-black text-purple-600 leading-none mb-1">{{ $project->demands->count() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-purple-400 uppercase tracking-widest">Demandes</div>
                             </button>
-                            <button @click="activeTab = 'reviews'" class="text-center md:text-left hover:opacity-80 transition-opacity">
+                            <button @click="switchTab('reviews')" class="text-center md:text-left hover:opacity-80 transition-opacity">
                                 <div class="text-xl md:text-3xl font-black text-green-600 leading-none mb-1">+{{ $project->getPositiveReviewsCount() }}</div>
                                 <div class="text-[8px] md:text-[10px] font-black text-green-400 uppercase tracking-widest">Avis +</div>
                             </button>
@@ -183,40 +175,23 @@
         </div>
     </div>
 
-    {{-- ===== TABS NAV ===== --}}
-    <div class="max-w-7xl mx-auto px-6 mb-8">
-        <div class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar-h">
-            @foreach([
-                ['key' => 'overview',  'label' => 'Vue d\'ensemble', 'icon' => 'M4 6h16M4 12h16M4 18h7'],
-                ['key' => 'offers',    'label' => 'Offres ('.$project->offers->count().')', 'icon' => 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'],
-                ['key' => 'demands',   'label' => 'Demandes ('.$project->demands->count().')', 'icon' => 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-                ['key' => 'reviews',   'label' => 'Avis ('.$project->reviews->count().')', 'icon' => 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'],
-                ['key' => 'team',      'label' => 'Équipe', 'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'],
-            ] as $tab)
-                <button
-                    @click="activeTab = '{{ $tab['key'] }}'"
-                    :class="activeTab === '{{ $tab['key'] }}' ? 'bg-slate-900 text-white shadow-xl' : 'bg-white/60 text-slate-500 hover:bg-white hover:text-slate-900'"
-                    class="flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all backdrop-blur-xl border border-white/60"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $tab['icon'] }}"/></svg>
-                    {{ $tab['label'] }}
-                </button>
-            @endforeach
-        </div>
-    </div>
 
-    {{-- ===== TAB CONTENT ===== --}}
-    <div class="max-w-7xl mx-auto px-6">
+
+    <div class="max-w-7xl mx-auto px-6" id="tab-content-start">
+
 
         {{-- ---- OVERVIEW ---- --}}
         <div x-show="activeTab === 'overview'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {{-- Offres preview --}}
-                <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] p-8 shadow-xl shadow-blue-500/5">
-                    <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        Ce que nous offrons
-                    </h3>
+                <div @click="switchTab('offers')" class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] p-8 shadow-xl shadow-blue-500/5 cursor-pointer hover:shadow-blue-500/10 hover:scale-[1.01] transition-all group/card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            Ce que nous offrons
+                        </h3>
+                        <svg class="w-4 h-4 text-slate-300 group-hover/card:text-blue-500 group-hover/card:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
+                    </div>
                     @forelse($project->offers->take(3) as $offer)
                         <div class="mb-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
                             <div class="font-black text-sm text-slate-900 uppercase tracking-tight mb-1">{{ $offer->title }}</div>
@@ -244,11 +219,14 @@
                 </div>
 
                 {{-- Demandes preview --}}
-                <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] p-8 shadow-xl shadow-purple-500/5">
-                    <h3 class="text-[10px] font-black text-purple-600 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
-                        Ce que nous cherchons
-                    </h3>
+                <div @click="switchTab('demands')" class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] p-8 shadow-xl shadow-purple-500/5 cursor-pointer hover:shadow-purple-500/10 hover:scale-[1.01] transition-all group/card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-[10px] font-black text-purple-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                            <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                            Ce que nous cherchons
+                        </h3>
+                        <svg class="w-4 h-4 text-slate-300 group-hover/card:text-purple-500 group-hover/card:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
+                    </div>
                     @forelse($project->demands->take(3) as $demand)
                         <div class="mb-4 p-4 bg-purple-50/50 rounded-2xl border border-purple-100">
                             <div class="font-black text-sm text-slate-900 uppercase tracking-tight mb-1">{{ $demand->title }}</div>
@@ -277,39 +255,68 @@
 
                 {{-- Avis preview --}}
                 @if($project->reviews->count() > 0)
-                    <div class="md:col-span-2 bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] p-8 shadow-xl">
-                        <h3 class="text-[10px] font-black text-green-600 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
-                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Derniers Avis
-                            <span class="ml-auto text-slate-300">{{ $project->getPositiveReviewsCount() }}✓ {{ $project->getNegativeReviewsCount() }}✗</span>
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($project->reviews->take(4) as $review)
+                    <div @click="switchTab('reviews')" class="md:col-span-1 bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3rem] p-8 shadow-xl cursor-pointer hover:shadow-green-500/5 hover:scale-[1.01] transition-all group/card h-full">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-[10px] font-black text-green-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                Derniers Avis
+                                <span class="ml-2 text-slate-300">{{ $project->getPositiveReviewsCount() }}✓ {{ $project->getNegativeReviewsCount() }}✗</span>
+                            </h3>
+                            <svg class="w-4 h-4 text-slate-300 group-hover/card:text-green-500 group-hover/card:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
+                        </div>
+                        <div class="space-y-4">
+                            @foreach($project->reviews->take(2) as $review)
                                 <div @class(['p-4 rounded-2xl border', 'bg-green-50/50 border-green-100' => $review->type === 'validate', 'bg-red-50/50 border-red-100' => $review->type === 'reject'])>
                                     <div class="flex items-center gap-3 mb-2">
-                                        <a href="{{ route('users.show', $review->user) }}" class="flex items-center gap-3 group/reviewer hover:opacity-80 transition-all">
-                                            <img src="{{ $review->user->avatar }}" class="w-8 h-8 rounded-xl object-cover ring-1 ring-slate-100 group-hover/reviewer:ring-blue-500 transition-all">
-                                            <div>
-                                                <div class="text-[10px] font-black text-slate-900 uppercase group-hover/reviewer:text-blue-600 transition-colors">{{ $review->user->name }}</div>
-                                                <span @class(['text-[7px] font-black uppercase px-2 py-0.5 rounded-full', 'bg-green-600 text-white' => $review->type === 'validate', 'bg-red-600 text-white' => $review->type === 'reject'])>
-                                                    {{ $review->type === 'validate' ? '✓ Validé' : '✗ Rejeté' }}
-                                                </span>
-                                            </div>
-                                        </a>
+                                        <img src="{{ $review->user->avatar }}" class="w-6 h-6 rounded-lg object-cover ring-1 ring-slate-100">
+                                        <div class="text-[9px] font-black text-slate-900 uppercase">{{ $review->user->name }}</div>
                                     </div>
                                     @if($review->comment)
-                                        <p class="text-[10px] font-medium text-slate-600 italic leading-relaxed">"{{ $review->comment }}"</p>
+                                        <p class="text-[9px] font-medium text-slate-600 italic leading-tight line-clamp-2">"{{ $review->comment }}"</p>
                                     @endif
                                 </div>
                             @endforeach
                         </div>
                     </div>
                 @endif
+
+                {{-- Équipe preview --}}
+                <div @click="switchTab('team')" class="md:col-span-1 bg-slate-900 rounded-[3rem] p-8 shadow-2xl shadow-blue-500/10 cursor-pointer hover:scale-[1.01] transition-all group/card relative overflow-hidden h-full">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                Le Noyau Dur
+                            </h3>
+                            <svg class="w-4 h-4 text-white/20 group-hover/card:text-blue-400 group-hover/card:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
+                        </div>
+                        
+                        <div class="flex -space-x-4 mb-6">
+                            @foreach($project->activeMembers->take(6) as $member)
+                                <img src="{{ $member->memberable->avatar ?? 'https://ui-avatars.com/api/?name='.urlencode($member->memberable->name ?? '?') }}" class="w-12 h-12 rounded-2xl border-4 border-slate-900 shadow-xl object-cover ring-1 ring-white/10 group-hover/card:-translate-y-1 transition-all" style="transition-delay: {{ $loop->index * 50 }}ms">
+                            @endforeach
+                            @if($project->activeMembers->count() > 6)
+                                <div class="w-12 h-12 rounded-2xl bg-slate-800 border-4 border-slate-900 flex items-center justify-center text-[10px] font-black text-white">+{{ $project->activeMembers->count() - 6 }}</div>
+                            @endif
+                        </div>
+
+                        <div class="bg-white/5 rounded-2xl p-4 border border-white/10">
+                            <div class="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Dernière activité</div>
+                            <div class="text-[10px] text-white font-bold">{{ $project->activeMembers->count() }} experts collaborent activement sur ce projet.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         {{-- ---- OFFRES ---- --}}
         <div x-show="activeTab === 'offers'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+            {{-- Back button --}}
+            <button @click="switchTab('overview')" class="back-to-overview mb-8 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 border-b-4 border-red-800 rounded-2xl text-[10px] font-black text-white uppercase tracking-[0.2em] hover:from-red-500 hover:to-rose-500 hover:translate-y-[-2px] hover:shadow-2xl hover:shadow-red-500/40 active:translate-y-[2px] active:border-b-0 transition-all group">
+                <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Retour à l'aperçu
+            </button>
             @if($project->canManage(auth()->user()))
                 <div class="mb-8">
                     @if(!$showOfferForm)
@@ -421,6 +428,11 @@
 
         {{-- ---- DEMANDES ---- --}}
         <div x-show="activeTab === 'demands'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+            {{-- Back button --}}
+            <button @click="switchTab('overview')" class="back-to-overview mb-8 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 border-b-4 border-red-800 rounded-2xl text-[10px] font-black text-white uppercase tracking-[0.2em] hover:from-red-500 hover:to-rose-500 hover:translate-y-[-2px] hover:shadow-2xl hover:shadow-red-500/40 active:translate-y-[2px] active:border-b-0 transition-all group">
+                <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Retour à l'aperçu
+            </button>
             @if($project->canManage(auth()->user()))
                 <div class="mb-8">
                     @if(!$showDemandForm)
@@ -532,6 +544,11 @@
 
         {{-- ---- AVIS (REVIEWS) ---- --}}
         <div x-show="activeTab === 'reviews'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+            {{-- Back button --}}
+            <button @click="switchTab('overview')" class="back-to-overview mb-8 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 border-b-4 border-red-800 rounded-2xl text-[10px] font-black text-white uppercase tracking-[0.2em] hover:from-red-500 hover:to-rose-500 hover:translate-y-[-2px] hover:shadow-2xl hover:shadow-red-500/40 active:translate-y-[2px] active:border-b-0 transition-all group">
+                <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Retour à l'aperçu
+            </button>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {{-- Review Form --}}
                 @auth
@@ -645,6 +662,11 @@
 
     {{-- ---- ÉQUIPE (TEAM) ---- --}}
     <div class="max-w-7xl mx-auto px-6 mb-12" x-show="activeTab === 'team'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+        {{-- Back button --}}
+        <button @click="switchTab('overview')" class="back-to-overview mb-8 flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 border-b-4 border-red-800 rounded-2xl text-[10px] font-black text-white uppercase tracking-[0.2em] hover:from-red-500 hover:to-rose-500 hover:translate-y-[-2px] hover:shadow-2xl hover:shadow-red-500/40 active:translate-y-[2px] active:border-b-0 transition-all group">
+            <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Retour à l'aperçu
+        </button>
         <div class="space-y-12">
             {{-- Admin Management --}}
             @if($project->canManage(auth()->user()))
@@ -968,5 +990,45 @@
         .custom-scrollbar-h::-webkit-scrollbar { height: 3px; }
         .custom-scrollbar-h::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar-h::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        .back-to-overview {
+            scroll-margin-top: 160px; /* Header (100px) + Comfortable Gap */
+        }
     </style>
+    <script>
+        function projectShowData(entangledTab) {
+            return {
+                activeTab: entangledTab,
+                lastScrollPos: 0,
+                showIndicator: false,
+                switchTab(tab) {
+                    if (tab === 'overview') {
+                        this.activeTab = 'overview';
+                        this.$nextTick(() => {
+                            window.scrollTo({ 
+                                top: this.lastScrollPos, 
+                                behavior: 'smooth' 
+                            });
+                        });
+                    } else {
+                        this.lastScrollPos = window.pageYOffset;
+                        this.activeTab = tab;
+                        this.$nextTick(() => {
+                            const el = document.querySelector('[x-show="activeTab === \'' + tab + '\'"] .back-to-overview');
+                            if (el) {
+                                el.scrollIntoView({ behavior: 'smooth' });
+                            } else {
+                                const fallBack = document.getElementById('tab-content-start');
+                                if (fallBack) fallBack.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        });
+                    }
+                },
+                playNotify() {
+                    let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+                    audio.volume = 0.2;
+                    audio.play().catch(e => console.log('Audio play failed:', e));
+                }
+            }
+        }
+    </script>
 </div>
