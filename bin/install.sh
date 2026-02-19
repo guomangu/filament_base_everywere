@@ -140,6 +140,9 @@ sed -i "s|^DB_DATABASE=.*|DB_DATABASE=laravel|" .env
 sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
 sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=|" .env
 
+# Add our bin directory to PATH so composer/npm scripts can find our wrappers
+export PATH="$BIN_DIR:$BIN_DIR/node/bin:$PATH"
+
 # PHP Dependencies
 "$BIN_DIR/composer" install --no-interaction --prefer-dist
 
@@ -149,7 +152,6 @@ if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=
 fi
 
 # Node Dependencies
-export PATH="$BIN_DIR/node/bin:$PATH"
 npm install && npm run build
 
 # 4. Database Initialization
