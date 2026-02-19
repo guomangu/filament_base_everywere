@@ -260,7 +260,8 @@ export PHP="$BIN_DIR/php"
 if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=' -f2)" ]; then
     echo "Generating Application Key..."
     # Use frankenphp directly to avoid any wrapper issues with argument passing
-    "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" key:generate --force || true
+    # Use frankenphp directly to avoid any wrapper issues with argument passing
+    "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- key:generate --force || true
     
     # Verify and Fallback
     if ! grep -q "^APP_KEY=base64:" .env; then
@@ -332,7 +333,7 @@ echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
 
 echo "Running migrations and seeders..."
 # Use frankenphp directly to avoid any wrapper issues with argument passing
-"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" migrate:fresh --seed --force || {
+"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" -- migrate:fresh --seed --force || {
     echo -e "${RED}Error: Initial migrations failed. Check database configuration.${NC}"
     exit 1
 }
@@ -357,7 +358,7 @@ fi
 
 chmod -R 775 storage bootstrap/cache "$DATA_DIR"
 # Use frankenphp directly to avoid any wrapper issues with argument passing
-"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear
+"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- config:clear
 
 echo -e "${GREEN}====================================================${NC}"
 echo -e "${GREEN}   Installation Complete! Use ./bin/start.sh       ${NC}"

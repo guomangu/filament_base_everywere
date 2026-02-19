@@ -83,12 +83,20 @@ if [ ! -S "$MYSQL_SOCKET" ]; then
 fi
 
 # Sync Schema
-echo -e "${GREEN}Syncing database schema and clearing config...${NC}"
+echo -e "${GREEN}Syncing database schema...${NC}"
 # Use frankenphp directly to avoid any wrapper issues with argument passing
-"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
-if ! "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" migrate --force; then
+# Added -- to ensure following arguments reach the script
+"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- config:clear >> "$LOG_DIR/install.log" 2>&1
+if ! "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- migrate --force; then
     echo -e "${RED}Error: Database migrations failed! Check the output above.${NC}"
-    # In maintenance/first run, this is critical.
+fi
+
+# Verify table existence (diagnostic)
+echo -e "${YELLOW}Verifying sessions table...${NC}"
+if ! export LD_LIBRARY_PATH="$BIN_DIR/lib" && "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "USE laravel; SHOW TABLES LIKE 'sessions';" | grep -q 'sessions'; then
+    echo -e "${RED}Warning: 'sessions' table not found in 'laravel' database!${NC}"
+    echo "Current tables:"
+    export LD_LIBRARY_PATH="$BIN_DIR/lib" && "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "USE laravel; SHOW TABLES;"
 fi
 
 # Start FrankenPHP
