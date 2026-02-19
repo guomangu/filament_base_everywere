@@ -105,7 +105,12 @@ for path in "${SEARCH_PATHS[@]}"; do
     fi
 done
 
-# If not found directly, try finding any .so.6 file
+# If not found directly, try finding any .so.6 file using ldconfig (most reliable)
+if [ -z "$FOUND_LIB" ]; then
+    FOUND_LIB=$(ldconfig -p | grep "libncurses.so.6" | head -n 1 | awk '{print $NF}')
+fi
+
+# Fallback to find if ldconfig failed
 if [ -z "$FOUND_LIB" ]; then
     FOUND_LIB=$(find /usr/lib /lib -name "libncurses.so.6*" -print -quit 2>/dev/null)
 fi
@@ -116,7 +121,12 @@ if [ -n "$FOUND_LIB" ]; then
     ln -sf "$FOUND_LIB" "$BIN_DIR/lib/libncurses.so.5"
     
     # Also handle libtinfo if possible (often same file or separate)
-    TINFO_LIB=$(echo "$FOUND_LIB" | sed 's/ncurses/tinfo/')
+    # Check ldconfig for tinfo too
+    TINFO_LIB=$(ldconfig -p | grep "libtinfo.so.6" | head -n 1 | awk '{print $NF}')
+    if [ -z "$TINFO_LIB" ]; then
+        TINFO_LIB=$(echo "$FOUND_LIB" | sed 's/ncurses/tinfo/')
+    fi
+
     if [ -f "$TINFO_LIB" ]; then
          ln -sf "$TINFO_LIB" "$BIN_DIR/lib/libtinfo.so.5"
     else
@@ -127,6 +137,9 @@ else
     echo -e "${RED}Warning: Could not find libncurses.so.6. MariaDB client WILL fail.${NC}"
     echo "Please install libncurses5 or libncurses6: sudo apt install libncurses5 || sudo apt install libncurses6"
 fi
+
+# DEBUG: List polyfills to be sure
+ls -l "$BIN_DIR/lib"
 
 # PHP Wrapper (Smart - Filters flags only for Artisan)
 cat <<EOF > "$BIN_DIR/php"
