@@ -47,7 +47,10 @@ export LD_LIBRARY_PATH="$BIN_DIR/lib:$LD_LIBRARY_PATH"
 
 DB_USER_FLAG=""
 if [ "$(id -u)" = "0" ]; then
-    DB_USER_FLAG="--user=root"
+    # If running as root, force MariaDB to run as the owner of this script
+    SCRIPT_OWNER=$(stat -c '%U' "${BASH_SOURCE[0]}")
+    DB_USER_FLAG="--user=$SCRIPT_OWNER"
+    echo "Running MariaDB as user: $SCRIPT_OWNER"
 fi
 
 "$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$MYSQL_SOCKET" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
