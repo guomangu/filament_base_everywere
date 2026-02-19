@@ -91,61 +91,26 @@ REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
 BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
 PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
 
-# Check detection logic: strictly check if 'artisan' follows 'composer.phar' directly
-# This handles the case where composer invokes itself as: php composer.phar -d ... artisan ...
-FILTER_MODE=0
-FOUND_COMPOSER=0
-FIRST_COMMAND=""
+# Check if this is an Artisan call
+ARGS=("\$@")
+ARTISAN_INDEX=-1
 
-for arg in "\$@"; do
-  # Skip flags (simple check)
-  if [[ "\$arg" == -* ]]; then continue; fi
-
-  if [[ "\$arg" == *"composer.phar" ]]; then
-     FOUND_COMPOSER=1
-     continue
-  fi
-  
-  # Captures the first non-flag, non-composer argument
-  if [ -z "\$FIRST_COMMAND" ]; then
-     FIRST_COMMAND="\$arg"
-     break
-  fi
+for i in "\${!ARGS[@]}"; do
+    if [[ "\${ARGS[\$i]}" == *"artisan" ]]; then
+        ARTISAN_INDEX=\$i
+        break
+    fi
 done
 
-# If composer is present AND the query command is artisan -> We are in the broken state.
-if [ "\$FOUND_COMPOSER" -eq 1 ] && [[ "\$FIRST_COMMAND" == *"artisan" ]]; then
-   FILTER_MODE=1
-fi
-
-# Fallback: If no composer.phar but artisan is there (direct call), filter flags too
-if [ "\$FOUND_COMPOSER" -eq 0 ] && [[ "\$first_arg" == *"artisan" ]]; then
-    # Actually, for direct calls, flags are usually not -d but artisan flags.
-    # But if users call: bin/php -d ... artisan, we might want to filter?
-    # Let's stick to the composer fix mostly.
-    # But wait, previous smart wrapper handled IS_ARTISAN=1.
-    if [[ "\$@" == *"artisan"* ]]; then
-        FILTER_MODE=1
-    fi
-fi
-
-params=()
-if [ "\$FILTER_MODE" -eq 1 ]; then
-  # Filter -d args AND composer.phar
-  while [[ \$# -gt 0 ]]; do
-    case "\$1" in
-      -d) shift; if [[ \$# -gt 0 ]]; then shift; fi ;;
-      -d*) shift ;;
-      *composer.phar*) shift ;;
-      *) params+=("\$1"); shift ;;
-    esac
-  done
+if [ \$ARTISAN_INDEX -ge 0 ]; then
+    # We found artisan! Discard everything before it (flags, composer.phar)
+    # and use artisan + remaining args.
+    CLEAN_ARGS=("${ARGS[@]:$ARTISAN_INDEX}")
+    exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${CLEAN_ARGS[@]}"
 else
-  # Pass everything
-  params=("\$@")
+    # Standard execution (Composer, etc)
+    exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
 fi
-
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
 
