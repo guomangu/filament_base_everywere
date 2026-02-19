@@ -87,15 +87,24 @@ fi
 # 2. Create Universal Wrappers
 echo -e "${YELLOW}[3/6] Creating environment wrappers...${NC}"
 
-# PHP Wrapper
+# PHP Wrapper (Standard - for Composer itself)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
 # Robust PROJECT_ROOT detection
 REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
 BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
 PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
+EOF
+chmod +x "$BIN_DIR/php"
 
-# Filter out -d arguments (php config) that frankenphp or the script might misinterpret as args
+# PHP Cleaner Wrapper (For subprocesses like Artisan that choke on Composer's flags)
+cat <<EOF > "$BIN_DIR/php-clean"
+#!/bin/bash
+REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
+BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
+PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
+
 params=()
 while [[ \$# -gt 0 ]]; do
   case "\$1" in
@@ -107,7 +116,9 @@ done
 
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
 EOF
-chmod +x "$BIN_DIR/php"
+chmod +x "$BIN_DIR/php-clean"
+
+# Symlink standard PHP for PATH (so 'php -v' works)
 ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 
 # Composer Wrapper
@@ -148,11 +159,11 @@ sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
 sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=|" .env
 
 # Add only core binaries to PATH during install to avoid artisan wrapper conflicts
-ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
 ln -sf "$BIN_DIR/node/bin/npm" "$BIN_DIR/.core/npm"
 export PATH="$BIN_DIR/.core:$PATH"
-export PHP="$BIN_DIR/php"
+# Force Composer to use the CLEAN wrapper for sub-processes
+export PHP="$BIN_DIR/php-clean"
 
 # PHP Dependencies
 "$BIN_DIR/composer" install --no-interaction --prefer-dist
