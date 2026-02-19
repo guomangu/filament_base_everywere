@@ -41,9 +41,16 @@ fi
 pkill -f "$BIN_DIR/frankenphp" || true
 
 # Start MariaDB
+# Start MariaDB
 echo -e "${GREEN}Starting MariaDB...${NC}"
 export LD_LIBRARY_PATH="$BIN_DIR/lib:$LD_LIBRARY_PATH"
-"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$MYSQL_SOCKET" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB >> "$LOG_DIR/mariadb.log" 2>&1 &
+
+DB_USER_FLAG=""
+if [ "$(id -u)" = "0" ]; then
+    DB_USER_FLAG="--user=root"
+fi
+
+"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$MYSQL_SOCKET" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
 MARIADB_PID=$!
 
 # Wait for MariaDB

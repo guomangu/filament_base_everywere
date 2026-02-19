@@ -306,7 +306,13 @@ if [ -z "$(ls -A "$MYSQL_DATA")" ]; then
 fi
 
 # Start temporary MariaDB for seeding
-"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB &
+# Start temporary MariaDB for seeding
+DB_USER_FLAG=""
+if [ "$(id -u)" = "0" ]; then
+    DB_USER_FLAG="--user=root"
+fi
+
+"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB $DB_USER_FLAG &
 TEMP_DB_PID=$!
 
 # Wait for ready
