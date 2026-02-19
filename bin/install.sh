@@ -84,39 +84,40 @@ if [ ! -d "$BIN_DIR/mariadb" ]; then
     rm mariadb.tar.gz
 fi
 
-# 2. Create Universal Wrappers
-echo -e "${YELLOW}[3/6] Creating environment wrappers...${NC}"
-
-# PHP Wrapper (Standard - for Composer itself)
+# PHP Wrapper (Smart - Filters flags only for Artisan)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-# Robust PROJECT_ROOT detection
 REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
 BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
 PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
-EOF
-chmod +x "$BIN_DIR/php"
 
-# PHP Cleaner Wrapper (For subprocesses like Artisan that choke on Composer's flags)
-cat <<EOF > "$BIN_DIR/php-clean"
-#!/bin/bash
-REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
-BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
-PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
+# Check if running 'artisan' to conditionally filter flags
+IS_ARTISAN=0
+for arg in "\$@"; do
+  if [[ "\$arg" == "artisan" ]] || [[ "\$arg" == *"artisan" ]]; then
+    IS_ARTISAN=1
+    break
+  fi
+done
 
 params=()
-while [[ \$# -gt 0 ]]; do
-  case "\$1" in
-    -d) shift; if [[ \$# -gt 0 ]]; then shift; fi ;;
-    -d*) shift ;;
-    *) params+=("\$1"); shift ;;
-  esac
-done
+if [ "\$IS_ARTISAN" -eq 1 ]; then
+  # Filter -d args for Artisan (FrankenPHP chokes on them)
+  while [[ \$# -gt 0 ]]; do
+    case "\$1" in
+      -d) shift; if [[ \$# -gt 0 ]]; then shift; fi ;;
+      -d*) shift ;;
+      *) params+=("\$1"); shift ;;
+    esac
+  done
+else
+  # Pass everything for Composer/Others
+  params=("\$@")
+fi
 
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
 EOF
-chmod +x "$BIN_DIR/php-clean"
+chmod +x "$BIN_DIR/php"
 
 # Symlink standard PHP for PATH (so 'php -v' works)
 ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
@@ -162,8 +163,7 @@ sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=|" .env
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
 ln -sf "$BIN_DIR/node/bin/npm" "$BIN_DIR/.core/npm"
 export PATH="$BIN_DIR/.core:$PATH"
-# Force Composer to use the CLEAN wrapper for sub-processes
-export PHP="$BIN_DIR/php-clean"
+export PHP="$BIN_DIR/php"
 
 # PHP Dependencies
 "$BIN_DIR/composer" install --no-interaction --prefer-dist
