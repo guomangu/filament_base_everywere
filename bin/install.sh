@@ -263,7 +263,7 @@ fi
 SOCK_PATH=$(readlink -f "$DATA_DIR/mysql/mysql.sock")
 sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mariadb|" .env
 sed -i "s|^DB_SOCKET=.*|DB_SOCKET=$SOCK_PATH|" .env
-sed -i "s|^DB_HOST=.*|DB_HOST=|" .env
+sed -i "s|^DB_HOST=.*|DB_HOST=localhost|" .env
 sed -i "s|^DB_PORT=.*|DB_PORT=|" .env
 sed -i "s|^DB_DATABASE=.*|DB_DATABASE=laravel|" .env
 sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
