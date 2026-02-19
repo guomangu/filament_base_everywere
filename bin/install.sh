@@ -339,7 +339,8 @@ echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
 
 echo "Running migrations and seeders..."
 # Use frankenphp directly to avoid any wrapper issues with argument passing
-"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" migrate:fresh --seed --force || {
+# Explicitly running RealisticDemoSeeder as requested
+"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" migrate:fresh --seed --seeder=RealisticDemoSeeder --force || {
     echo -e "${RED}Error: Initial migrations failed. Check database configuration.${NC}"
     exit 1
 }
