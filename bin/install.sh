@@ -324,7 +324,7 @@ echo "Starting temporary Database for setup..."
 DB_USER_FLAG=""
 if [ "$(id -u)" = "0" ]; then DB_USER_FLAG="--user=root"; fi
 
-"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
+"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --skip-grant-tables --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
 TEMP_PID=$!
 
 # Wait for it to start
@@ -338,29 +338,22 @@ if [ ! -S "$SOCK_PATH" ]; then
     exit 1
 fi
 
-# Ensure current user exists in MariaDB with socket auth
-# This solves the "Access denied" error for both guuu and root
-echo "Ensuring MariaDB user accounts are configured..."
+# Ensure current user exists in MariaDB and database is created
+echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
+# Since we are in --skip-grant-tables, we can connect as root without password.
+# We create the database BEFORE flushing privileges to be safe.
 "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "
+    CREATE DATABASE IF NOT EXISTS laravel;
     FLUSH PRIVILEGES;
     CREATE USER IF NOT EXISTS '$(whoami)'@'localhost' IDENTIFIED VIA unix_socket;
     GRANT ALL PRIVILEGES ON *.* TO '$(whoami)'@'localhost' WITH GRANT OPTION;
     ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket;
     FLUSH PRIVILEGES;
-" || echo "Note: Root password might be set, or auth is already fixed."
+" || {
+    echo -e "${RED}Warning: Manual user configuration failed. Attempting to proceed...${NC}"
+}
 
-# Seed Database
 echo "Running migrations and seeders..."
-echo "Creating 'laravel' database..."
-# Try running mariadb client. If it fails, capture debug info.
-if ! "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"; then
-    echo -e "${RED}MariaDB Client failed. Debugging libraries...${NC}"
-    ldd "$MARIADB_DIR/bin/mariadb"
-    export LD_DEBUG=libs
-    "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"
-    exit 1
-fi
-
 "$BIN_DIR/artisan" migrate:fresh --seed --force
 
 # Shutdown temp DB
