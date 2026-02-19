@@ -261,7 +261,7 @@ fi
 
 # Configure .env (Database Paths)
 SOCK_PATH=$(readlink -f "$DATA_DIR/mysql/mysql.sock")
-sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mariadb|" .env
+sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
 sed -i "s|^DB_SOCKET=.*|DB_SOCKET=$SOCK_PATH|" .env
 sed -i "s|^DB_HOST=.*|DB_HOST=localhost|" .env
 sed -i "s|^DB_PORT=.*|DB_PORT=|" .env
