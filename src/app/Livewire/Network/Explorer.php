@@ -72,7 +72,6 @@ class Explorer extends Component
                 $c->proximity_type = 'direct';
                 $c->proximity_level = 1;
             } else {
-                // Determine proximity through geography
                 $myCities = $baseUser->activeJoinedCircles->pluck('city')->filter()->unique();
                 if ($myCities->contains($c->city)) {
                     $c->proximity_type = 'city';
@@ -82,6 +81,15 @@ class Explorer extends Component
                     if ($myRegions->contains($c->region)) {
                         $c->proximity_type = 'region';
                         $c->proximity_level = 4;
+                    } else {
+                        $myCountries = $baseUser->activeJoinedCircles->pluck('country')->filter()->unique();
+                        if ($myCountries->contains($c->country)) {
+                            $c->proximity_type = 'global'; // Same country
+                            $c->proximity_level = 5;
+                        } else {
+                            $c->proximity_type = 'earth'; // Different country
+                            $c->proximity_level = 6;
+                        }
                     }
                 }
             }
@@ -93,7 +101,14 @@ class Explorer extends Component
             ->values()
             ->take($this->limit)
             ->map(function($item) use ($baseUser) {
-                $item->trustPath = $baseUser->getTrustPathTo($item);
+                $path = $baseUser->getTrustPathTo($item);
+                
+                // Add "La Terre" if countries differ
+                if ($item->proximity_type === 'earth') {
+                    array_splice($path, 1, 0, [['type' => 'earth', 'name' => 'La Terre']]);
+                }
+                
+                $item->trustPath = $path;
                 return $item;
             });
     }

@@ -49,6 +49,14 @@
                         <span class="text-[7px] font-black uppercase tracking-widest text-emerald-500 leading-none mb-0.5">Preuve</span>
                         <span class="text-[8px] font-bold text-emerald-900 truncate max-w-[80px] italic group-hover:text-emerald-600">"{{ $node['name'] }}"</span>
                     </a>
+                @elseif($node['type'] === 'earth')
+                    <div class="flex flex-col items-center bg-blue-900 border border-blue-700 px-3 py-1 rounded-xl shadow-lg animate-pulse group">
+                        <span class="text-[7px] font-black uppercase tracking-widest text-blue-200 leading-none mb-0.5">Global</span>
+                        <div class="flex items-center gap-1">
+                            <svg class="w-2.5 h-2.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                            <span class="text-[8px] font-black text-white truncate max-w-[80px]">{{ $node['name'] }}</span>
+                        </div>
+                    </div>
                 @elseif($node['type'] === 'region')
                     <div class="flex flex-col items-center bg-orange-600/10 border border-orange-200/50 px-3 py-1 rounded-xl group">
                         <span class="text-[7px] font-black uppercase tracking-widest text-orange-500 leading-none mb-0.5">Région</span>

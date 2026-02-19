@@ -17,8 +17,21 @@
         }
         this.loading = true;
         try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&limit=5&addressdetails=1`);
-            this.suggestions = await response.json();
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.query)}&format=json&limit=8&addressdetails=1`);
+            const rawData = await response.json();
+            
+            this.suggestions = rawData.map(s => {
+                const addr = s.address || {};
+                const city = addr.city || addr.town || addr.village || addr.municipality;
+                const region = addr.state || addr.region || addr.province;
+                const country = addr.country;
+                
+                if (city && region && country) {
+                    return { ...s, parsed: { city, region, country } };
+                }
+                return null;
+            }).filter(s => s !== null);
+            
             this.isOpen = this.suggestions.length > 0;
         } catch (e) {
             console.error(e);
@@ -31,7 +44,6 @@
         this.raw = suggestion;
         this.isAutoDetected = isAuto;
         this.isOpen = false;
-        // Direct call to Livewire method for reliable sync
         $wire.handleAddressSelected({ query: this.query, raw: this.raw });
     },
     async detectLocation() {
@@ -90,7 +102,7 @@ id="{{ $id }}">
     </style>
 
     <label class="block text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 px-1">
-        Votre Localisation (Quartier, Ville) <span class="text-red-500">*</span>
+        Localisation du Cercle (Ville/Région/Pays) <span class="text-red-500">*</span>
     </label>
 
     <div class="relative">
@@ -103,7 +115,7 @@ id="{{ $id }}">
                     type="text" 
                     autocomplete="off"
                     class="addr-input-field block w-full py-3.5 px-4 text-base focus:outline-none focus:ring-0 sm:text-sm sm:leading-6" 
-                    placeholder="Tapez pour rechercher votre adresse...">
+                    placeholder="Tapez pour rechercher (ex: Paris)...">
             </div>
             
             <div class="flex items-center gap-x-1 pe-3">
@@ -128,9 +140,30 @@ id="{{ $id }}">
             x-transition:enter-end="opacity-100 translate-y-0"
             class="addr-dropdown absolute z-60 w-full mt-2 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/5">
             <template x-for="suggestion in suggestions" :key="suggestion.place_id">
-                <button @click="select(suggestion)" type="button" class="w-full text-left px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
-                    <div class="text-sm font-bold group-hover:text-blue-600 transition-colors" x-text="suggestion.display_name"></div>
-                    <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-black mt-1" x-text="suggestion.type"></div>
+                <button @click="select(suggestion)" type="button" class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group">
+                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                        <!-- Ville -->
+                        <div class="flex flex-col items-center shrink-0 bg-blue-600/10 border border-blue-200/50 px-3 py-1 rounded-xl">
+                            <span class="text-[7px] font-black uppercase tracking-widest text-blue-600 leading-none mb-0.5">Ville</span>
+                            <span class="text-[9px] font-bold text-blue-900 group-hover:text-blue-600 transition-colors" x-text="suggestion.parsed.city"></span>
+                        </div>
+                        <div class="text-slate-300 shrink-0">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                        </div>
+                        <!-- Région -->
+                        <div class="flex flex-col items-center shrink-0 bg-orange-600/10 border border-orange-200/50 px-3 py-1 rounded-xl">
+                            <span class="text-[7px] font-black uppercase tracking-widest text-orange-500 leading-none mb-0.5">Région</span>
+                            <span class="text-[9px] font-bold text-orange-900" x-text="suggestion.parsed.region"></span>
+                        </div>
+                        <div class="text-slate-300 shrink-0">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                        </div>
+                        <!-- Pays -->
+                        <div class="flex flex-col items-center shrink-0 bg-slate-900/10 border border-slate-900/20 px-3 py-1 rounded-xl">
+                            <span class="text-[7px] font-black uppercase tracking-widest text-slate-500 leading-none mb-0.5">Pays</span>
+                            <span class="text-[9px] font-bold text-slate-900 uppercase" x-text="suggestion.parsed.country"></span>
+                        </div>
+                    </div>
                 </button>
             </template>
         </div>

@@ -30,6 +30,11 @@ class Profile extends Component
     public ?string $votingType = null;
     public string $replyText = '';
 
+    // Project Creation UX
+    public bool $isCreatingProject = false;
+    public string $projectType = '';
+    public string $projectTitle = '';
+
     protected $rules = [
         'skillName' => 'required_if:step,1|min:2',
         'proofTitle' => 'required_if:step,2|min:3',
@@ -298,6 +303,46 @@ class Profile extends Component
             'message' => 'Code de transfert généré !',
             'type' => 'success'
         ]);
+    }
+
+    public function startCreatingProject(string $type)
+    {
+        if (auth()->id() !== $this->user->id) return;
+        $this->projectType = $type;
+        $this->projectTitle = '';
+        $this->isCreatingProject = true;
+    }
+
+    public function cancelProjectCreation()
+    {
+        $this->isCreatingProject = false;
+        $this->projectType = '';
+        $this->projectTitle = '';
+    }
+
+    public function confirmProjectCreation()
+    {
+        if (auth()->id() !== $this->user->id) return;
+        
+        $this->validate([
+            'projectTitle' => 'required|min:3|max:255',
+        ]);
+
+        $project = Project::create([
+            'title' => $this->projectTitle,
+            'description' => $this->projectType === 'offer' ? 'Nouvelle offre de service' : 'Nouveau besoin exprimé',
+            'owner_id' => auth()->id(),
+            'is_open' => true,
+        ]);
+
+        // Create the initial offer/demand
+        $project->allOffers()->create([
+            'title' => $this->projectTitle,
+            'description' => 'Détails à personnaliser...',
+            'type' => $this->projectType,
+        ]);
+
+        return redirect()->route('projects.show', $project);
     }
 
     public function render()

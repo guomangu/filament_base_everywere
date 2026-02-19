@@ -55,6 +55,7 @@
                                     'city' => 'Ville',
                                     'region' => 'Région',
                                     'global' => 'Pays',
+                                    'earth' => 'Monde',
                                     default => 'Réseau'
                                 } }}
                             </span>
