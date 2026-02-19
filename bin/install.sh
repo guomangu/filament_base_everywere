@@ -201,32 +201,27 @@ echo -e "${YELLOW}[3/6] Creating wrappers...${NC}"
 # Absolute base path for internal use in wrappers
 BASE_DIR=$(readlink -f "$PROJECT_ROOT")
 
-# PHP Wrapper (Boring - Filters flags FrankenPHP doesn't handle in CLI)
+# PHP Wrapper (Direct frankenphp call, very simple)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-PROJECT_ROOT="$BASE_DIR"
-export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
-
+export LD_LIBRARY_PATH="$BASE_DIR/bin/lib:\$LD_LIBRARY_PATH"
+# Strip common flags that frankenphp php-cli doesn't handle natively
 ARGS=()
-while [[ \$# -gt 0 ]]; do
-    case "\$1" in
-        -d|-c|-n|-v|-i|--version|--info)
-            shift 
-            if [[ "\$1" != -* ]] && [[ \$# -gt 0 ]]; then shift; fi
-            ;;
-        -d*|-c*)
-            shift
-            ;;
-        *)
-            ARGS+=("\$1")
-            shift
-            ;;
-    esac
+for arg in "\$@"; do
+    if [[ "\$arg" == "-d" ]] || [[ "\$arg" == "allow_url_fopen=1" ]]; then continue; fi
+    ARGS+=("\$arg")
 done
-
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${ARGS[@]}"
+exec "$BASE_DIR/bin/frankenphp" php-cli "\${ARGS[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
+
+# Artisan Wrapper (Absolute Path)
+cat <<EOF > "$BIN_DIR/artisan"
+#!/bin/bash
+cd "$BASE_DIR/src"
+exec "$BIN_DIR/php" artisan "\$@"
+EOF
+chmod +x "$BIN_DIR/artisan"
 
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
@@ -237,17 +232,6 @@ export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/bin/composer.phar" "\$@"
 EOF
 chmod +x "$BIN_DIR/composer"
-
-# Artisan Wrapper
-cat <<EOF > "$BIN_DIR/artisan"
-#!/bin/bash
-PROJECT_ROOT="$BASE_DIR"
-export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
-cd "\$PROJECT_ROOT/src"
-# Call frankenphp directly with absolute path to artisan
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/src/artisan" "\$@"
-EOF
-chmod +x "$BIN_DIR/artisan"
 
 # Synchronize PATH for install session
 mkdir -p "$BIN_DIR/.core"
@@ -312,6 +296,7 @@ echo -e "${YELLOW}[5/6] Initializing database...${NC}"
 MARIADB_DIR="$BIN_DIR/mariadb"
 MYSQL_DATA="$DATA_DIR/mysql"
 MYSQL_PID="$MYSQL_DATA/mariadb.pid"
+MYSQL_SOCKET="$DATA_DIR/mysql/mysql.sock" # Define socket path explicitly
 
 # Export Library Path GLOBALLY for this section so all mariadb tools see the polyfill
 export LD_LIBRARY_PATH="$BIN_DIR/lib:$LD_LIBRARY_PATH"
@@ -332,16 +317,16 @@ echo "Starting temporary Database for setup..."
 DB_USER_FLAG=""
 if [ "$(id -u)" = "0" ]; then DB_USER_FLAG="--user=root"; fi
 
-"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --skip-grant-tables --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
+"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$MYSQL_SOCKET" --pid-file="$MYSQL_PID" --skip-networking --skip-grant-tables --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
 TEMP_PID=$!
 
 # Wait for it to start
 for i in {1..30}; do
-    if [ -S "$SOCK_PATH" ]; then break; fi
+    if [ -S "$MYSQL_SOCKET" ]; then break; fi
     sleep 1
 done
 
-if [ ! -S "$SOCK_PATH" ]; then
+if [ ! -S "$MYSQL_SOCKET" ]; then
     echo -e "${RED}Error: Temporary MariaDB failed to start. Check $LOG_DIR/mariadb.log${NC}"
     exit 1
 fi
@@ -350,7 +335,7 @@ fi
 echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
 # Since we are in --skip-grant-tables, we can connect as root without password.
 # We create the database BEFORE flushing privileges to be safe.
-"$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "
+"$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "
     CREATE DATABASE IF NOT EXISTS laravel;
     FLUSH PRIVILEGES;
     CREATE USER IF NOT EXISTS '$(whoami)'@'localhost' IDENTIFIED VIA unix_socket;
@@ -360,14 +345,21 @@ echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
 " || {
     echo -e "${RED}Warning: Manual user configuration failed. Attempting to proceed...${NC}"
 }
+# Sync Schema
+echo -e "${GREEN}Syncing database schema...${NC}"
+# Use the wrapper which correctly handles paths
+"$BIN_DIR/php" "$SRC_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
+if ! "$BIN_DIR/php" "$SRC_DIR/artisan" migrate --force; then
+    echo -e "${RED}Error: Database migrations failed! Check the output above.${NC}"
+fi
 
-echo "Running migrations and seeders..."
-# Use frankenphp directly to avoid any wrapper issues with argument passing
-# Explicitly running RealisticDemoSeeder as requested
-"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" migrate:fresh --seed --seeder=RealisticDemoSeeder --force || {
-    echo -e "${RED}Error: Initial migrations failed. Check database configuration.${NC}"
-    exit 1
-}
+# Verify table existence (diagnostic)
+echo -e "${YELLOW}Verifying sessions table...${NC}"
+if ! export LD_LIBRARY_PATH="$BIN_DIR/lib" && "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "USE laravel; SHOW TABLES LIKE 'sessions';" | grep -q 'sessions'; then
+    echo -e "${RED}Warning: 'sessions' table not found in 'laravel' database!${NC}"
+    echo "Current tables:"
+    export LD_LIBRARY_PATH="$BIN_DIR/lib" && "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "USE laravel; SHOW TABLES;"
+fi
 
 # Shutdown temp DB
 kill $TEMP_PID

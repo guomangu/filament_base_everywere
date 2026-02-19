@@ -58,7 +58,10 @@ MARIADB_PID=$!
 
 # Wait for MariaDB
 for i in {1..30}; do
-    if [ -S "$MYSQL_SOCKET" ]; then break; fi
+    if [ -S "$MYSQL_SOCKET" ]; then 
+        chmod 777 "$MYSQL_SOCKET" || true
+        break 
+    fi
     sleep 1
 done
 
@@ -67,7 +70,7 @@ cd "$SRC_DIR"
 if ! grep -q "^DB_HOST=localhost" .env; then
     echo -e "${YELLOW}Enforcing DB_HOST=localhost for socket connection...${NC}"
     sed -i "s|^DB_HOST=.*|DB_HOST=localhost|" .env
-    "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear
+    "$BIN_DIR/php" "$SRC_DIR/artisan" config:clear
 fi
 
 # If running as root (sudo), we must override DB_USERNAME to match the process owner
@@ -84,9 +87,9 @@ fi
 
 # Sync Schema
 echo -e "${GREEN}Syncing database schema...${NC}"
-# Use frankenphp directly to avoid any wrapper issues with argument passing
-"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
-if ! "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" migrate --force; then
+# Use absolute path to ensure no "artisan undefined" issues
+"$BIN_DIR/php" "$SRC_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
+if ! "$BIN_DIR/php" "$SRC_DIR/artisan" migrate --force; then
     echo -e "${RED}Error: Database migrations failed! Check the output above.${NC}"
 fi
 
