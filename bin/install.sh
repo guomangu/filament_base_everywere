@@ -201,7 +201,7 @@ echo -e "${YELLOW}[3/6] Creating wrappers...${NC}"
 # Absolute base path for internal use in wrappers
 BASE_DIR=$(readlink -f "$PROJECT_ROOT")
 
-# PHP Wrapper (Smart - Filters flags FrankenPHP doesn't like)
+# PHP Wrapper (Boring - Filters flags FrankenPHP doesn't handle in CLI)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
 PROJECT_ROOT="$BASE_DIR"
@@ -218,12 +218,7 @@ while [[ \$# -gt 0 ]]; do
             shift
             ;;
         *)
-            # If the argument is exactly "artisan", use its absolute path
-            if [[ "\$1" == "artisan" ]]; then
-                ARGS+=("\$PROJECT_ROOT/src/artisan")
-            else
-                ARGS+=("\$1")
-            fi
+            ARGS+=("\$1")
             shift
             ;;
     esac
@@ -238,7 +233,8 @@ cat <<EOF > "$BIN_DIR/composer"
 #!/bin/bash
 PROJECT_ROOT="$BASE_DIR"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
-exec "\$PROJECT_ROOT/bin/php" "\$PROJECT_ROOT/bin/composer.phar" "\$@"
+# Call frankenphp directly to avoid double-processing in php wrapper
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/bin/composer.phar" "\$@"
 EOF
 chmod +x "$BIN_DIR/composer"
 
@@ -248,7 +244,8 @@ cat <<EOF > "$BIN_DIR/artisan"
 PROJECT_ROOT="$BASE_DIR"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 cd "\$PROJECT_ROOT/src"
-exec "\$PROJECT_ROOT/bin/php" artisan "\$@"
+# Call frankenphp directly with absolute path to artisan
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/src/artisan" "\$@"
 EOF
 chmod +x "$BIN_DIR/artisan"
 
