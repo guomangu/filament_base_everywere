@@ -100,6 +100,11 @@ for arg in "\$@"; do
   fi
 done
 
+# DEBUG LOGGING
+echo "DEBUG: PHP Wrapper called with: \$@" >&2
+echo "DEBUG: PWD: \$(pwd)" >&2
+echo "DEBUG: IS_ARTISAN: \$IS_ARTISAN" >&2
+
 params=()
 if [ "\$IS_ARTISAN" -eq 1 ]; then
   # Filter -d args for Artisan (FrankenPHP chokes on them)
