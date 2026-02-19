@@ -42,21 +42,10 @@ class Create extends Component implements HasForms
             ->schema([
                 \Filament\Forms\Components\Grid::make(1)
                     ->schema([
-                        TextInput::make('name')
-                            ->label('Circle Name')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('The Creative Forge...'),
                         \Filament\Forms\Components\ViewField::make('address')
-                            ->label('Location / City')
+                            ->label('Localisation du Cercle')
                             ->view('filament.forms.components.address-autocomplete')
                             ->required(),
-                        Textarea::make('description')
-                            ->label('Mission & Description')
-                            ->required()
-                            ->minLength(10)
-                            ->rows(4)
-                            ->placeholder('What are we building here?'),
                     ])
             ])
             ->statePath('data');
@@ -72,9 +61,11 @@ class Create extends Component implements HasForms
         }
 
         $parsed = \App\Services\LocalizationService::parseAddress($data['address'], $this->raw_address);
+        $name = $parsed['city'] ?? 'Cercle local';
 
         $circle = Circle::create([
-            ...$data,
+            'name' => $name,
+            'description' => 'Cercle local à ' . $name,
             'address' => $parsed['full_address'],
             'city' => $parsed['city'],
             'neighborhood' => $parsed['neighborhood'],

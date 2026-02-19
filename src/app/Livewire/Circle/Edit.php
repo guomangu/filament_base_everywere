@@ -14,8 +14,6 @@ class Edit extends Component
     public $is_public;
 
     protected $rules = [
-        'name' => 'required|string|min:3|max:255',
-        'description' => 'required|string|min:10',
         'address' => 'required|string|max:255',
         'type' => 'required|in:business,event,place,project',
         'is_public' => 'boolean',
@@ -40,8 +38,6 @@ class Edit extends Component
         $this->validate();
 
         $this->circle->update([
-            'name' => $this->name,
-            'description' => $this->description,
             'type' => $this->type,
             'address' => $this->address,
             'is_public' => $this->is_public,

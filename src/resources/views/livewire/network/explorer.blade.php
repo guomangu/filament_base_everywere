@@ -30,12 +30,12 @@
             @endphp
             <div class="bg-white/80 border border-slate-100 rounded-[2.5rem] p-4 hover:shadow-xl hover:shadow-blue-500/5 transition-all group overflow-hidden relative">
                 <div class="flex items-center gap-4 mb-4">
-                    <div class="relative shrink-0">
+                    <a href="{{ $url }}" class="relative shrink-0 group/av hover:scale-105 transition-transform duration-300">
                         <img src="{{ $avatar }}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-50 group-hover:ring-blue-500/20 transition-all">
                         <div class="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-slate-900 rounded-lg border-2 border-white">
                             <span class="text-[7px] font-black text-white leading-none">{{ $score }}</span>
                         </div>
-                    </div>
+                    </a>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 mb-0.5">
                             <span @class([
@@ -70,20 +70,18 @@
                     @endphp
                     <div class="flex flex-wrap gap-1">
                         @foreach($skills as $skill)
-                            <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-tight">
+                            <button wire:click="selectSkill('{{ $skill }}')" class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-tight hover:bg-blue-600 hover:text-white transition-colors">
                                 {{ $skill }}
-                            </span>
+                            </button>
                         @endforeach
                     </div>
                 </div>
 
                 @if(!empty($result->trustPath))
-                    <div class="pt-4 border-t border-slate-50">
+                    <div class="pt-4 border-t border-slate-50 relative z-10">
                         <x-user-trust-chain :path="$result->trustPath" class="scale-90 origin-left" />
                     </div>
                 @endif
-
-                <a href="{{ $url }}" class="absolute inset-0 z-0"></a>
             </div>
         @empty
             <div class="md:col-span-2 py-12 text-center">

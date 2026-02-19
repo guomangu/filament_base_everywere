@@ -1,8 +1,8 @@
 <div class="max-w-4xl mx-auto py-12 px-4">
     <div class="bg-white/40 backdrop-blur-xl border border-white/40 rounded-[3rem] p-8 md:p-16 shadow-2xl shadow-blue-500/5">
         <div class="mb-12">
-            <h1 class="text-4xl font-black text-slate-900 mb-2">Initialize a New Circle</h1>
-            <p class="text-slate-500 font-medium">Create a space for community, work, or local collaboration.</p>
+            <h1 class="text-4xl font-black text-slate-900 mb-2">Initialiser un Nouveau Cercle</h1>
+            <p class="text-slate-500 font-medium italic">Le nom du cercle sera automatiquement défini par la ville sélectionnée.</p>
         </div>
 
         <form wire:submit.prevent="store" class="space-y-6">

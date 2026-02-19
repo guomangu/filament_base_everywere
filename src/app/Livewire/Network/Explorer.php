@@ -157,6 +157,14 @@ class Explorer extends Component
             });
     }
 
+    public function selectSkill(string $skillName)
+    {
+        $existing = collect(explode(' ', $this->search))->map(fn($s) => strtolower(trim($s)))->filter();
+        if (!$existing->contains(strtolower($skillName))) {
+            $this->search = trim($this->search . ' ' . $skillName);
+        }
+    }
+
     public function render()
     {
         return view('livewire.network.explorer', [
