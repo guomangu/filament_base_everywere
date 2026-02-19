@@ -260,14 +260,15 @@ if [ ! -f .env ]; then
 fi
 
 # Configure .env (Database Paths)
+# Handle potential commented lines in .env.example
 SOCK_PATH=$(readlink -f "$DATA_DIR/mysql/mysql.sock")
-sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
-sed -i "s|^DB_SOCKET=.*|DB_SOCKET=$SOCK_PATH|" .env
-sed -i "s|^DB_HOST=.*|DB_HOST=localhost|" .env
-sed -i "s|^DB_PORT=.*|DB_PORT=|" .env
-sed -i "s|^DB_DATABASE=.*|DB_DATABASE=laravel|" .env
-sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
-sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=|" .env
+sed -i "s|^#\? *DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
+sed -i "s|^#\? *DB_SOCKET=.*|DB_SOCKET=$SOCK_PATH|" .env
+sed -i "s|^#\? *DB_HOST=.*|DB_HOST=localhost|" .env
+sed -i "s|^#\? *DB_PORT=.*|DB_PORT=|" .env
+sed -i "s|^#\? *DB_DATABASE=.*|DB_DATABASE=laravel|" .env
+sed -i "s|^#\? *DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
+sed -i "s|^#\? *DB_PASSWORD=.*|DB_PASSWORD=|" .env
 
 # Add only core binaries to PATH during install to avoid artisan wrapper conflicts
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
