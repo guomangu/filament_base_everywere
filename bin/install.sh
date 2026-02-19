@@ -279,8 +279,20 @@ export PHP="$BIN_DIR/php"
 "$BIN_DIR/composer" install --no-interaction --prefer-dist
 
 # App Key
+# App Key
 if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=' -f2)" ]; then
-    "$BIN_DIR/artisan" key:generate --force
+    echo "Generating Application Key..."
+    "$BIN_DIR/artisan" key:generate --force || true
+    
+    # Verify and Fallback
+    if ! grep -q "^APP_KEY=base64:" .env; then
+        echo "Artisan key:generate failed or didn't update .env. Using OpenSSL fallback..."
+        NEW_KEY="base64:$(openssl rand -base64 32)"
+        # Escape for sed
+        ESCAPED_KEY=$(echo "$NEW_KEY" | sed 's/[\/&]/\\&/g')
+        sed -i "s|^APP_KEY=.*|APP_KEY=$ESCAPED_KEY|" .env
+        echo "Generated key via OpenSSL: $NEW_KEY"
+    fi
 fi
 
 # Node Dependencies
@@ -306,7 +318,6 @@ if [ -z "$(ls -A "$MYSQL_DATA")" ]; then
 fi
 
 # Start temporary MariaDB for seeding
-# Start temporary MariaDB for seeding
 DB_USER_FLAG=""
 if [ "$(id -u)" = "0" ]; then
     DB_USER_FLAG="--user=root"
@@ -324,9 +335,6 @@ done
 if [ ! -S "$SOCK_PATH" ]; then
     echo -e "${RED}MariaDB failed to start during installation.${NC}"
     kill $TEMP_DB_PID || true
-    exit 1
-fi
-
     exit 1
 fi
 
