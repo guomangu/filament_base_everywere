@@ -12,6 +12,17 @@ NC='\033[0m' # No Color
 
 echo -e "${GREEN}Starting God Stack Installation...${NC}"
 
+# 0. Permissions check for VPS portability
+echo "Checking directory permissions..."
+USER_HOME="/home/$(whoami)"
+if [ -d "$USER_HOME" ]; then
+    CURRENT_PERMS=$(stat -c %a "$USER_HOME")
+    if [ "$CURRENT_PERMS" = "700" ]; then
+        echo "Detected strict home directory permissions ($CURRENT_PERMS). Fixing to 755 to allow web server access..."
+        chmod 755 "$USER_HOME"
+    fi
+fi
+
 # Ensure directories exist
 mkdir -p "$BIN_DIR" "$DATA_DIR/mysql" "$DATA_DIR/storage" "$BIN_DIR/lib"
 
@@ -142,11 +153,16 @@ EOF
     # Ensure APP_KEY is set (even if .env existed but was empty of key)
     if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=' -f2)" ]; then
         echo "Generating application key..."
-        "$PHP_BINARY" artisan key:generate
+        "$PHP_BINARY" artisan key:generate --force
     fi
 
+    # Ensure storage and cache are writable
+    echo "Setting storage permissions..."
+    chmod -R 775 storage bootstrap/cache
+    
     # Clear potentially stale cache
     "$PHP_BINARY" artisan config:clear
+    "$PHP_BINARY" artisan cache:clear
 
 
     # Auto-configure .env using sed to avoid duplicates
