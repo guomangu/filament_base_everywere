@@ -90,19 +90,13 @@ echo -e "${YELLOW}[3/6] Creating environment wrappers...${NC}"
 # PHP Wrapper
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
-params=()
-while [[ \$# -gt 0 ]]; do
-  case "\$1" in
-    -d) shift; if [[ \$# -gt 0 ]]; then shift; fi ;;
-    -d*) shift ;;
-    *) params+=("\$1"); shift ;;
-  esac
-done
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
+# Robust PROJECT_ROOT detection
+REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
+BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
+PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
 EOF
 chmod +x "$BIN_DIR/php"
-ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
@@ -142,6 +136,7 @@ sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
 sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=|" .env
 
 # Add only core binaries to PATH during install to avoid artisan wrapper conflicts
+ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
 ln -sf "$BIN_DIR/node/bin/npm" "$BIN_DIR/.core/npm"
 export PATH="$BIN_DIR/.core:$PATH"
