@@ -26,12 +26,29 @@ echo -e "${GREEN}====================================================${NC}"
 echo -e "${YELLOW}[1/6] Checking system and permissions...${NC}"
 
 # Check for required system tools
-for cmd in curl tar xz git; do
-    if ! command -v $cmd &> /dev/null; then
-        echo -e "${RED}Error: $cmd is not installed. Please run: sudo apt update && sudo apt install -y $cmd${NC}"
-        exit 1
+# Check for required system tools
+# We also check for libncurses6 to ensure we have a base for our polyfill
+REQUIRED_PACKAGES="curl tar xz-utils git"
+
+# Check if we need to install anything
+NEEDS_INSTALL=0
+for pkg in $REQUIRED_PACKAGES; do
+    if ! dpkg -s $pkg >/dev/null 2>&1; then
+        NEEDS_INSTALL=1
+        break
     fi
 done
+
+# Explicitly check for libncurses
+if ! dpkg -s libncurses6 >/dev/null 2>&1 && ! dpkg -s libncurses5 >/dev/null 2>&1; then
+    NEEDS_INSTALL=1
+fi
+
+if [ "$NEEDS_INSTALL" -eq 1 ]; then
+    echo "Installing required system packages..."
+    sudo apt update
+    sudo apt install -y curl tar xz-utils git libncurses6 libtinfo6 || echo "Warning: Package installation failed. Proceeding anyway..."
+fi
 
 # Fix home directory permissions if strict (typical on some VPS)
 USER_HOME="/home/$(whoami)"
