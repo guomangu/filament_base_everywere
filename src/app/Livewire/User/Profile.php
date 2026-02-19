@@ -29,10 +29,6 @@ class Profile extends Component
     public string $validationComment = '';
     public ?string $votingType = null;
     public string $replyText = '';
-    public string $search = '';
-    public $lat;
-    public $lng;
-    public $locationName;
 
     protected $rules = [
         'skillName' => 'required_if:step,1|min:2',
@@ -67,17 +63,8 @@ class Profile extends Component
         }
     }
 
-    public function resetLocation()
-    {
-        $this->reset(['lat', 'lng', 'locationName']);
-    }
-
     public function setLocation($lat, $lng, $name)
     {
-        $this->lat = $lat;
-        $this->lng = $lng;
-        $this->locationName = $name;
-
         if (auth()->check()) {
             auth()->user()->update([
                 'coordinates' => ['lat' => $lat, 'lng' => $lng],
@@ -338,126 +325,6 @@ class Profile extends Component
         // Combine local and proches achievements
         $allAchievements = $this->user->achievements->merge($prochesAchievements);
 
-        // Network Results (1st & 2nd degree) if searching
-        $searchResults = collect();
-        if (!empty($this->search) && auth()->check() && auth()->id() === $this->user->id) {
-            $me = auth()->user();
-            $searchTerm = '%' . strtolower($this->search) . '%';
-
-            // 1. Get 1st Degree: Members of circles I am in
-            $myCircleIds = $me->activeJoinedCircles->pluck('id');
-            $firstDegreeUserIds = \App\Models\CircleMember::whereIn('circle_id', $myCircleIds)
-                ->where('status', 'active')
-                ->pluck('user_id')
-                ->unique();
-
-            // 2. Get 2nd Degree: Circles these members are in, and THEIR members
-            $secondDegreeCircleIds = \App\Models\CircleMember::whereIn('user_id', $firstDegreeUserIds)
-                ->where('status', 'active')
-                ->pluck('circle_id')
-                ->unique();
-
-            $secondDegreeUserIds = \App\Models\CircleMember::whereIn('circle_id', $secondDegreeCircleIds)
-                ->where('status', 'active')
-                ->pluck('user_id')
-                ->unique()
-                ->diff($firstDegreeUserIds)
-                ->diff([$me->id]);
-
-            $networkUserIds = $firstDegreeUserIds->merge($secondDegreeUserIds)->unique();
-
-            $query = \App\Models\User::whereIn('id', $networkUserIds)
-                ->with([
-                    'achievements.skill', 
-                    'proches.achievements.skill', 
-                    'activeJoinedCircles'
-                ]);
-
-            if ($this->lat && $this->lng) {
-                $query->selectRaw("*, (6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coordinates, '$.lat'))))) AS distance", [$this->lat, $this->lng, $this->lat]);
-            }
-
-            $searchResults = $query->where(function($q) use ($searchTerm) {
-                    $q->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                     ->orWhereRaw('LOWER(bio) LIKE ?', [$searchTerm])
-                      ->orWhereHas('achievements', function($aq) use ($searchTerm) {
-                          $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                            ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                            ->orWhereHas('skill', function($sq) use ($searchTerm) {
-                                $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                            });
-                      })
-                      ->orWhereHas('proches', function($pq) use ($searchTerm) {
-                          $pq->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
-                            ->orWhereHas('achievements', function($aq) use ($searchTerm) {
-                                $aq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                                  ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                                  ->orWhereHas('skill', function($sq) use ($searchTerm) {
-                                      $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]);
-                                  });
-                            });
-                      });
-                })
-                ->get()
-                ->map(function($u) use ($firstDegreeUserIds, $searchTerm) {
-                    $u->degree = $firstDegreeUserIds->contains($u->id) ? 1 : 2;
-                    $sText = str_replace('%', '', strtolower($searchTerm));
-                    
-                    // Priority 1: Direct Achievement Match
-                    $achievementMatch = $u->achievements->first(fn($a) => 
-                        str_contains(strtolower($a->title), $sText) || 
-                        str_contains(strtolower($a->description), $sText) || 
-                        str_contains(strtolower($a->skill?->name ?? ''), $sText)
-                    );
-
-                    if ($achievementMatch) {
-                        $u->matchReason = "Expertise: " . ($achievementMatch->skill?->name ?? $achievementMatch->title);
-                        $target = $achievementMatch;
-                    } 
-                    // Priority 2: Proche Match (Direct or Achievement)
-                    else {
-                        $matchedProche = null;
-                        $matchedProcheAchievement = null;
-
-                        foreach($u->proches as $proche) {
-                            if (str_contains(strtolower($proche->name), $sText)) {
-                                $matchedProche = $proche;
-                                break;
-                            }
-                            $pa = $proche->achievements->first(fn($a) => 
-                                str_contains(strtolower($a->title), $sText) || 
-                                str_contains(strtolower($a->description), $sText) || 
-                                str_contains(strtolower($a->skill?->name ?? ''), $sText)
-                            );
-                            if ($pa) {
-                                $matchedProche = $proche;
-                                $matchedProcheAchievement = $pa;
-                                break;
-                            }
-                        }
-
-                        if ($matchedProcheAchievement) {
-                            $u->matchReason = "Expertise Proche: " . ($matchedProcheAchievement->skill?->name ?? $matchedProcheAchievement->title);
-                            $target = $matchedProcheAchievement;
-                        } elseif ($matchedProche) {
-                            $u->matchReason = "Proche: " . $matchedProche->name;
-                            $target = $matchedProche;
-                        } 
-                        // Priority 3: User Match (Name/Bio)
-                        else {
-                            if (str_contains(strtolower($u->name), $sText)) $u->matchReason = "Nom";
-                            else if (str_contains(strtolower($u->bio), $sText)) $u->matchReason = "Bio";
-                            else $u->matchReason = "Expertise";
-                            $target = $u;
-                        }
-                    }
-
-                    $u->trustPath = auth()->check() ? auth()->user()->getTrustPathTo($target) : [];
-                    return $u;
-                })
-                ->sortBy('degree');
-        }
-
         // 4. User Projects (owned or active member)
         try {
             $memberProjectIds = ProjectMember::where('memberable_type', \App\Models\User::class)
@@ -477,7 +344,6 @@ class Profile extends Component
         return view('livewire.user.profile', [
             'groupedAchievements' => $allAchievements->groupBy(fn($ach) => $ach->skill->name),
             'networkExperts' => $networkExperts,
-            'searchResults' => $searchResults,
             'canEdit' => $this->canEdit(),
             'userProjects' => $userProjects,
             'activeProject' => $this->user->activeProject(),
