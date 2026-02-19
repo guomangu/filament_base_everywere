@@ -86,59 +86,52 @@ fi
 
 # Polyfill missing libraries (specifically libncurses.so.5 for MariaDB on Debian 13)
 # Polyfill missing libraries (specifically libncurses.so.5 for MariaDB on Debian 13)
-# The portable MariaDB binary expects older libraries.
-# We explicitly check common Debian/Ubuntu multiarch paths for the newer version (v6) and symlink it.
+echo "Debug: Searching for ncurses libraries..."
 
-# Define potential paths for libncurses.so.6
-SEARCH_PATHS=(
-    "/usr/lib/x86_64-linux-gnu/libncurses.so.6"
-    "/usr/lib/libncurses.so.6"
-    "/lib/x86_64-linux-gnu/libncurses.so.6"
-    "/lib/libncurses.so.6"
-)
+# Ensure we can find ldconfig/system tools
+export PATH=$PATH:/usr/sbin:/sbin
 
-FOUND_LIB=""
-for path in "${SEARCH_PATHS[@]}"; do
-    if [ -f "$path" ]; then
-        FOUND_LIB="$path"
-        break
-    fi
-done
+# DEBUG: What do we actually have?
+echo "Debug: System ncurses files:"
+find /usr/lib /lib /lib64 /usr/lib64 -name "libncurses.so*" 2>/dev/null | head -n 5
 
-# If not found directly, try finding any .so.6 file using ldconfig (most reliable)
+# 1. Try finding explicitly via find (covering more paths)
+FOUND_LIB=$(find /usr/lib /lib /lib64 /usr/lib64 -name "libncurses.so.6*" -print -quit 2>/dev/null)
+
+# 2. Try ldconfig if find failed
 if [ -z "$FOUND_LIB" ]; then
-    FOUND_LIB=$(ldconfig -p | grep "libncurses.so.6" | head -n 1 | awk '{print $NF}')
+    FOUND_LIB=$(ldconfig -p 2>/dev/null | grep "libncurses.so.6" | head -n 1 | awk '{print $NF}')
 fi
 
-# Fallback to find if ldconfig failed
+# 3. Desperate fallback: Try finding ANY ncurses so
 if [ -z "$FOUND_LIB" ]; then
-    FOUND_LIB=$(find /usr/lib /lib -name "libncurses.so.6*" -print -quit 2>/dev/null)
+     FOUND_LIB=$(find /usr/lib /lib /lib64 /usr/lib64 -name "libncurses.so*" -print -quit 2>/dev/null)
 fi
 
 if [ -n "$FOUND_LIB" ]; then
-    echo "Found system ncurses: $FOUND_LIB"
-    echo "Polyfilling libncurses.so.5..."
+    echo "Polyfilling libncurses.so.5 using $FOUND_LIB..."
     ln -sf "$FOUND_LIB" "$BIN_DIR/lib/libncurses.so.5"
     
-    # Also handle libtinfo if possible (often same file or separate)
-    # Check ldconfig for tinfo too
-    TINFO_LIB=$(ldconfig -p | grep "libtinfo.so.6" | head -n 1 | awk '{print $NF}')
-    if [ -z "$TINFO_LIB" ]; then
-        TINFO_LIB=$(echo "$FOUND_LIB" | sed 's/ncurses/tinfo/')
+    # Handle libtinfo
+    TINFO_LIB=$(echo "$FOUND_LIB" | sed 's/ncurses/tinfo/')
+    if [ ! -f "$TINFO_LIB" ]; then
+        # Try finding tinfo explicitly
+        TINFO_LIB=$(find /usr/lib /lib /lib64 /usr/lib64 -name "libtinfo.so.6*" -print -quit 2>/dev/null)
     fi
 
-    if [ -f "$TINFO_LIB" ]; then
+    if [ -n "$TINFO_LIB" ] && [ -f "$TINFO_LIB" ]; then
          ln -sf "$TINFO_LIB" "$BIN_DIR/lib/libtinfo.so.5"
     else
-         # Fallback: link ncurses to tinfo (often works if bundled)
+         # Fallback link ncurses to tinfo
          ln -sf "$FOUND_LIB" "$BIN_DIR/lib/libtinfo.so.5"
     fi
 else
-    echo -e "${RED}Warning: Could not find libncurses.so.6. MariaDB client WILL fail.${NC}"
-    echo "Please install libncurses5 or libncurses6: sudo apt install libncurses5 || sudo apt install libncurses6"
+    echo -e "${RED}Warning: Could not find ANY libncurses. MariaDB client WILL fail.${NC}"
+    echo "Debug: Dumping ldconfig..."
+    ldconfig -p | grep curses || true
 fi
 
-# DEBUG: List polyfills to be sure
+echo "Debug: Contents of $BIN_DIR/lib:"
 ls -l "$BIN_DIR/lib"
 
 # PHP Wrapper (Smart - Filters flags only for Artisan)
