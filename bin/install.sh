@@ -91,32 +91,57 @@ REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
 BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
 PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
 
-# Check if running 'artisan' to conditionally filter flags
-IS_ARTISAN=0
+# Check detection logic: strictly check if 'artisan' follows 'composer.phar' directly
+# This handles the case where composer invokes itself as: php composer.phar -d ... artisan ...
+FILTER_MODE=0
+FOUND_COMPOSER=0
+FIRST_COMMAND=""
+
 for arg in "\$@"; do
-  if [[ "\$arg" == "artisan" ]] || [[ "\$arg" == *"artisan" ]]; then
-    IS_ARTISAN=1
-    break
+  # Skip flags (simple check)
+  if [[ "\$arg" == -* ]]; then continue; fi
+
+  if [[ "\$arg" == *"composer.phar" ]]; then
+     FOUND_COMPOSER=1
+     continue
+  fi
+  
+  # Captures the first non-flag, non-composer argument
+  if [ -z "\$FIRST_COMMAND" ]; then
+     FIRST_COMMAND="\$arg"
+     break
   fi
 done
 
-# DEBUG LOGGING
-echo "DEBUG: PHP Wrapper called with: \$@" >&2
-echo "DEBUG: PWD: \$(pwd)" >&2
-echo "DEBUG: IS_ARTISAN: \$IS_ARTISAN" >&2
+# If composer is present AND the query command is artisan -> We are in the broken state.
+if [ "\$FOUND_COMPOSER" -eq 1 ] && [[ "\$FIRST_COMMAND" == *"artisan" ]]; then
+   FILTER_MODE=1
+fi
+
+# Fallback: If no composer.phar but artisan is there (direct call), filter flags too
+if [ "\$FOUND_COMPOSER" -eq 0 ] && [[ "\$first_arg" == *"artisan" ]]; then
+    # Actually, for direct calls, flags are usually not -d but artisan flags.
+    # But if users call: bin/php -d ... artisan, we might want to filter?
+    # Let's stick to the composer fix mostly.
+    # But wait, previous smart wrapper handled IS_ARTISAN=1.
+    if [[ "\$@" == *"artisan"* ]]; then
+        FILTER_MODE=1
+    fi
+fi
 
 params=()
-if [ "\$IS_ARTISAN" -eq 1 ]; then
-  # Filter -d args for Artisan (FrankenPHP chokes on them)
+if [ "\$FILTER_MODE" -eq 1 ]; then
+  # Filter -d args AND composer.phar
   while [[ \$# -gt 0 ]]; do
     case "\$1" in
       -d) shift; if [[ \$# -gt 0 ]]; then shift; fi ;;
       -d*) shift ;;
+      *composer.phar*) shift ;;
       *) params+=("\$1"); shift ;;
     esac
   done
 else
-  # Pass everything for Composer/Others
+  # Pass everything
   params=("\$@")
 fi
 
