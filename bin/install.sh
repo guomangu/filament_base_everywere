@@ -198,12 +198,20 @@ MARIADB_DIR="$BIN_DIR/mariadb"
 MYSQL_DATA="$DATA_DIR/mysql"
 MYSQL_PID="$MYSQL_DATA/mariadb.pid"
 
+# Export Library Path GLOBALLY for this section so all mariadb tools see the polyfill
+export LD_LIBRARY_PATH="$BIN_DIR/lib:$LD_LIBRARY_PATH"
+
+# Force kill any stale mariadbd processes to avoid file lock errors (error 11)
+echo "Ensuring no stale Database processes are running..."
+pkill -f "$MARIADB_DIR/bin/mariadbd" || true
+sleep 2
+
 if [ -z "$(ls -A "$MYSQL_DATA")" ]; then
+    echo "Installing default system tables..."
     "$MARIADB_DIR/scripts/mariadb-install-db" --user=$(whoami) --datadir="$MYSQL_DATA" --basedir="$MARIADB_DIR" --auth-root-authentication-method=normal
 fi
 
 # Start temporary MariaDB for seeding
-export LD_LIBRARY_PATH="$BIN_DIR/lib:$LD_LIBRARY_PATH"
 "$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB &
 TEMP_DB_PID=$!
 
