@@ -316,6 +316,19 @@ sleep 2
 if [ -z "$(ls -A "$MYSQL_DATA")" ]; then
     echo "Installing default system tables..."
     "$MARIADB_DIR/scripts/mariadb-install-db" --user=$(whoami) --datadir="$MYSQL_DATA" --basedir="$MARIADB_DIR" --auth-root-authentication-method=normal
+    
+    # We need to start it momentarily to create the user account for the current user
+    # because mariadb-install-db only creates root.
+    echo "Creating user account for $(whoami)..."
+    "$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --skip-networking --skip-grant-tables &
+    TEMP_PID=$!
+    sleep 5
+    
+    export LD_LIBRARY_PATH="$BIN_DIR/lib:$LD_LIBRARY_PATH"
+    "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "FLUSH PRIVILEGES; CREATE USER IF NOT EXISTS '$(whoami)'@'localhost' IDENTIFIED VIA unix_socket; GRANT ALL PRIVILEGES ON *.* TO '$(whoami)'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+    
+    kill $TEMP_PID
+    wait $TEMP_PID 2>/dev/null || true
 fi
 
 # Start temporary MariaDB for seeding
