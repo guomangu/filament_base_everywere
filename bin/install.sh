@@ -96,17 +96,21 @@ ARGS=("\$@")
 ARTISAN_INDEX=-1
 
 for i in "\${!ARGS[@]}"; do
-    if [[ "\${ARGS[\$i]}" == *"artisan" ]]; then
+    if [[ "\${ARGS[\$i]}" == "artisan" ]] || [[ "\${ARGS[\$i]}" == *"artisan" ]]; then
         ARTISAN_INDEX=\$i
         break
     fi
 done
 
 if [ \$ARTISAN_INDEX -ge 0 ]; then
-    # We found artisan! Discard everything before it (flags, composer.phar)
-    # and use artisan + remaining args.
-    CLEAN_ARGS=("${ARGS[@]:$ARTISAN_INDEX}")
-    exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${CLEAN_ARGS[@]}"
+    # Found artisan! 
+    # Discard everything before (flags, composer) AND the artisan arg itself.
+    # Use ABSOLUTE path to src/artisan to avoid any ambiguity or "Path empty" errors.
+    
+    # Get args AFTER artisan matching index
+    REST_ARGS=("${ARGS[@]:$((ARTISAN_INDEX + 1))}")
+    
+    exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/src/artisan" "\${REST_ARGS[@]}"
 else
     # Standard execution (Composer, etc)
     exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
