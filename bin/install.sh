@@ -90,7 +90,7 @@ echo -e "${YELLOW}[3/6] Creating environment wrappers...${NC}"
 # PHP Wrapper
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
 params=()
 while [[ \$# -gt 0 ]]; do
   case "\$1" in
@@ -107,7 +107,7 @@ ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
 cd "\$PROJECT_ROOT/src"
 exec "\$PROJECT_ROOT/bin/php" "\$PROJECT_ROOT/bin/composer.phar" "\$@"
 EOF
@@ -116,7 +116,7 @@ chmod +x "$BIN_DIR/composer"
 # Artisan Wrapper
 cat <<EOF > "$BIN_DIR/artisan"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
 cd "\$PROJECT_ROOT/src"
 exec "\$PROJECT_ROOT/bin/php" artisan "\$@"
 EOF
