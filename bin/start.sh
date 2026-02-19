@@ -59,16 +59,22 @@ MARIADB_PID=$!
 # Wait for MariaDB
 for i in {1..30}; do
     if [ -S "$MYSQL_SOCKET" ]; then break; fi
-    if [ -S "$MYSQL_SOCKET" ]; then break; fi
     sleep 1
 done
 
 # Ensure DB_HOST is localhost for socket connection (prevent TCP fallback)
 cd "$SRC_DIR"
-if grep -q "^DB_HOST=$" .env || ! grep -q "^DB_HOST=localhost" .env; then
+if ! grep -q "^DB_HOST=localhost" .env; then
     echo -e "${YELLOW}Enforcing DB_HOST=localhost for socket connection...${NC}"
     sed -i "s|^DB_HOST=.*|DB_HOST=localhost|" .env
     "$BIN_DIR/artisan" config:clear
+fi
+
+# If running as root (sudo), we must override DB_USERNAME to match the process owner
+# for unix_socket authentication to work correctly.
+if [ "$(id -u)" = "0" ]; then
+    echo -e "${YELLOW}Running as root, overriding DB_USERNAME to 'root' for socket auth...${NC}"
+    export DB_USERNAME=root
 fi
 
 if [ ! -S "$MYSQL_SOCKET" ]; then

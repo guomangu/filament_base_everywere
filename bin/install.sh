@@ -316,42 +316,41 @@ sleep 2
 if [ -z "$(ls -A "$MYSQL_DATA")" ]; then
     echo "Installing default system tables..."
     "$MARIADB_DIR/scripts/mariadb-install-db" --user=$(whoami) --datadir="$MYSQL_DATA" --basedir="$MARIADB_DIR" --auth-root-authentication-method=normal
-    
-    # We need to start it momentarily to create the user account for the current user
-    # because mariadb-install-db only creates root.
-    echo "Creating user account for $(whoami)..."
-    "$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --skip-networking --skip-grant-tables &
-    TEMP_PID=$!
-    sleep 5
-    
-    export LD_LIBRARY_PATH="$BIN_DIR/lib:$LD_LIBRARY_PATH"
-    "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "FLUSH PRIVILEGES; CREATE USER IF NOT EXISTS '$(whoami)'@'localhost' IDENTIFIED VIA unix_socket; GRANT ALL PRIVILEGES ON *.* TO '$(whoami)'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
-    
-    kill $TEMP_PID
-    wait $TEMP_PID 2>/dev/null || true
 fi
 
-# Start temporary MariaDB for seeding
+# 5. Start temporary MariaDB for seeding & user setup
+echo "Starting temporary Database for setup..."
+# If root, use root, otherwise use current user
 DB_USER_FLAG=""
-if [ "$(id -u)" = "0" ]; then
-    DB_USER_FLAG="--user=root"
-fi
+if [ "$(id -u)" = "0" ]; then DB_USER_FLAG="--user=root"; fi
 
-"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB $DB_USER_FLAG &
-TEMP_DB_PID=$!
+"$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$SOCK_PATH" --pid-file="$MYSQL_PID" --skip-networking --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
+TEMP_PID=$!
 
-# Wait for ready
+# Wait for it to start
 for i in {1..30}; do
     if [ -S "$SOCK_PATH" ]; then break; fi
     sleep 1
 done
 
 if [ ! -S "$SOCK_PATH" ]; then
-    echo -e "${RED}MariaDB failed to start during installation.${NC}"
-    kill $TEMP_DB_PID || true
+    echo -e "${RED}Error: Temporary MariaDB failed to start. Check $LOG_DIR/mariadb.log${NC}"
     exit 1
 fi
 
+# Ensure current user exists in MariaDB with socket auth
+# This solves the "Access denied" error for both guuu and root
+echo "Ensuring MariaDB user accounts are configured..."
+"$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "
+    FLUSH PRIVILEGES;
+    CREATE USER IF NOT EXISTS '$(whoami)'@'localhost' IDENTIFIED VIA unix_socket;
+    GRANT ALL PRIVILEGES ON *.* TO '$(whoami)'@'localhost' WITH GRANT OPTION;
+    ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket;
+    FLUSH PRIVILEGES;
+" || echo "Note: Root password might be set, or auth is already fixed."
+
+# Seed Database
+echo "Running migrations and seeders..."
 echo "Creating 'laravel' database..."
 # Try running mariadb client. If it fails, capture debug info.
 if ! "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"; then
@@ -365,8 +364,8 @@ fi
 "$BIN_DIR/artisan" migrate:fresh --seed --force
 
 # Shutdown temp DB
-kill $TEMP_DB_PID
-wait $TEMP_DB_PID 2>/dev/null || true
+kill $TEMP_PID
+wait $TEMP_PID 2>/dev/null || true
 
 # 5. Final Permissions
 echo -e "${YELLOW}[6/6] Finalizing permissions...${NC}"
