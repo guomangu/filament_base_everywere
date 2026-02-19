@@ -19,7 +19,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${GREEN}====================================================${NC}"
-echo -e "${GREEN}   Starting Universal God Stack Installation...    ${NC}"
+echo -e "${GREEN}   God Stack Universal Installer v2.1              ${NC}"
 echo -e "${GREEN}====================================================${NC}"
 
 # 0. System Checks & Permissions
@@ -172,6 +172,12 @@ fi
 echo "Debug: Final contents of logical library path ($BIN_DIR/lib):"
 ls -l "$BIN_DIR/lib"
 
+# Try to install libncurses5 if possible and polyfill failed
+if [ ! -f "$BIN_DIR/lib/libncurses.so.5" ]; then
+    echo "Attempting to install libncurses5 via apt..."
+    sudo apt update && sudo apt install -y libncurses5 || echo "libncurses5 package not found, relying on polyfill."
+fi
+
 # PHP Wrapper (Smart - Filters flags only for Artisan)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
@@ -298,7 +304,19 @@ if [ ! -S "$SOCK_PATH" ]; then
     exit 1
 fi
 
-"$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"
+    exit 1
+fi
+
+echo "Creating 'laravel' database..."
+# Try running mariadb client. If it fails, capture debug info.
+if ! "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"; then
+    echo -e "${RED}MariaDB Client failed. Debugging libraries...${NC}"
+    ldd "$MARIADB_DIR/bin/mariadb"
+    export LD_DEBUG=libs
+    "$MARIADB_DIR/bin/mariadb" --socket="$SOCK_PATH" -u root -e "CREATE DATABASE IF NOT EXISTS laravel;"
+    exit 1
+fi
+
 "$BIN_DIR/artisan" migrate:fresh --seed --force
 
 # Shutdown temp DB
