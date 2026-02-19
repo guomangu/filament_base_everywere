@@ -85,20 +85,47 @@ if [ ! -d "$BIN_DIR/mariadb" ]; then
 fi
 
 # Polyfill missing libraries (specifically libncurses.so.5 for MariaDB on Debian 13)
-# The portal MariaDB binary expects older libraries not present by default on Debian 13 (Trixie).
-if [ ! -f "$BIN_DIR/lib/libncurses.so.5" ]; then
-    # Attempt to find system libncurses.so.6 and symlink it
-    # This is a common strategy for portable binaries on newer distros
-    SYSTEM_LIB=$(find /usr/lib /lib -name "libncurses.so.6*" -print -quit 2>/dev/null)
-    
-    if [ -n "$SYSTEM_LIB" ]; then
-        echo "Polyfilling libncurses.so.5 using $SYSTEM_LIB..."
-        ln -sf "$SYSTEM_LIB" "$BIN_DIR/lib/libncurses.so.5"
-        # Often libtinfo is also needed/bundled in ncurses
-        ln -sf "$SYSTEM_LIB" "$BIN_DIR/lib/libtinfo.so.5" 
-    else
-        echo "Warning: Could not find libncurses.so.6. MariaDB client might fail."
+# Polyfill missing libraries (specifically libncurses.so.5 for MariaDB on Debian 13)
+# The portable MariaDB binary expects older libraries.
+# We explicitly check common Debian/Ubuntu multiarch paths for the newer version (v6) and symlink it.
+
+# Define potential paths for libncurses.so.6
+SEARCH_PATHS=(
+    "/usr/lib/x86_64-linux-gnu/libncurses.so.6"
+    "/usr/lib/libncurses.so.6"
+    "/lib/x86_64-linux-gnu/libncurses.so.6"
+    "/lib/libncurses.so.6"
+)
+
+FOUND_LIB=""
+for path in "${SEARCH_PATHS[@]}"; do
+    if [ -f "$path" ]; then
+        FOUND_LIB="$path"
+        break
     fi
+done
+
+# If not found directly, try finding any .so.6 file
+if [ -z "$FOUND_LIB" ]; then
+    FOUND_LIB=$(find /usr/lib /lib -name "libncurses.so.6*" -print -quit 2>/dev/null)
+fi
+
+if [ -n "$FOUND_LIB" ]; then
+    echo "Found system ncurses: $FOUND_LIB"
+    echo "Polyfilling libncurses.so.5..."
+    ln -sf "$FOUND_LIB" "$BIN_DIR/lib/libncurses.so.5"
+    
+    # Also handle libtinfo if possible (often same file or separate)
+    TINFO_LIB=$(echo "$FOUND_LIB" | sed 's/ncurses/tinfo/')
+    if [ -f "$TINFO_LIB" ]; then
+         ln -sf "$TINFO_LIB" "$BIN_DIR/lib/libtinfo.so.5"
+    else
+         # Fallback: link ncurses to tinfo (often works if bundled)
+         ln -sf "$FOUND_LIB" "$BIN_DIR/lib/libtinfo.so.5"
+    fi
+else
+    echo -e "${RED}Warning: Could not find libncurses.so.6. MariaDB client WILL fail.${NC}"
+    echo "Please install libncurses5 or libncurses6: sudo apt install libncurses5 || sudo apt install libncurses6"
 fi
 
 # PHP Wrapper (Smart - Filters flags only for Artisan)
