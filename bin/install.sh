@@ -356,6 +356,18 @@ wait $TEMP_DB_PID 2>/dev/null || true
 
 # 5. Final Permissions
 echo -e "${YELLOW}[6/6] Finalizing permissions...${NC}"
+
+# Ensure current user owns everything (in case root start messed it up)
+CURRENT_USER=$(whoami)
+echo "Ensuring $CURRENT_USER owns storage and bootstrap/cache..."
+
+# Try simple chown first, if fails, use sudo
+if ! chown -R "$CURRENT_USER":"$CURRENT_USER" storage bootstrap/cache 2>/dev/null; then
+    echo -e "${YELLOW}Detected root-owned files. Fixing ownership with sudo...${NC}"
+    sudo chown -R "$CURRENT_USER":"$CURRENT_USER" storage bootstrap/cache
+    sudo chown -R "$CURRENT_USER":"$CURRENT_USER" "$DATA_DIR/logs" 2>/dev/null || true
+fi
+
 chmod -R 775 storage bootstrap/cache
 "$BIN_DIR/artisan" config:clear
 
