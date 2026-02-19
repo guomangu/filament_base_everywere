@@ -196,12 +196,12 @@ if [ ! -f "$BIN_DIR/lib/libncurses.so.5" ]; then
 fi
 
 # 2. Wrapper Creation
-echo -e "${YELLOW}[3/6] creating wrappers...${NC}"
+echo -e "${YELLOW}[3/6] Creating wrappers...${NC}"
 
 # PHP Wrapper
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
 EOF
@@ -210,7 +210,7 @@ chmod +x "$BIN_DIR/php"
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/bin/composer.phar" "\$@"
 EOF
@@ -219,12 +219,18 @@ chmod +x "$BIN_DIR/composer"
 # Artisan Wrapper
 cat <<EOF > "$BIN_DIR/artisan"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 cd "\$PROJECT_ROOT/src"
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli artisan "\$@"
 EOF
 chmod +x "$BIN_DIR/artisan"
+
+# Synchronize PATH for install session
+ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
+ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
+ln -sf "$BIN_DIR/node/bin/npm" "$BIN_DIR/.core/npm"
+export PATH="$BIN_DIR/.core:$PATH"
 
 # 3. Application Setup
 echo -e "${YELLOW}[4/6] Setting up application...${NC}"
@@ -261,7 +267,7 @@ if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=
     echo "Generating Application Key..."
     # Use frankenphp directly to avoid any wrapper issues with argument passing
     # Use frankenphp directly to avoid any wrapper issues with argument passing
-    "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- key:generate --force || true
+    "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" key:generate --force || true
     
     # Verify and Fallback
     if ! grep -q "^APP_KEY=base64:" .env; then
@@ -333,7 +339,7 @@ echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
 
 echo "Running migrations and seeders..."
 # Use frankenphp directly to avoid any wrapper issues with argument passing
-"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" -- migrate:fresh --seed --force || {
+"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" migrate:fresh --seed --force || {
     echo -e "${RED}Error: Initial migrations failed. Check database configuration.${NC}"
     exit 1
 }
@@ -358,7 +364,7 @@ fi
 
 chmod -R 775 storage bootstrap/cache "$DATA_DIR"
 # Use frankenphp directly to avoid any wrapper issues with argument passing
-"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- config:clear
+"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear
 
 echo -e "${GREEN}====================================================${NC}"
 echo -e "${GREEN}   Installation Complete! Use ./bin/start.sh       ${NC}"

@@ -85,9 +85,8 @@ fi
 # Sync Schema
 echo -e "${GREEN}Syncing database schema...${NC}"
 # Use frankenphp directly to avoid any wrapper issues with argument passing
-# Added -- to ensure following arguments reach the script
-"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- config:clear >> "$LOG_DIR/install.log" 2>&1
-if ! "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" -- migrate --force; then
+"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
+if ! "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" migrate --force; then
     echo -e "${RED}Error: Database migrations failed! Check the output above.${NC}"
 fi
 
