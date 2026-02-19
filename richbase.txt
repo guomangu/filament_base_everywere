@@ -1,0 +1,5 @@
+debian@vps-b04288ea-vps-ovh-net:~/filament1$ ./bin/artisan db:seed --class=RealisticDemoSeeder --force
+
+   INFO  Seeding database.  
+
+debian@vps-b04288ea-vps-ovh-net:~/filament1$ 
