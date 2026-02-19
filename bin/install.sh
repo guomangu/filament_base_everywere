@@ -108,6 +108,7 @@ done
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
+ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
@@ -147,7 +148,6 @@ sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
 sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=|" .env
 
 # Add only core binaries to PATH during install to avoid artisan wrapper conflicts
-ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
 ln -sf "$BIN_DIR/node/bin/npm" "$BIN_DIR/.core/npm"
 export PATH="$BIN_DIR/.core:$PATH"
