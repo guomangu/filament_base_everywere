@@ -105,6 +105,7 @@ while [[ \$# -gt 0 ]]; do
   esac
 done
 
+echo "DEBUG: Executing frankenphp php-cli \${params[@]}" >&2
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
