@@ -94,7 +94,18 @@ cat <<EOF > "$BIN_DIR/php"
 REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
 BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
 PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
+
+# Filter out -d arguments (php config) that frankenphp or the script might misinterpret as args
+params=()
+while [[ \$# -gt 0 ]]; do
+  case "\$1" in
+    -d) shift; if [[ \$# -gt 0 ]]; then shift; fi ;;
+    -d*) shift ;;
+    *) params+=("\$1"); shift ;;
+  esac
+done
+
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
 
