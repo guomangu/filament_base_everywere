@@ -84,6 +84,23 @@ if [ ! -d "$BIN_DIR/mariadb" ]; then
     rm mariadb.tar.gz
 fi
 
+# Polyfill missing libraries (specifically libncurses.so.5 for MariaDB on Debian 13)
+# The portal MariaDB binary expects older libraries not present by default on Debian 13 (Trixie).
+if [ ! -f "$BIN_DIR/lib/libncurses.so.5" ]; then
+    # Attempt to find system libncurses.so.6 and symlink it
+    # This is a common strategy for portable binaries on newer distros
+    SYSTEM_LIB=$(find /usr/lib /lib -name "libncurses.so.6*" -print -quit 2>/dev/null)
+    
+    if [ -n "$SYSTEM_LIB" ]; then
+        echo "Polyfilling libncurses.so.5 using $SYSTEM_LIB..."
+        ln -sf "$SYSTEM_LIB" "$BIN_DIR/lib/libncurses.so.5"
+        # Often libtinfo is also needed/bundled in ncurses
+        ln -sf "$SYSTEM_LIB" "$BIN_DIR/lib/libtinfo.so.5" 
+    else
+        echo "Warning: Could not find libncurses.so.6. MariaDB client might fail."
+    fi
+fi
+
 # PHP Wrapper (Smart - Filters flags only for Artisan)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
