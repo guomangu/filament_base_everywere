@@ -218,7 +218,12 @@ while [[ \$# -gt 0 ]]; do
             shift
             ;;
         *)
-            ARGS+=("\$1")
+            # If the argument is exactly "artisan", use its absolute path
+            if [[ "\$1" == "artisan" ]]; then
+                ARGS+=("\$PROJECT_ROOT/src/artisan")
+            else
+                ARGS+=("\$1")
+            fi
             shift
             ;;
     esac
