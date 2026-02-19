@@ -193,12 +193,17 @@
                                 @endif
                             </div>
                             @if($circle->address)
-                                <div class="flex flex-wrap gap-2 text-slate-900">
-                                    @if($circle->city)
-                                        <a href="{{ url('/?search=' . urlencode($circle->city)) }}" class="px-3 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-tight hover:bg-blue-600 transition-all">
-                                            {{ $circle->city }}
-                                        </a>
-                                    @else
+                                <div class="flex flex-wrap items-center gap-1">
+                                    @if($circle->address_tags)
+                                        @foreach($circle->address_tags as $tag)
+                                            <a href="{{ url('/?search=' . urlencode($tag)) }}" class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors">
+                                                {{ $tag }}
+                                            </a>
+                                            @if(!$loop->last)
+                                                <span class="text-[8px] text-gray-300 dark:text-gray-600 font-bold">&lt;</span>
+                                            @endif
+                                        @endforeach
+                                    @elseif($circle->address)
                                         <a href="{{ url('/?search=' . urlencode($circle->address)) }}" class="text-[10px] font-black uppercase hover:text-blue-600 transition-colors">
                                             {{ $circle->address }}
                                         </a>

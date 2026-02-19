@@ -45,22 +45,15 @@
                     radial-gradient(at 50% 0%, hsla(225,100%,94%,1) 0, transparent 50%), 
                     radial-gradient(at 100% 0%, hsla(217,100%,94%,1) 0, transparent 50%);
             }
-            /* Over-aggressive Visibility Patch */
+            /* Refined Visibility Patch - allow dark mode overrides */
             .fi-input-wrp, .fi-input, textarea, input, select {
-                background-color: white !important;
-                color: #0f172a !important;
-                border-color: #cbd5e1 !important;
+                background-color: white;
+                color: #0f172a;
+                border: 1px solid #cbd5e1;
             }
-            .fi-input-wrp:focus-within {
-                ring-color: #3b82f6 !important;
-            }
-            .fi-fo-field-wrp-label, .fi-fo-field-wrp-label * {
-                color: #1e293b !important;
-                font-weight: 800 !important;
-                opacity: 1 !important;
-            }
-            .fi-btn {
-                background-color: #0f172a !important;
+            .dark .fi-input-wrp, .dark .fi-input, .dark textarea, .dark input, .dark select {
+                background-color: #1e293b;
+                color: white;
             }
         </style>
         

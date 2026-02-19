@@ -75,7 +75,8 @@
                         @input.debounce.300ms="fetchSuggestions()"
                         @click.away="isOpen = false"
                         type="text" 
-                        class="w-full bg-white/60 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none" 
+                        autocomplete="off"
+                        class="w-full !bg-white border-slate-100 rounded-2xl px-6 py-4 font-bold !text-slate-950 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none" 
                         placeholder="Start typing an address or city...">
                     
                     <div x-show="loading" class="absolute right-6 top-1/2 -translate-y-1/2">
@@ -83,14 +84,14 @@
                     </div>
 
                     <!-- Suggestions Dropdown -->
-                    <div x-show="isOpen" 
+                    <div x-show="isOpen" x-cloak
                         x-transition:enter="transition ease-out duration-200"
                         x-transition:enter-start="opacity-0 translate-y-2"
                         x-transition:enter-end="opacity-100 translate-y-0"
-                        class="absolute z-50 w-full mt-2 bg-white/90 backdrop-blur-xl border border-slate-100 rounded-2xl shadow-xl overflow-hidden">
+                        class="absolute z-60 w-full mt-2 !bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden divide-y divide-slate-50">
                         <template x-for="suggestion in suggestions" :key="suggestion.place_id">
-                            <button @click="select(suggestion)" type="button" class="w-full text-left px-6 py-4 hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-none group">
-                                <div class="text-xs font-black text-slate-900 group-hover:text-blue-600 transition-colors" x-text="suggestion.display_name"></div>
+                            <button @click="select(suggestion)" type="button" class="w-full text-left px-6 py-4 hover:bg-blue-50 transition-colors group">
+                                <div class="text-xs font-black !text-slate-950 group-hover:text-blue-600 transition-colors" x-text="suggestion.display_name"></div>
                                 <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1" x-text="suggestion.type"></div>
                             </button>
                         </template>

@@ -1,6 +1,3 @@
 #!/bin/bash
-# Direct Laravel Artisan wrapper
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export LD_LIBRARY_PATH="$PROJECT_ROOT/bin/lib:$LD_LIBRARY_PATH"
-cd "$PROJECT_ROOT/src"
-exec "$PROJECT_ROOT/bin/frankenphp" php-cli artisan "$@"
+cd "/home/guuu/Documents/filament1/src"
+exec "/home/guuu/Documents/filament1/bin/php" artisan "$@"

@@ -18,6 +18,18 @@ class Create extends Component implements HasForms
     use InteractsWithForms;
 
     public ?array $data = [];
+    public $raw_address = null;
+
+    protected $listeners = [
+        'address-selected' => 'handleAddressSelected',
+    ];
+
+    public function handleAddressSelected($payload = null)
+    {
+        if (!$payload) return;
+        $this->data['address'] = $payload['query'];
+        $this->raw_address = $payload['raw'];
+    }
 
     public function mount(): void
     {
@@ -54,8 +66,19 @@ class Create extends Component implements HasForms
     {
         $data = $this->form->getState();
 
+        if (!$this->raw_address) {
+            $this->addError('data.address', 'Veuillez sélectionner une adresse dans la liste suggérée.');
+            return null;
+        }
+
+        $parsed = \App\Services\LocalizationService::parseAddress($data['address'], $this->raw_address);
+
         $circle = Circle::create([
             ...$data,
+            'address' => $parsed['full_address'],
+            'city' => $parsed['city'],
+            'neighborhood' => $parsed['neighborhood'],
+            'region' => $parsed['region'],
             'type' => 'project', // Default type
             'is_public' => true, // Hidden default
             'owner_id' => auth()->id(),

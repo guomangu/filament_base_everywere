@@ -16,6 +16,10 @@ class Circle extends Model
         'description',
         'type',
         'address',
+        'city',
+        'neighborhood',
+        'region',
+        'country',
         'coordinates',
         'owner_id',
     ];
@@ -209,6 +213,10 @@ class Circle extends Model
      */
     public function getNeighborhoodAttribute(): ?string
     {
+        if ($this->attributes['neighborhood'] ?? null) {
+            return $this->attributes['neighborhood'];
+        }
+
         if (!$this->address) return null;
         $parts = array_map('trim', explode(',', $this->address));
         return (count($parts) >= 4) ? $parts[1] : null;
@@ -219,6 +227,10 @@ class Circle extends Model
      */
     public function getCityAttribute(): ?string
     {
+        if ($this->attributes['city'] ?? null) {
+            return $this->attributes['city'];
+        }
+
         if (!$this->address) return null;
         $parts = array_map('trim', explode(',', $this->address));
         $count = count($parts);
@@ -227,5 +239,44 @@ class Circle extends Model
         if ($count === 3) return $parts[1];
         if ($count === 2) return $parts[0];
         
+        return null;
+    }
+
+    /**
+     * Get the country part of the address
+     */
+    public function getCountryAttribute(): ?string
+    {
+        return $this->attributes['country'] ?? null;
+    }
+
+    /**
+     * Get address in format: Country > Region > City > Neighborhood
+     */
+    public function getFormattedAddressAttribute(): string
+    {
+        $parts = array_filter([
+            $this->country,
+            $this->region,
+            $this->city
+        ]);
+
+        if (empty($parts)) {
+            return $this->address ?: 'Adresse non renseignée';
+        }
+
+        return implode(' > ', $parts);
+    }
+
+    /**
+     * Get address components as tags (Neighborhood < City < Region < Country)
+     */
+    public function getAddressTagsAttribute(): array
+    {
+        return array_filter([
+            $this->city,
+            $this->region,
+            $this->country
+        ]);
     }
 }

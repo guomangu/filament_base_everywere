@@ -152,7 +152,18 @@
                         @endif
                         <span class="text-xs font-bold text-slate-400 flex items-center gap-2">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            {{ $type === 'user' ? ($user->location ?? 'Global') : ($type === 'circle' ? ($circle->address ?? 'Global') : ($project->address ?? 'Global')) }}
+                            @if($type === 'circle' && $circle->address_tags)
+                                @foreach($circle->address_tags as $tag)
+                                    <span class="inline-flex items-center px-1 py-0.5 rounded bg-slate-100 text-[8px] font-bold text-slate-500 uppercase tracking-tighter">
+                                        {{ $tag }}
+                                    </span>
+                                    @if(!$loop->last)
+                                        <span class="text-[8px] text-slate-300 font-bold">&lt;</span>
+                                    @endif
+                                @endforeach
+                            @else
+                                {{ $type === 'user' ? ($user->location ?? 'Global') : ($type === 'circle' ? ($circle->formatted_address ?? 'Global') : ($project->address ?? 'Global')) }}
+                            @endif
                         </span>
                     </div>
                 </div>

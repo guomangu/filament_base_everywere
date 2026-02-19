@@ -29,6 +29,11 @@
                         <span class="text-[7px] font-black uppercase tracking-widest text-emerald-500 leading-none mb-0.5">Preuve</span>
                         <span class="text-[8px] font-bold text-emerald-900 truncate max-w-[80px] italic group-hover:text-emerald-600">"{{ $node['name'] }}"</span>
                     </a>
+                @elseif($node['type'] === 'region')
+                    <div class="flex flex-col items-center bg-orange-600/10 border border-orange-200/50 px-3 py-1 rounded-xl group">
+                        <span class="text-[7px] font-black uppercase tracking-widest text-orange-500 leading-none mb-0.5">Région</span>
+                        <span class="text-[8px] font-bold text-orange-900 truncate max-w-[80px]">{{ $node['name'] }}</span>
+                    </div>
                 @endif
 
                 @if(!$loop->last)

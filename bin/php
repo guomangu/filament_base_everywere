@@ -1,5 +1,9 @@
 #!/bin/bash
-# Direct PHP CLI wrapper
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export LD_LIBRARY_PATH="$PROJECT_ROOT/bin/lib:$LD_LIBRARY_PATH"
-exec "$PROJECT_ROOT/bin/frankenphp" php-cli "$@"
+export LD_LIBRARY_PATH="/home/guuu/Documents/filament1/bin/lib:$LD_LIBRARY_PATH"
+# Strip common flags that frankenphp php-cli doesn't handle natively
+ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" == "-d" ]] || [[ "$arg" == "allow_url_fopen=1" ]]; then continue; fi
+    ARGS+=("$arg")
+done
+exec "/home/guuu/Documents/filament1/bin/frankenphp" php-cli "${ARGS[@]}"

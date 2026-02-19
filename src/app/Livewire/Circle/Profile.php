@@ -33,7 +33,7 @@ class Profile extends Component
         
         \App\Models\CircleMember::updateOrCreate(
             ['circle_id' => $this->circle->id, 'user_id' => auth()->id()],
-            ['status' => 'pending', 'role' => 'member', 'joined_at' => now()]
+            ['status' => 'active', 'role' => 'member', 'joined_at' => now()]
         );
 
         $this->circle->load('members');

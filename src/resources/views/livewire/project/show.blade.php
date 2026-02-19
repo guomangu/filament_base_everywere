@@ -222,9 +222,22 @@
                                         <svg class="w-3.5 h-3.5 text-slate-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                         @if($project->address)
                                             <div class="flex flex-col gap-2">
-                                                <span class="text-xs font-black text-slate-900 uppercase tracking-tight leading-tight">
-                                                    {{ $project->address }}
-                                                </span>
+                                                @if($project->circle && $project->circle->address_tags)
+                                                    <div class="flex flex-wrap items-center gap-1 mt-1">
+                                                        @foreach($project->circle->address_tags as $tag)
+                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-white/10 text-[8px] font-black text-white/60 uppercase tracking-tighter">
+                                                                {{ $tag }}
+                                                            </span>
+                                                            @if(!$loop->last)
+                                                                <span class="text-[8px] text-white/20 font-bold">&lt;</span>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <span class="text-xs font-black text-slate-900 uppercase tracking-tight leading-tight">
+                                                        {{ $project->address }}
+                                                    </span>
+                                                @endif
                                                 @if($project->city)
                                                     <div class="flex">
                                                         <a href="{{ url('/?search=' . urlencode($project->city)) }}" class="px-3 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">

@@ -208,6 +208,24 @@ class User extends Authenticatable implements FilamentUser
                 ]);
             }
 
+            // 1.5 Degree: Common Region
+            $myRegions = $this->activeJoinedCircles->pluck('region')->filter()->unique();
+            $targetRegions = $target->activeJoinedCircles->pluck('region')->filter()->unique();
+            $commonRegions = $myRegions->intersect($targetRegions);
+
+            if ($commonRegions->isNotEmpty()) {
+                $regionName = $commonRegions->first();
+                $myCircle = $this->activeJoinedCircles->where('region', $regionName)->first();
+                $targetCircle = $target->activeJoinedCircles->where('region', $regionName)->first();
+
+                return array_merge($path, [
+                    ['type' => 'circle', 'id' => $myCircle->id, 'name' => $myCircle->name],
+                    ['type' => 'region', 'name' => $regionName],
+                    ['type' => 'circle', 'id' => $targetCircle->id, 'name' => $targetCircle->name],
+                    ['type' => 'user', 'id' => $target->id, 'name' => $target->name, 'avatar' => $target->avatar]
+                ]);
+            }
+
             // 2nd Degree: Intermediaries
             $intermediaries = CircleMember::whereIn('circle_id', $myCircleIds)
                 ->where('status', 'active')
