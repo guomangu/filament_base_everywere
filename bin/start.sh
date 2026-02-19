@@ -67,7 +67,7 @@ cd "$SRC_DIR"
 if ! grep -q "^DB_HOST=localhost" .env; then
     echo -e "${YELLOW}Enforcing DB_HOST=localhost for socket connection...${NC}"
     sed -i "s|^DB_HOST=.*|DB_HOST=localhost|" .env
-    "$BIN_DIR/artisan" config:clear
+    "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear
 fi
 
 # If running as root (sudo), we must override DB_USERNAME to match the process owner
@@ -84,8 +84,9 @@ fi
 
 # Sync Schema
 echo -e "${GREEN}Syncing database schema and clearing config...${NC}"
-"$BIN_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
-if ! "$BIN_DIR/artisan" migrate --force; then
+# Use frankenphp directly to avoid any wrapper issues with argument passing
+"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
+if ! "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" migrate --force; then
     echo -e "${RED}Error: Database migrations failed! Check the output above.${NC}"
     # In maintenance/first run, this is critical.
 fi

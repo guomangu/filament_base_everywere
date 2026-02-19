@@ -195,58 +195,34 @@ if [ ! -f "$BIN_DIR/lib/libncurses.so.5" ]; then
     sudo apt update && sudo apt install -y libncurses5 || echo "libncurses5 package not found, relying on polyfill."
 fi
 
-# PHP Wrapper (Smart - Filters flags only for Artisan)
+# 2. Wrapper Creation
+echo -e "${YELLOW}[3/6] creating wrappers...${NC}"
+
+# PHP Wrapper
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
-BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
-PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH/.." && pwd)
-
-# Check if this is an Artisan call
-ARGS=("\$@")
-ARTISAN_INDEX=-1
-
-for i in "\${!ARGS[@]}"; do
-    if [[ "\${ARGS[\$i]}" == "artisan" ]] || [[ "\${ARGS[\$i]}" == *"artisan" ]]; then
-        ARTISAN_INDEX=\$i
-        break
-    fi
-done
-
-if [ \$ARTISAN_INDEX -ge 0 ]; then
-    # Found artisan! 
-    # Discard everything before (flags, composer) AND the artisan arg itself.
-    # Use ABSOLUTE path to src/artisan to avoid any ambiguity or "Path empty" errors.
-    
-    # Get args AFTER artisan matching index
-    REST_ARGS=("${ARGS[@]:$((ARTISAN_INDEX + 1))}")
-    
-    exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/src/artisan" "\${REST_ARGS[@]}"
-else
-    # Standard execution (Composer, etc)
-    exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
-fi
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
 EOF
 chmod +x "$BIN_DIR/php"
-
-# Symlink standard PHP for PATH (so 'php -v' works)
-ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
-cd "\$PROJECT_ROOT/src"
-exec "\$PROJECT_ROOT/bin/php" "\$PROJECT_ROOT/bin/composer.phar" "\$@"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/bin/composer.phar" "\$@"
 EOF
 chmod +x "$BIN_DIR/composer"
 
 # Artisan Wrapper
 cat <<EOF > "$BIN_DIR/artisan"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
+PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 cd "\$PROJECT_ROOT/src"
-exec "\$PROJECT_ROOT/bin/php" artisan "\$@"
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli artisan "\$@"
 EOF
 chmod +x "$BIN_DIR/artisan"
 
@@ -283,7 +259,8 @@ export PHP="$BIN_DIR/php"
 # App Key
 if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=' -f2)" ]; then
     echo "Generating Application Key..."
-    "$BIN_DIR/artisan" key:generate --force || true
+    # Use frankenphp directly to avoid any wrapper issues with argument passing
+    "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" key:generate --force || true
     
     # Verify and Fallback
     if ! grep -q "^APP_KEY=base64:" .env; then
@@ -354,7 +331,8 @@ echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
 }
 
 echo "Running migrations and seeders..."
-"$BIN_DIR/artisan" migrate:fresh --seed --force || {
+# Use frankenphp directly to avoid any wrapper issues with argument passing
+"$MARIADB_DIR/../frankenphp" php-cli "$SRC_DIR/artisan" migrate:fresh --seed --force || {
     echo -e "${RED}Error: Initial migrations failed. Check database configuration.${NC}"
     exit 1
 }
@@ -378,7 +356,8 @@ if ! chown -R "$CURRENT_USER":"$CURRENT_USER" storage bootstrap/cache "$DATA_DIR
 fi
 
 chmod -R 775 storage bootstrap/cache "$DATA_DIR"
-"$BIN_DIR/artisan" config:clear
+# Use frankenphp directly to avoid any wrapper issues with argument passing
+"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear
 
 echo -e "${GREEN}====================================================${NC}"
 echo -e "${GREEN}   Installation Complete! Use ./bin/start.sh       ${NC}"

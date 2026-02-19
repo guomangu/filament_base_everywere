@@ -1,5 +1,5 @@
 #!/bin/bash
-# Simple wrapper for FrankenPHP CLI
+# Direct PHP CLI wrapper
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export LD_LIBRARY_PATH="$PROJECT_ROOT/bin/lib:$LD_LIBRARY_PATH"
 exec "$PROJECT_ROOT/bin/frankenphp" php-cli "$@"

@@ -1,4 +1,6 @@
 #!/bin/bash
+# Direct Laravel Artisan wrapper
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export LD_LIBRARY_PATH="$PROJECT_ROOT/bin/lib:$LD_LIBRARY_PATH"
 cd "$PROJECT_ROOT/src"
-exec "$PROJECT_ROOT/bin/php" "$PROJECT_ROOT/src/artisan" "$@"
+exec "$PROJECT_ROOT/bin/frankenphp" php-cli artisan "$@"
