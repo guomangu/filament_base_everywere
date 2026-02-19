@@ -105,7 +105,6 @@ while [[ \$# -gt 0 ]]; do
   esac
 done
 
-echo "DEBUG: Executing frankenphp php-cli \${params[@]}" >&2
 exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${params[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
@@ -149,9 +148,11 @@ sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
 sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=|" .env
 
 # Add only core binaries to PATH during install to avoid artisan wrapper conflicts
+ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
 ln -sf "$BIN_DIR/node/bin/npm" "$BIN_DIR/.core/npm"
 export PATH="$BIN_DIR/.core:$PATH"
+export PHP="$BIN_DIR/php"
 
 # PHP Dependencies
 "$BIN_DIR/composer" install --no-interaction --prefer-dist
