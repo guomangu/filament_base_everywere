@@ -83,13 +83,12 @@ if [ ! -S "$MYSQL_SOCKET" ]; then
 fi
 
 # Sync Schema
-# Sync Schema & Clear Config
 echo -e "${GREEN}Syncing database schema and clearing config...${NC}"
-"$BIN_DIR/artisan" config:clear
-"$BIN_DIR/artisan" migrate --force || {
-    echo -e "${RED}Error: Database migrations failed. The application might be in an inconsistent state.${NC}"
-    # We continue here because the app might still run, but we warned the user.
-}
+"$BIN_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
+if ! "$BIN_DIR/artisan" migrate --force; then
+    echo -e "${RED}Error: Database migrations failed! Check the output above.${NC}"
+    # In maintenance/first run, this is critical.
+fi
 
 # Start FrankenPHP
 PORT=${1:-80}
