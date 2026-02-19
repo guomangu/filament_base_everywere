@@ -65,7 +65,9 @@ if [ ! -S "$MYSQL_SOCKET" ]; then
 fi
 
 # Sync Schema
-echo -e "${GREEN}Syncing database schema...${NC}"
+# Sync Schema & Clear Config
+echo -e "${GREEN}Syncing database schema and clearing config...${NC}"
+"$BIN_DIR/artisan" config:clear
 "$BIN_DIR/artisan" migrate --force
 
 # Start FrankenPHP
