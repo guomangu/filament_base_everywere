@@ -86,7 +86,10 @@ fi
 # Sync Schema & Clear Config
 echo -e "${GREEN}Syncing database schema and clearing config...${NC}"
 "$BIN_DIR/artisan" config:clear
-"$BIN_DIR/artisan" migrate --force
+"$BIN_DIR/artisan" migrate --force || {
+    echo -e "${RED}Error: Database migrations failed. The application might be in an inconsistent state.${NC}"
+    # We continue here because the app might still run, but we warned the user.
+}
 
 # Start FrankenPHP
 PORT=${1:-80}

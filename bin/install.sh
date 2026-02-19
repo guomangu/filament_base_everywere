@@ -354,7 +354,10 @@ echo "Ensuring MariaDB accounts and 'laravel' database are configured..."
 }
 
 echo "Running migrations and seeders..."
-"$BIN_DIR/artisan" migrate:fresh --seed --force
+"$BIN_DIR/artisan" migrate:fresh --seed --force || {
+    echo -e "${RED}Error: Initial migrations failed. Check database configuration.${NC}"
+    exit 1
+}
 
 # Shutdown temp DB
 kill $TEMP_PID
