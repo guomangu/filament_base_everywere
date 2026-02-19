@@ -198,27 +198,24 @@ fi
 # 2. Wrapper Creation
 echo -e "${YELLOW}[3/6] Creating wrappers...${NC}"
 
+# Absolute base path for internal use in wrappers
+BASE_DIR=$(readlink -f "$PROJECT_ROOT")
+
 # PHP Wrapper (Smart - Filters flags FrankenPHP doesn't like)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-# Find Project Root (Foolproof search)
-REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
-BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
-PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)
-
+PROJECT_ROOT="$BASE_DIR"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 
-# Filter arguments: Strip standard PHP flags that FrankenPHP doesn't handle natively in php-cli
 ARGS=()
 while [[ \$# -gt 0 ]]; do
     case "\$1" in
         -d|-c|-n|-v|-i|--version|--info)
-            shift # skip flag
-            # If it's -d or -c, it usually has a value next
+            shift 
             if [[ "\$1" != -* ]] && [[ \$# -gt 0 ]]; then shift; fi
             ;;
         -d*|-c*)
-            shift # skip -dkey=val
+            shift
             ;;
         *)
             ARGS+=("\$1")
@@ -234,9 +231,7 @@ chmod +x "$BIN_DIR/php"
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
 #!/bin/bash
-REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
-BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
-PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)
+PROJECT_ROOT="$BASE_DIR"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 exec "\$PROJECT_ROOT/bin/php" "\$PROJECT_ROOT/bin/composer.phar" "\$@"
 EOF
@@ -245,9 +240,7 @@ chmod +x "$BIN_DIR/composer"
 # Artisan Wrapper
 cat <<EOF > "$BIN_DIR/artisan"
 #!/bin/bash
-REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
-BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
-PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)
+PROJECT_ROOT="$BASE_DIR"
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 cd "\$PROJECT_ROOT/src"
 exec "\$PROJECT_ROOT/bin/php" artisan "\$@"
