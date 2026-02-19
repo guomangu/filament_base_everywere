@@ -198,35 +198,64 @@ fi
 # 2. Wrapper Creation
 echo -e "${YELLOW}[3/6] Creating wrappers...${NC}"
 
-# PHP Wrapper
+# PHP Wrapper (Smart - Filters flags FrankenPHP doesn't like)
 cat <<EOF > "$BIN_DIR/php"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
+# Find Project Root (Foolproof search)
+REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
+BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
+PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)
+
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$@"
+
+# Filter arguments: Strip standard PHP flags that FrankenPHP doesn't handle natively in php-cli
+ARGS=()
+while [[ \$# -gt 0 ]]; do
+    case "\$1" in
+        -d|-c|-n|-v|-i|--version|--info)
+            shift # skip flag
+            # If it's -d or -c, it usually has a value next
+            if [[ "\$1" != -* ]] && [[ \$# -gt 0 ]]; then shift; fi
+            ;;
+        -d*|-c*)
+            shift # skip -dkey=val
+            ;;
+        *)
+            ARGS+=("\$1")
+            shift
+            ;;
+    esac
+done
+
+exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\${ARGS[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
 
 # Composer Wrapper
 cat <<EOF > "$BIN_DIR/composer"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
+REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
+BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
+PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/bin/composer.phar" "\$@"
+exec "\$PROJECT_ROOT/bin/php" "\$PROJECT_ROOT/bin/composer.phar" "\$@"
 EOF
 chmod +x "$BIN_DIR/composer"
 
 # Artisan Wrapper
 cat <<EOF > "$BIN_DIR/artisan"
 #!/bin/bash
-PROJECT_ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)"
+REAL_SCRIPT=\$(readlink -f "\$0" 2>/dev/null || echo "\$0")
+BIN_DIR_PATH=\$(dirname "\$REAL_SCRIPT")
+PROJECT_ROOT=\$(cd "\$BIN_DIR_PATH" && while [ ! -d bin ] && [ "\$PWD" != "/" ]; do cd ..; done && pwd)
 export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
 cd "\$PROJECT_ROOT/src"
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli artisan "\$@"
+exec "\$PROJECT_ROOT/bin/php" artisan "\$@"
 EOF
 chmod +x "$BIN_DIR/artisan"
 
 # Synchronize PATH for install session
+mkdir -p "$BIN_DIR/.core"
 ln -sf "$BIN_DIR/php" "$BIN_DIR/.core/php"
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
 ln -sf "$BIN_DIR/node/bin/npm" "$BIN_DIR/.core/npm"
