@@ -362,12 +362,13 @@ CURRENT_USER=$(whoami)
 echo "Ensuring $CURRENT_USER owns storage and bootstrap/cache..."
 
 # Try simple chown first, if fails, use sudo
-if ! chown -R "$CURRENT_USER":"$CURRENT_USER" storage bootstrap/cache data 2>/dev/null; then
+# Note: storage and bootstrap are in src/ (PWD), but data is in $DATA_DIR (absolute)
+if ! chown -R "$CURRENT_USER":"$CURRENT_USER" storage bootstrap/cache "$DATA_DIR" 2>/dev/null; then
     echo -e "${YELLOW}Detected root-owned files. Fixing ownership with sudo...${NC}"
-    sudo chown -R "$CURRENT_USER":"$CURRENT_USER" storage bootstrap/cache data
+    sudo chown -R "$CURRENT_USER":"$CURRENT_USER" storage bootstrap/cache "$DATA_DIR"
 fi
 
-chmod -R 775 storage bootstrap/cache data
+chmod -R 775 storage bootstrap/cache "$DATA_DIR"
 "$BIN_DIR/artisan" config:clear
 
 echo -e "${GREEN}====================================================${NC}"
