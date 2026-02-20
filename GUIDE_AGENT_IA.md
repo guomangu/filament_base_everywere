@@ -46,35 +46,53 @@ Le projet suit le manifeste **God Stack** : une application **ultra-portable**, 
 - **Message** : Messages dans les Circles. Lié à un `sender` (User) et un `circle`.
 
 ### Modèles Project (Marketplace)
-- **Project** : Entité temporaire de service. Statut `is_open` (boolean). Relations : `owner`, `members`, `activeMembers`, `offers`, `demands`, `reviews`.
+- **Project** : Entité principale. Statut `is_open` (boolean). Relations : `owner`, `members`, `activeMembers`, `offers`, `demands`, `reviews`, `messages`.
 - **ProjectMember** : Relation polymorphique (User OU Proche). Statuts : `pending`, `active`, `inactive`. Rôles : `admin`, `member`.
-- **ProjectOffer** : Offres ET demandes (champ `type`). Liées aux Skills via pivot `project_offer_skill`.
+- **ProjectOffer** : Offres ET demandes (champ `type`). C'est l'entité centrale de présentation sur l'accueil et les profils. Liées aux Skills via pivot `project_offer_skill`.
 - **ProjectReview** : Avis avec `parent_id` pour les réponses imbriquées. Types : `validate`, `reject`.
 
 ---
 
-## 🗺️ Routes Publiques
+## 🗺️ Pages et Vues Principales (Navigation & Composants)
 
-| URL | Nom | Composant |
-|-----|-----|-----------|
-| `/` | - | `Livewire\Home` |
-| `/users/{user}` | `users.show` | `Livewire\User\Profile` |
-| `/circles` | `circles.index` | `CircleController@index` |
-| `/circles/{circle}` | `circles.show` | `Livewire\Circle\Profile` |
-| `/cv/u/{user}` | `cv.user` | `Livewire\Cv\Viewer` |
-| `/cv/c/{circle}` | `cv.circle` | `Livewire\Cv\Viewer` |
+La navigation du site est pensée pour être unifiée. Le menu principal (`navbar`) permet de jongler entre son Profil, ses Réseaux, et la Messagerie Globale.
 
-### Routes Authentifiées
-| URL | Nom | Composant |
-|-----|-----|-----------|
-| `/circles/create` | `circles.create` | `Livewire\Circle\Create` |
-| `/circles/{circle}/edit` | `circles.edit` | `Livewire\Circle\Edit` |
-| `/achievements/create` | `achievements.create` | `Livewire\Achievement\Create` |
-| `/profile/edit` | `profile.edit` | `Livewire\User\Edit` |
-| `/projects` | `projects.index` | `Livewire\Project\Index` |
-| `/projects/create` | `projects.create` | `Livewire\Project\Create` |
-| `/projects/{project}` | `projects.show` | `Livewire\Project\Show` |
-| `/proches/claim/{token}` | `proches.claim` | `Livewire\User\Claim` |
+### 1. Page d'Accueil (`/` -> `Livewire\Home`)
+- **Vocation** : Hub central de découverte de proximité. Montre les **Offres de services (ProjectOffers)** et les **Cercles** autour de l'utilisateur.
+- **Composants clés** : 
+  - **Recherche Smart** : Filtre instantanément par mot clé.
+  - **Tri Géospatial** : Les résultats sont ordonnés par distance (SQL Haversine sur les coordonnées).
+  - **Cartes Détaillées** : Utilise le composant `<x-offer-card>` pour les offres et un design de carte compact pour les Cercles affichant la distance, les membres et leurs **compétences**.
+- **UX** : Grille glassmorphism responsivée (2 colonnes mobile, 4 desktop).
+
+### 2. Profil Utilisateur (`/users/{user}` -> `Livewire\User\Profile`)
+- **Vocation** : CV vivant de l'utilisateur.
+- **Composants clés** :
+  - **Header & Trust Score** : Met en avant le score de confiance et les statistiques (Projets, Preuves, Offres). Un bouton "MESSAGE" ouvre directement un chat privé avec cet utilisateur.
+  - **Le Réseau (Trust Network)** : Affiche les Cercles de l'utilisateur (avec bouton de création en haut pour l'owner) et ses Proches gérés.
+  - **Expertises & Réalisations** : Liste des compétences (Skills) validées par des "Achievements" (Preuves). Présence d'un bouton "Générer mon CV PDF" (`/cv/u/{user}`) à la fin de cette section.
+  - **Offres de l'Utilisateur** : Grille listant toutes les offres (`ProjectOffer`) actives de l'utilisateur, permettant l'interaction (Devis, Avis) via `HandlesOfferActions`.
+
+### 3. Profil de Cercle (`/circles/{circle}` -> `Livewire\Circle\Profile`)
+- **Vocation** : Page de communauté ou de hub d'entreprise.
+- **Composants clés** :
+  - **Informations & Réseaux** : Section `polymorphic` pour afficher les horaires, sites web, etc. Affiche également "l'Explorateur de Réseau" (`Network\Explorer.php`) listant d'autres cercles connexes.
+  - **Le Vivier d'Expertises** : Affiche tous les membres, proches inclus, et leurs compétences cumulées. Inclut une section **Projets Actifs** qui liste les `ProjectOffer` liés aux projets des membres du cercle.
+  - **Le Board (Interface Chat)** : Espace de communication interne du cercle. Les messages sont affichés *chronologiquement* (du plus ancien au plus récent de haut en bas), avec un champ de texte fixé en bas, contenu dans un bloc scorllable avec *Alpine.js auto-scroll*. Distingue visuellement le Fondateur des Membres.
+
+### 4. Page de Projet / Offre (`/projects/{project}` -> `Livewire\Project\Show`)
+- **Vocation** : Espace collaboratif temporaire lié à des offres spécifiques.
+- **Composants clés** :
+  - **Amazon-style Header** : Présente le fondateur, les membres, l'adresse, et l'état d'ouverture (Open/Closed).
+  - **Onglets (Tabs)** : Navigation fluide entre la "Description globale", les "Offres de services", les "Besoins" et les "Avis".
+  - **Le Forum (Interface Chat)** : Identique à l'interface "Le Board" des cercles. C'est l'espace de messagerie instantanée des membres du projet. L'entrée de message est au-dessus du flux chronologique, géré par Alpine.js.
+
+### 5. Messagerie Globale (Overlay `GlobalMessaging.php`)
+- **Vocation** : Le "Direct Message" et le hub de notifications, accessible via le bouton rond (bulle) de la barre de navigation. 
+- **Composants clés** :
+  - **Overlay 100%** : Glisse sur l'écran sans le recharger.
+  - **Navigation par Tiroir (Desktop)** : Une colonne gauche pour choisir une conversation "Privée" (Messages directs 1-to-1) ou "Forums" (Les Cercles ou Projets). La colonne droite affiche le chat.
+  - **Interface Mobile** : Passe automatiquement d'une liste de conversations au chat plein écran lors d'une sélection.
 
 ---
 
@@ -91,20 +109,24 @@ Le composant `Home` implémente une recherche "Smart" :
 - Attribution de compétences et preuves aux proches.
 - **Claim Strategy** : Système de transfert sécurisé (Token + Code) pour qu'un proche devienne un utilisateur autonome en récupérant tout son historique.
 
-### 3. Système Project (Marketplace)
-- Projets temporaires avec offres et demandes de services.
-- Membres polymorphiques (Users et Proches).
-- Intégré dans les profils Circle (section "Projets Actifs").
+### 3. Système Project (Marketplace / Offres)
+- Les **Offres de services** (`ProjectOffer`) sont désormais au centre de l'UX (affichées sur l'accueil et les profils visiteurs).
+- **Architecture de Code unifiée** : Utilisation du trait `App\Traits\HandlesOfferActions` et de la vue partagée `livewire.offers.modals` pour gérer les devis et les avis depuis n'importe où (Home, Profil, Projet, Cercle), évitant la duplication de code et la redondance des modales.
 - Avis imbriqués (validate/reject avec réponses).
 
-### 4. CV Partageable
+### 4. Interfaces de Chat Intégrées (Le Board / Le Forum)
+- Les espaces de discussion des Cercles ("Le Board") et des Projets ("Le Forum") fonctionnent comme des chats temps réel en bas de page.
+- **Scroll & Ordre** : Messages en ordre chronologique avec saisie en bas. Un composant Alpine.js gère le scroll automatique vers le dernier message à l'ouverture ou à l'envoi.
+- **Rôles** : L'interface distingue subtilement les fondateurs/créateurs des membres via l'UI.
+
+### 5. CV Partageable
 - URL publique `/cv/u/{user}` et `/cv/c/{circle}`.
 - Pour les circles : agrège les compétences de tous les membres.
 - Optimisé pour export PDF A4.
 
-### 5. UI/UX "God Stack Premium"
+### 6. UI/UX "God Stack Premium"
 - Design basé sur le **Glassmorphism** (bordures blanches translucides, flous de fond 3xl).
-- Responsive total de Desktop à Smartphone.
+- Responsive total de Desktop à Smartphone (Layouts fluides en 2, 3 ou 4 colonnes).
 - Utilisation de composants Filament Forms injectés pour les interactions complexes.
 
 ---
@@ -229,12 +251,14 @@ Le projet utilise des serveurs MCP pour augmenter les capacités de l'Agent IA :
 - [x] Système de **Proches** et transfert de compte opérationnel.
 - [x] Recherche étendue incluant le Vivier d'Expertises des Proches.
 - [x] Système d'Information polymorphique stabilisé.
-- [x] **Système Project** (Marketplace) : Modèles, migrations, composants Livewire, routes.
-- [x] **Intégration Circle Profile** : Section "Projets Actifs" dans "Le Vivier d'Expertises".
+- [x] **Système Project** (Marketplace) : Affichage d'offres unifié. Trait HandleOfferActions implémenté.
+- [x] **Interfaces de Chat** : "Le Board" et "Le Forum" restructurés avec Auto-scroll Alpine.js.
+- [x] **Messagerie Globale** : Tiroir de navigation latéral pour les messages privés.
+- [x] **SEO** : Dynamic tags and metadata configuration with localisation rules.
+- [x] **Réseau de Confiance** : Affichage des "trust paths" transparent via le composant `user-trust-chain`.
 - [x] **MCP Servers** configurés (mariadb-portable + laravel-context).
-- [ ] Vues Blade pour Project (Index, Show, Create) à créer.
-- [ ] Intégration Projets dans profil User.
-- [ ] Amélioration continue de l'UX/UI responsive.
+- [ ] Refonte du système de Notifications (Broadcast réel vs Polling).
+- [ ] Outils de modération (Signalements).
 
 > [!IMPORTANT]
 > Ne jamais installer de paquets système (apt/dnf). Toujours utiliser ce qui est présent dans `/bin` ou via Composer/NPM dans `/src`.

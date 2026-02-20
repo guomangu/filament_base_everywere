@@ -95,6 +95,7 @@ class Profile extends Component
 
         $this->message = '';
         $this->circle->load('messages.sender');
+        $this->dispatch('messageSent');
     }
 
     public function render()

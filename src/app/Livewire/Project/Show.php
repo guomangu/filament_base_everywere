@@ -429,6 +429,7 @@ class Show extends Component
 
         $this->message = '';
         $this->project->load('messages.sender');
+        $this->dispatch('messageSent');
     }
 
     public function getSkillSuggestionsProperty()

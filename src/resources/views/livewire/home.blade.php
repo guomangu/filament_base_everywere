@@ -138,9 +138,22 @@ class="min-h-screen bg-slate-50/50">
                                     </div>
                                 @endif
 
-                                <p class="text-slate-500 font-medium text-[11px] leading-relaxed line-clamp-3 mb-6">
+                                <p class="text-slate-500 font-medium text-[11px] leading-relaxed line-clamp-3 mb-4 flex-1">
                                     {{ $item->description }}
                                 </p>
+
+                                <div class="mb-4">
+                                    @php 
+                                        $allSkills = $item->members->flatMap(fn($m) => $m->user ? $m->user->achievements : collect())->map(fn($a) => $a->skill ? $a->skill->name : '')->filter()->unique()->take(6);
+                                    @endphp
+                                    <div class="flex flex-wrap gap-1">
+                                        @foreach($allSkills as $skill)
+                                            <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-tight">
+                                                {{ $skill }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                </div>
 
                                 <!-- Footer -->
                                 <div class="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">

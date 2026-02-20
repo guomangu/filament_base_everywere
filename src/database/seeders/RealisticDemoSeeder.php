@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Circle;
 use App\Models\Project;
@@ -11,67 +12,59 @@ use App\Models\Achievement;
 use App\Models\AchievementValidation;
 use App\Models\Message;
 use App\Models\ProjectReview;
-use Illuminate\Support\Str;
+use App\Models\Proche;
+use App\Models\ProjectOffer;
 
 class RealisticDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Create Skills (Expanded)
+        // 0. Clean Existing Data to Ensure a Consistent State
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Message::truncate();
+        ProjectReview::truncate();
+        DB::table('project_offer_skill')->truncate();
+        ProjectOffer::truncate();
+        DB::table('project_skill')->truncate();
+        DB::table('project_members')->truncate();
+        Project::truncate();
+        DB::table('circle_members')->truncate();
+        Circle::truncate();
+        AchievementValidation::truncate();
+        Achievement::truncate();
+        Proche::truncate();
+        // Don't truncate users entirely to avoid breaking admin accounts, but we delete the 4 injected users
+        User::whereIn('email', [
+            'marc@trustcircle.com', 
+            'julie@trustcircle.com', 
+            'thomas@trustcircle.com', 
+            'sophie@trustcircle.com'
+        ])->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // 1. Create Core Skills
         $skillsData = [
-            'Laravel' => 'laravel',
-            'React' => 'react',
-            'UI Design' => 'ui-design',
-            'Permaculture' => 'permaculture',
-            'Menuiserie' => 'menuiserie',
             'Architecture' => 'architecture',
-            'Cuisine' => 'cuisine',
-            'Photographie' => 'photographie',
-            'Marketing' => 'marketing',
-            'Stratégie' => 'strategie',
-            'FoodTech' => 'foodtech',
+            'Menuiserie' => 'menuiserie',
+            'UI Design' => 'ui-design',
+            'Développement Web' => 'developpement-web',
+            'Permaculture' => 'permaculture',
+            'Stratégie Digitale' => 'strategie-digitale',
             'Éco-conception' => 'eco-conception',
-            'Low-Tech' => 'low-tech',
-            'Ferblanterie' => 'ferblanterie',
-            'Apiculture' => 'apiculture',
-            'Copywriting' => 'copywriting',
-            'Data Science' => 'data-science',
-            'Ébénisterie' => 'ebenisterie',
-            'Maraîchage' => 'maraichage',
-            'Céramique' => 'ceramique',
-            'Blockchain' => 'blockchain',
-            'Hydrologie' => 'hydrologie',
+            'Photographie' => 'photographie'
         ];
 
         $skills = [];
         foreach ($skillsData as $name => $slug) {
-            $skills[$name] = Skill::updateOrCreate(['name' => $name], ['slug' => $slug]);
+            $skills[$name] = Skill::firstOrCreate(['slug' => $slug], ['name' => $name]);
         }
 
-        // 2. Create 22 Realistic Personas
+        // 2. Create the 4 Core Users
         $usersData = [
-            ['id' => 'marc', 'name' => 'Marc Lefebvre', 'city' => 'Paris', 'lat' => 48.8566, 'lng' => 2.3522, 'role' => 'Fullstack Developer'],
-            ['id' => 'julie', 'name' => 'Julie Chen', 'city' => 'Paris', 'lat' => 48.8647, 'lng' => 2.3327, 'role' => 'UX Designer'],
-            ['id' => 'thomas', 'name' => 'Thomas Morel', 'city' => 'Lyon', 'lat' => 45.7640, 'lng' => 4.8357, 'role' => 'Architecte'],
-            ['id' => 'sophie', 'name' => 'Sophie Bernard', 'city' => 'Lyon', 'lat' => 45.7500, 'lng' => 4.8500, 'role' => 'Permacultrice'],
-            ['id' => 'antoine', 'name' => 'Antoine Duval', 'city' => 'Marseille', 'lat' => 43.2965, 'lng' => 5.3698, 'role' => 'Menuisier'],
-            ['id' => 'elena', 'name' => 'Elena Rossi', 'city' => 'Marseille', 'lat' => 43.3000, 'lng' => 5.4000, 'role' => 'Chef de Cuisine'],
-            ['id' => 'lucas', 'name' => 'Lucas Petit', 'city' => 'Nantes', 'lat' => 47.2184, 'lng' => -1.5536, 'role' => 'Copywriter'],
-            ['id' => 'ines', 'name' => 'Inès Garcia', 'city' => 'Nantes', 'lat' => 47.2200, 'lng' => -1.5600, 'role' => 'Photographe'],
-            ['id' => 'gabriel', 'name' => 'Gabriel Vandernoot', 'city' => 'Bruxelles', 'lat' => 50.8503, 'lng' => 4.3517, 'role' => 'Stratège Réseau'],
-            ['id' => 'claire', 'name' => 'Claire Dubois', 'city' => 'Bordeaux', 'lat' => 44.8378, 'lng' => -0.5792, 'role' => 'Hydrologue'],
-            ['id' => 'nicolas', 'name' => 'Nicolas Girard', 'city' => 'Bordeaux', 'lat' => 44.8400, 'lng' => -0.5800, 'role' => 'Low-Tech Expert'],
-            ['id' => 'sarah', 'name' => 'Sarah Lopez', 'city' => 'Strasbourg', 'lat' => 48.5734, 'lng' => 7.7521, 'role' => 'Maraîchère'],
-            ['id' => 'pierre', 'name' => 'Pierre Leroy', 'city' => 'Strasbourg', 'lat' => 48.5800, 'lng' => 7.7600, 'role' => 'Apiculteur'],
-            ['id' => 'hannya', 'name' => 'Hannya Tanaka', 'city' => 'Lille', 'lat' => 50.6292, 'lng' => 3.0573, 'role' => 'Data Scientist'],
-            ['id' => 'victor', 'name' => 'Victor Hugo', 'city' => 'Lille', 'lat' => 50.6300, 'lng' => 3.0600, 'role' => 'Expert Blockchain'],
-            ['id' => 'emma', 'name' => 'Emma Watson', 'city' => 'Toulouse', 'lat' => 43.6047, 'lng' => 1.4442, 'role' => 'Céramiste'],
-            ['id' => 'hugo', 'name' => 'Hugo Boss', 'city' => 'Toulouse', 'lat' => 43.6100, 'lng' => 1.4500, 'role' => 'Ébéniste'],
-            ['id' => 'lea', 'name' => 'Léa Fontaine', 'city' => 'Genève', 'lat' => 46.2044, 'lng' => 6.1432, 'role' => 'Consultante RSE'],
-            ['id' => 'arthur', 'name' => 'Arthur Rimbaud', 'city' => 'Namur', 'lat' => 50.4674, 'lng' => 4.8719, 'role' => 'Ferblantier'],
-            ['id' => 'mathilde', 'name' => 'Mathilde Blanc', 'city' => 'Montpellier', 'lat' => 43.6108, 'lng' => 3.8767, 'role' => 'Urbaniste'],
-            ['id' => 'leo', 'name' => 'Léo Marchand', 'city' => 'Rennes', 'lat' => 48.1173, 'lng' => -1.6778, 'role' => 'Musicien'],
-            ['id' => 'clara', 'name' => 'Clara Morgane', 'city' => 'Nice', 'lat' => 43.7102, 'lng' => 7.2620, 'role' => 'Coach Bien-être'],
+            ['id' => 'marc', 'name' => 'Marc Lefebvre', 'city' => 'Paris', 'lat' => 48.8566, 'lng' => 2.3522, 'role' => 'Tech Lead & Stratège'],
+            ['id' => 'julie', 'name' => 'Julie Chen', 'city' => 'Paris', 'lat' => 48.8647, 'lng' => 2.3327, 'role' => 'UX/UI Designer'],
+            ['id' => 'thomas', 'name' => 'Thomas Morel', 'city' => 'Lyon', 'lat' => 45.7640, 'lng' => 4.8357, 'role' => 'Architecte Bioclimatique'],
+            ['id' => 'sophie', 'name' => 'Sophie Bernard', 'city' => 'Lyon', 'lat' => 45.7500, 'lng' => 4.8500, 'role' => 'Experte Permaculture'],
         ];
 
         $users = [];
@@ -80,205 +73,217 @@ class RealisticDemoSeeder extends Seeder
                 'name' => $data['name'],
                 'email' => strtolower($data['id']) . '@trustcircle.com',
                 'password' => bcrypt('password'),
-                'bio' => "Je suis {$data['name']}, {$data['role']} basé à {$data['city']}. Passionné par la collaboration et le partage de savoir-faire.",
+                'bio' => "Je suis {$data['name']}, {$data['role']} basé(e) à {$data['city']}. Heureux de collaborer sur des projets qui ont du sens.",
                 'location' => "{$data['city']}, France",
                 'coordinates' => ['lat' => $data['lat'], 'lng' => $data['lng']],
                 'avatar_url' => "https://i.pravatar.cc/150?u={$data['id']}",
-                'trust_score' => rand(50, 95),
+                'trust_score' => rand(50, 90),
             ]);
         }
 
-        // 3. Create 7 Thematic Circles
-        $circles = [
-            'tech-paris' => Circle::create([
-                'name' => 'Tech & Design Hub',
-                'description' => 'Collaboration de pointe pour les projets digitaux éthiques.',
-                'address' => 'Station F, Paris, France',
-                'coordinates' => ['lat' => 48.8338, 'lng' => 2.3708],
-                'owner_id' => $users['marc']->id,
-            ]),
-            'habitat-lyon' => Circle::create([
-                'name' => 'Atelier Vivant Lyon',
-                'description' => 'Construction écologique et design bioclimatique.',
-                'address' => 'Confluence, Lyon, France',
-                'coordinates' => ['lat' => 45.7485, 'lng' => 4.8159],
-                'owner_id' => $users['thomas']->id,
-            ]),
-            'gastro-marseille' => Circle::create([
-                'name' => 'Mer & Saveurs',
-                'description' => 'Gastronomie locale et durable en Méditerranée.',
-                'address' => 'Vieux-Port, Marseille, France',
-                'coordinates' => ['lat' => 43.2951, 'lng' => 5.3744],
-                'owner_id' => $users['elena']->id,
-            ]),
-            'lowtech-bordeaux' => Circle::create([
-                'name' => 'Bordeaux Low-Tech',
-                'description' => 'Ingénierie utile, durable et accessible pour le quotidien.',
-                'address' => 'Darwin, Bordeaux, France',
-                'coordinates' => ['lat' => 44.8504, 'lng' => -0.5619],
-                'owner_id' => $users['nicolas']->id,
-            ]),
-            'agri-strasbourg' => Circle::create([
-                'name' => 'Terres d\'Alsace',
-                'description' => 'Maraîchage bio et apiculture urbaine en circuit court.',
-                'address' => 'Parc de l\'Orangerie, Strasbourg, France',
-                'coordinates' => ['lat' => 48.5839, 'lng' => 7.7766],
-                'owner_id' => $users['sarah']->id,
-            ]),
-            'art-nantes' => Circle::create([
-                'name' => 'L\'Île des Créatifs',
-                'description' => 'Collectif d\'artistes, photographes et artisans d\'art.',
-                'address' => 'Machines de l\'île, Nantes, France',
-                'coordinates' => ['lat' => 47.2064, 'lng' => -1.5644],
-                'owner_id' => $users['ines']->id,
-            ]),
-            'impact-nation' => Circle::create([
-                'name' => 'Impact Nation',
-                'description' => 'Le réseau global des acteurs du changement.',
-                'address' => 'Grand Place, Bruxelles, Belgique',
-                'coordinates' => ['lat' => 50.8467, 'lng' => 4.3524],
-                'owner_id' => $users['gabriel']->id,
-            ]),
-        ];
+        // 3. Create Proches (Managed Profiles)
+        $proches = [];
+        $proches['lucas'] = Proche::create([
+            'parent_id' => $users['marc']->id,
+            'name' => 'Lucas (Photographe affilié)'
+        ]);
 
-        // 4. Detailed Memberships
-        $circles['tech-paris']->addMember($users['julie'], 'admin');
-        $circles['tech-paris']->addMember($users['hannya'], 'member');
-        $circles['tech-paris']->addMember($users['victor'], 'member');
-        
-        $circles['habitat-lyon']->addMember($users['sophie'], 'admin');
-        $circles['habitat-lyon']->addMember($users['antoine'], 'member');
-        $circles['habitat-lyon']->addMember($users['hugo'], 'member');
-        
-        $circles['gastro-marseille']->addMember($users['antoine'], 'member');
-        $circles['gastro-marseille']->addMember($users['ines'], 'member');
-        
-        $circles['lowtech-bordeaux']->addMember($users['claire'], 'admin');
-        $circles['lowtech-bordeaux']->addMember($users['mathilde'], 'member');
-        
-        $circles['agri-strasbourg']->addMember($users['pierre'], 'admin');
-        $circles['agri-strasbourg']->addMember($users['lea'], 'member');
-        
-        $circles['art-nantes']->addMember($users['lucas'], 'admin');
-        $circles['art-nantes']->addMember($users['emma'], 'member');
-        $circles['art-nantes']->addMember($users['leo'], 'member');
+        $proches['emile'] = Proche::create([
+            'parent_id' => $users['thomas']->id,
+            'name' => 'Emile (Menuisier traditionnel)'
+        ]);
 
-        foreach ($users as $user) {
-            $circles['impact-nation']->addMember($user, 'member');
-        }
-
-        // 5. 10+ Diverse Projects
-        $projectsData = [
-            ['id' => 'nomad', 'owner' => 'lucas', 'title' => 'Digital Nomad Platform', 'city' => 'Nantes', 'lat' => 47.2184, 'lng' => -1.5536, 'skills' => ['Laravel', 'React', 'Marketing']],
-            ['id' => 'cabane', 'owner' => 'thomas', 'title' => 'L\'Archipel Auto-construit', 'city' => 'Lyon', 'lat' => 45.7772, 'lng' => 4.8554, 'skills' => ['Architecture', 'Menuiserie', 'Éco-conception']],
-            ['id' => 'trace', 'owner' => 'marc', 'title' => 'FoodTrace Blockchain', 'city' => 'Paris', 'lat' => 48.8566, 'lng' => 2.3522, 'skills' => ['Laravel', 'Blockchain', 'FoodTech']],
-            ['id' => 'eau', 'owner' => 'claire', 'title' => 'Régénération Hydrique', 'city' => 'Bordeaux', 'lat' => 44.8504, 'lng' => -0.5619, 'skills' => ['Hydrologie', 'Permaculture', 'Stratégie']],
-            ['id' => 'miel', 'owner' => 'pierre', 'title' => 'Miel de Strasbourg 2026', 'city' => 'Strasbourg', 'lat' => 48.5839, 'lng' => 7.7766, 'skills' => ['Apiculture', 'Maraîchage', 'Marketing']],
-            ['id' => 'terre', 'owner' => 'emma', 'title' => 'Céramique & Low-Tech', 'city' => 'Toulouse', 'lat' => 43.6047, 'lng' => 1.4442, 'skills' => ['Céramique', 'Low-Tech', 'Éco-conception']],
-            ['id' => 'bois', 'owner' => 'hugo', 'title' => 'Ebénisterie Participative', 'city' => 'Toulouse', 'lat' => 43.6100, 'lng' => 1.4500, 'skills' => ['Ébénisterie', 'Menuiserie', 'Stratégie']],
-            ['id' => 'data', 'owner' => 'hannya', 'title' => 'Data pour l\'Impact', 'city' => 'Lille', 'lat' => 50.6292, 'lng' => 3.0573, 'skills' => ['Data Science', 'Laravel', 'Copywriting']],
-            ['id' => 'rse', 'owner' => 'lea', 'title' => 'Audit RSE Global', 'city' => 'Genève', 'lat' => 46.2044, 'lng' => 6.1432, 'skills' => ['Stratégie', 'Marketing']],
-            ['id' => 'metal', 'owner' => 'arthur', 'title' => 'Metal & Design', 'city' => 'Namur', 'lat' => 50.4674, 'lng' => 4.8719, 'skills' => ['Ferblanterie', 'UI Design']],
-        ];
-
-        $projects = [];
-        foreach ($projectsData as $p) {
-            $projects[$p['id']] = Project::create([
-                'title' => $p['title'],
-                'description' => "Projet ambitieux de {$p['title']} visant à transformer nos pratiques à {$p['city']}.",
-                'address' => "{$p['city']}, France",
-                'coordinates' => ['lat' => $p['lat'], 'lng' => $p['lng']],
-                'owner_id' => $users[$p['owner']]->id,
-                'is_open' => true,
-            ]);
-
-            foreach ($p['skills'] as $sName) {
-                $projects[$p['id']]->skills()->attach($skills[$sName]->id);
-            }
-        }
-
-        // Project Teams
-        $projects['nomad']->addMember($users['marc'], 'admin');
-        $projects['nomad']->addMember($users['julie'], 'member');
-        $projects['cabane']->addMember($users['antoine'], 'admin');
-        $projects['cabane']->addMember($users['sophie'], 'member');
-        $projects['trace']->addMember($users['elena'], 'member');
-        $projects['trace']->addMember($users['victor'], 'member');
-
-        // 6. Enriched Offers & Demands
-        foreach ($projects as $p) {
-            $p->allOffers()->create(['title' => 'Expertise Technique', 'description' => 'Accompagnement sur la partie métier.', 'type' => 'offer']);
-            $p->allOffers()->create(['title' => 'Besoin de visibilité', 'description' => 'Nous cherchons quelqu\'un pour la com.', 'type' => 'demand']);
-            $p->allOffers()->create(['title' => 'Matériel disponible', 'description' => 'Outillage partagé pour l\'équipe.', 'type' => 'offer']);
-        }
-
-        // 7. Dense Trust Web (Achievements & Validations)
-        $achNames = [
-            ['user' => 'marc', 'skill' => 'Laravel', 'title' => 'Système de Graphe'],
-            ['user' => 'julie', 'skill' => 'UI Design', 'title' => 'Refonte God Stack'],
-            ['user' => 'thomas', 'skill' => 'Architecture', 'title' => 'Maison Passive'],
-            ['user' => 'sophie', 'skill' => 'Permaculture', 'title' => 'Forêt Comestible'],
-            ['user' => 'claire', 'skill' => 'Hydrologie', 'title' => 'Gestion des Eaux'],
-            ['user' => 'nicolas', 'skill' => 'Low-Tech', 'title' => 'Filtre à Eau Low-Tech'],
-            ['user' => 'sarah', 'skill' => 'Maraîchage', 'title' => 'AMAP Strasbourg'],
-            ['user' => 'hannya', 'skill' => 'Data Science', 'title' => 'Modèle Prédictif'],
-            ['user' => 'hugo', 'skill' => 'Ébénisterie', 'title' => 'Table en Noyer'],
-            ['user' => 'emma', 'skill' => 'Céramique', 'title' => 'Art de la Table'],
-            ['user' => 'gabriel', 'skill' => 'Stratégie', 'title' => 'Conférence Confiance'],
-            ['user' => 'lucas', 'skill' => 'Copywriting', 'title' => 'Manifeste Impact'],
-            ['user' => 'ines', 'skill' => 'Photographie', 'title' => 'Série Portrait'],
-            ['user' => 'antoine', 'skill' => 'Menuiserie', 'title' => 'Charpente Traditionnelle'],
+        // 4. Detailed Achievements (Users + Proches)
+        $achievementsData = [
+            // Marc
+            ['user' => 'marc', 'type' => 'user', 'skill' => 'Développement Web', 'title' => 'Plateforme SaaS de Coliving'],
+            ['user' => 'marc', 'type' => 'user', 'skill' => 'Stratégie Digitale', 'title' => 'Lancement Campus Numérique'],
+            // Julie
+            ['user' => 'julie', 'type' => 'user', 'skill' => 'UI Design', 'title' => 'Refonte de l\'application GreenHome'],
+            ['user' => 'julie', 'type' => 'user', 'skill' => 'Éco-conception', 'title' => 'Audit d\'accessibilité web'],
+            // Thomas
+            ['user' => 'thomas', 'type' => 'user', 'skill' => 'Architecture', 'title' => 'Maison Passive Lyon 3'],
+            ['user' => 'thomas', 'type' => 'user', 'skill' => 'Éco-conception', 'title' => 'Label Bâtiment Durable'],
+            // Sophie
+            ['user' => 'sophie', 'type' => 'user', 'skill' => 'Permaculture', 'title' => 'Ferme Pédagogique du Rhône'],
+            // Proches
+            ['user' => 'lucas', 'type' => 'proche', 'skill' => 'Photographie', 'title' => 'Couverture Photo Festival Arts'],
+            ['user' => 'emile', 'type' => 'proche', 'skill' => 'Menuiserie', 'title' => 'Rénovation Charpente Historique'],
         ];
 
         $achs = [];
-        foreach ($achNames as $a) {
-            $achs[] = Achievement::create([
-                'user_id' => $users[$a['user']]->id,
+        foreach ($achievementsData as $k => $a) {
+            $entityIdentifier = $a['type'] === 'user' ? 'user_id' : 'proche_id';
+            $entityId = $a['type'] === 'user' ? $users[$a['user']]->id : $proches[$a['user']]->id;
+
+            $achs[$k] = Achievement::create([
+                $entityIdentifier => $entityId,
                 'skill_id' => $skills[$a['skill']]->id,
                 'title' => $a['title'],
-                'description' => "Réalisation majeure dans le domaine de {$a['skill']}.",
+                'description' => "Une réalisation validée en {$a['skill']}.",
                 'is_verified' => true,
             ]);
         }
 
-        // Mutual Cross-Validations
-        foreach ($achs as $ach) {
-            $validator = collect($users)->random();
-            if ($validator->id !== $ach->user_id) {
-                AchievementValidation::create([
-                    'achievement_id' => $ach->id,
-                    'user_id' => $validator->id,
-                    'type' => 'validate',
-                    'comment' => 'Une expertise indéniable, un plaisir de collaborer.',
-                ]);
-            }
-        }
+        // 5. Build Trust Web (Cross-Validations)
+        AchievementValidation::create(['achievement_id' => $achs[0]->id, 'user_id' => $users['julie']->id, 'type' => 'validate', 'comment' => 'Marc a magistralement piloté la tech.']);
+        AchievementValidation::create(['achievement_id' => $achs[2]->id, 'user_id' => $users['marc']->id, 'type' => 'validate', 'comment' => 'Les maquettes de Julie sont parfaites.']);
+        AchievementValidation::create(['achievement_id' => $achs[4]->id, 'user_id' => $users['sophie']->id, 'type' => 'validate', 'comment' => 'Son design architectural respecte le vivant.']);
+        AchievementValidation::create(['achievement_id' => $achs[6]->id, 'user_id' => $users['thomas']->id, 'type' => 'validate', 'comment' => 'Sophie a transformé un sol mort en oasis.']);
+        AchievementValidation::create(['achievement_id' => $achs[1]->id, 'user_id' => $users['thomas']->id, 'type' => 'validate', 'comment' => 'Marc nous a très bien conseillé sur le digital.']);
+        AchievementValidation::create(['achievement_id' => $achs[7]->id, 'user_id' => $users['julie']->id, 'type' => 'validate', 'comment' => 'Magnifiques photos, Lucas a du talent.']);
+        AchievementValidation::create(['achievement_id' => $achs[8]->id, 'user_id' => $users['sophie']->id, 'type' => 'validate', 'comment' => 'Emile a fait du super boulot sur le cabanon.']);
 
-        // 8. Social Content (Messages & Reviews)
-        foreach ($circles as $c) {
-            Message::create(['circle_id' => $c->id, 'sender_id' => $c->owner_id, 'content' => "Bienvenue dans le cercle {$c->name} !"]);
-            $visitor = collect($users)->random();
-            Message::create(['circle_id' => $c->id, 'sender_id' => $visitor->id, 'content' => "Ravi de rejoindre ce collectif."]);
-        }
 
-        foreach ($projects as $p) {
-            $review = ProjectReview::create([
-                'project_id' => $p->id,
-                'user_id' => collect($users)->random()->id,
-                'type' => 'validate',
-                'comment' => 'Excellent projet, très bien géré.',
+        // 6. Create 3 Vibrant Circles
+        $circles = [
+            'collectif-tech' => Circle::create([
+                'name' => 'Collectif "Digital Green"',
+                'description' => 'Un espace pour repenser un web plus léger et éthique.',
+                'address' => 'Paris, France',
+                'coordinates' => ['lat' => 48.8600, 'lng' => 2.3400],
+                'owner_id' => $users['marc']->id,
+            ]),
+            'atelier-rhone' => Circle::create([
+                'name' => 'Ateliers du Rhône',
+                'description' => 'Savoir-faire manuel, artisanat et synergie locale.',
+                'address' => 'Lyon, France',
+                'coordinates' => ['lat' => 45.7600, 'lng' => 4.8400],
+                'owner_id' => $users['thomas']->id,
+            ]),
+            'vision-commune' => Circle::create([
+                'name' => 'Maison de la Vision Globale',
+                'description' => 'Réseau collaboratif mixant tech et monde physique.',
+                'address' => 'France',
+                'owner_id' => $users['julie']->id,
+            ]),
+        ];
+
+        // 7. Circle Memberships
+        $circles['collectif-tech']->addMember($users['julie'], 'admin');
+        $circles['collectif-tech']->addMember($users['thomas'], 'member');
+        
+        $circles['atelier-rhone']->addMember($users['sophie'], 'admin');
+        $circles['atelier-rhone']->addMember($users['marc'], 'member');
+        
+        $circles['vision-commune']->addMember($users['marc'], 'admin');
+        $circles['vision-commune']->addMember($users['thomas'], 'member');
+        $circles['vision-commune']->addMember($users['sophie'], 'member');
+
+        // 8. Open Projects with Rich Offers/Demands
+        $projects = [
+            'projet-refonte' => Project::create([
+                'title' => 'Refonte Web Application Mobile',
+                'description' => 'Projet de refonte UI/UX et migration technique.',
+                'address' => 'Paris',
+                'coordinates' => ['lat' => 48.8600, 'lng' => 2.3450],
+                'owner_id' => $users['marc']->id,
+                'is_open' => true,
+            ]),
+            'projet-eco-lieu' => Project::create([
+                'title' => 'Construction Éco-Lieu Partagé',
+                'description' => 'Chantier participatif pour un centre de formation.',
+                'address' => 'Lyon',
+                'coordinates' => ['lat' => 45.7500, 'lng' => 4.8600],
+                'owner_id' => $users['thomas']->id,
+                'is_open' => true,
+            ])
+        ];
+
+        // Project Teams
+        $projects['projet-refonte']->addMember($users['julie'], 'admin');
+        $projects['projet-refonte']->addMember($proches['lucas'], 'member');
+        $projects['projet-eco-lieu']->addMember($users['sophie'], 'admin');
+        $projects['projet-eco-lieu']->addMember($proches['emile'], 'member');
+        $projects['projet-eco-lieu']->addMember($users['marc'], 'member');
+        
+        // Link Skills to Projects
+        $projects['projet-refonte']->skills()->sync([$skills['Développement Web']->id, $skills['UI Design']->id]);
+        $projects['projet-eco-lieu']->skills()->sync([$skills['Architecture']->id, $skills['Permaculture']->id, $skills['Menuiserie']->id]);
+
+
+        // Offers & Demands (Marketplace)
+        $projects['projet-refonte']->allOffers()->create([
+            'title' => 'Audit UI/UX Complet', 
+            'description' => 'Julie propose un audit détaillé de vos interfaces pour 500€.', 
+            'type' => 'offer'
+        ])->skills()->attach($skills['UI Design']->id);
+
+        $projects['projet-refonte']->allOffers()->create([
+            'title' => 'Recherche Développeur Front', 
+            'description' => 'Nous cherchons un dev React pour épauler Marc sur cette semaine.', 
+            'type' => 'demand'
+        ])->skills()->attach($skills['Développement Web']->id);
+
+        $projects['projet-eco-lieu']->allOffers()->create([
+            'title' => 'Design Permaculturel du Terrain', 
+            'description' => 'Sophie vous offre un plan aménagé pour optimiser les flux d\'eau.', 
+            'type' => 'offer'
+        ])->skills()->attach($skills['Permaculture']->id);
+
+        $projects['projet-eco-lieu']->allOffers()->create([
+            'title' => 'Besoin de bras pour la charpente', 
+            'description' => 'Ce week-end, grand besoin d\'aide pour lever l\'ossature bois.', 
+            'type' => 'demand'
+        ])->skills()->attach($skills['Menuiserie']->id);
+
+
+        // 9. Conversations in "Le Board" (Chronological)
+        $boardChat = [
+            ['circle' => 'vision-commune', 'sender' => 'julie', 'time' => '-2 days', 'text' => "Bienvenue à tous dans ce cercle de convergence ! C'est super de voir le groupe grandir."],
+            ['circle' => 'vision-commune', 'sender' => 'thomas', 'time' => '-1 day', 'text' => "Merci Julie pour l'invitation. J'ai hâte de croiser nos approches."],
+            ['circle' => 'vision-commune', 'sender' => 'marc', 'time' => '-12 hours', 'text' => "Salut ! Si quelqu'un veut échanger sur de l'outillage numérique frugal, je suis là."],
+            ['circle' => 'vision-commune', 'sender' => 'sophie', 'time' => '-2 hours', 'text' => "Top ! Justement Thomas et moi on se posait des questions pour numériser certaines données de nos sols...!"],
+        ];
+
+        foreach ($boardChat as $chat) {
+            Message::create([
+                'circle_id' => $circles[$chat['circle']]->id,
+                'sender_id' => $users[$chat['sender']]->id,
+                'content' => $chat['text'],
+                'created_at' => \Carbon\Carbon::parse($chat['time']),
+                'updated_at' => \Carbon\Carbon::parse($chat['time']),
             ]);
+        }
 
-            ProjectReview::create([
-                'project_id' => $p->id,
-                'user_id' => $p->owner_id,
-                'type' => 'validate',
-                'comment' => 'Merci pour votre soutien !',
-                'parent_id' => $review->id,
+
+        // 10. Conversations in "Le Forum" (Projects)
+        $forumChat = [
+            ['project' => 'projet-eco-lieu', 'sender' => 'thomas', 'time' => '-3 days', 'text' => "Le terrassement commence demain. On espère qu'il ne pleuvra pas trop."],
+            ['project' => 'projet-eco-lieu', 'sender' => 'sophie', 'time' => '-3 days', 'text' => "Et moi j'ai reçu les plants pour les haies sèches. On mettra tout ça en jauge."],
+            ['project' => 'projet-eco-lieu', 'sender' => 'marc', 'time' => '-1 day', 'text' => "Je passerai ce week-end pour donner un coup de main, vous me direz ce qu'il faut amener !"],
+            ['project' => 'projet-eco-lieu', 'sender' => 'thomas', 'time' => 'now', 'text' => "Super Marc, prends de bonnes chaussures de sécu, ça va batailler sévère."],
+        ];
+
+        foreach ($forumChat as $chat) {
+            Message::create([
+                'project_id' => $projects[$chat['project']]->id,
+                'sender_id' => $users[$chat['sender']]->id,
+                'content' => $chat['text'],
+                'created_at' => \Carbon\Carbon::parse($chat['time']),
+                'updated_at' => \Carbon\Carbon::parse($chat['time']),
             ]);
         }
 
-        // 9. Recalculate Everything
+        // 11. Project Reviews
+        $review1 = ProjectReview::create([
+            'project_id' => $projects['projet-eco-lieu']->id,
+            'user_id' => $users['marc']->id,
+            'type' => 'validate',
+            'comment' => "Une organisation parfaite sur le chantier, Thomas gère ça d'une main de maître.",
+            'created_at' => now()->subHours(5)
+        ]);
+
+        ProjectReview::create([
+            'project_id' => $projects['projet-eco-lieu']->id,
+            'user_id' => $users['thomas']->id,
+            'type' => 'validate',
+            'comment' => "Merci d'être venu nous aider si spontanément !",
+            'parent_id' => $review1->id,
+            'created_at' => now()->subHours(2)
+        ]);
+
+        // 12. Recalculate Every User's Trust Score
         foreach ($users as $user) {
             $user->recalculateTrustScore();
         }

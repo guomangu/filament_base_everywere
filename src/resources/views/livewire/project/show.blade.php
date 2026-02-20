@@ -351,51 +351,108 @@
 
 
 
-    {{-- ===== DETACHED FORUM (BOTTOM) ===== --}}
+    {{-- ===== LE FORUM DU PROJET (Nouveau Layout Chat) ===== --}}
     <div class="max-w-7xl mx-auto px-6 mt-12 pt-12 border-t border-slate-100">
-        <div class="bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
-
-            <h2 class="text-3xl font-black mb-10 tracking-tight flex items-center gap-4 relative z-10">
-                Le Forum
-                <span class="px-3 py-1 bg-white/10 text-xs rounded-full border border-white/10 font-black">{{ $project->messages->count() }}</span>
-            </h2>
-
-            {{-- Message input --}}
-            @auth
-                <div class="relative z-10 p-4 bg-white/5 border border-white/10 rounded-[2.5rem] mb-10 group-focus-within:border-blue-500 transition-all">
-                    <textarea wire:model="message" placeholder="Posez une question, partagez une info..."
-                        class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
-                        rows="3"></textarea>
-                    <button wire:click="sendMessage" class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-xl shadow-white/5">
-                        Envoyer au projet
-                    </button>
+        <div class="bg-slate-900 rounded-[3.5rem] p-8 md:p-12 shadow-2xl shadow-slate-900/40 text-white relative flex flex-col h-[700px] overflow-hidden group/board mt-8">
+            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent pointer-events-none"></div>
+            
+            <div class="flex items-center justify-between mb-6 relative z-10 shrink-0">
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-black tracking-tight flex items-center gap-4">
+                        Le Forum
+                        <span class="px-3 py-1 bg-blue-500/10 text-blue-400 text-[10px] rounded-full border border-blue-500/20 uppercase tracking-widest">
+                            {{ $project->messages->count() }}
+                        </span>
+                    </h2>
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">Discussions du projet</p>
                 </div>
-            @else
-                <div class="relative z-10 text-center p-8 bg-white/5 border border-dashed border-white/10 rounded-3xl mb-10">
-                    <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Connectez-vous pour participer au forum</p>
-                </div>
-            @endauth
 
-            {{-- Messages feed --}}
-            <div class="space-y-6 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar relative z-10">
-                @forelse($project->messages as $msg)
-                    <div class="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                @auth
+                @if($project->isMember(auth()->user()) || $project->isOwner(auth()->user()))
+                    <div class="flex items-center gap-2 bg-white/5 py-1.5 px-3 rounded-full border border-white/10 shadow-inner">
+                        <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Live</span>
+                    </div>
+                @endif
+                @endauth
+            </div>
+
+            <!-- Messages feed -->
+            <div class="flex-grow overflow-y-auto pr-6 custom-scrollbar relative z-10 space-y-8 flex flex-col mb-6"
+                 id="forum-scroller"
+                 x-data
+                 x-init="$nextTick(() => { $el.scrollTop = $el.scrollHeight }); $watch('showIndicator', () => { setTimeout(() => $el.scrollTop = $el.scrollHeight, 100) });"
+                 x-on:message-sent.window="setTimeout(() => $el.scrollTop = $el.scrollHeight, 100)">
+                @forelse($project->messages->reverse() as $msg)
+                    <div class="flex flex-col gap-3 group/msg shrink-0">
                         <div class="flex items-center gap-3">
                             <a href="{{ route('users.show', $msg->sender) }}" class="flex items-center gap-3 group/msg hover:opacity-80 transition-all">
-                                <img src="{{ $msg->sender->avatar }}" class="w-6 h-6 rounded-lg ring-1 ring-white/20 group-hover/msg:ring-blue-500 transition-all">
-                                <span class="text-xs font-black uppercase tracking-widest text-slate-400 group-hover/msg:text-blue-400 transition-colors">{{ $msg->sender->name }}</span>
-                                <span class="text-[9px] font-black text-slate-600 uppercase">{{ $msg->created_at->diffForHumans() }}</span>
+                                <div class="relative shrink-0">
+                                    <img src="{{ $msg->sender->avatar }}" class="w-8 h-8 rounded-xl ring-2 ring-white/5 group-hover/msg:ring-blue-500 transition-all object-cover">
+                                    @if($msg->sender_id === $project->owner_id)
+                                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-slate-900 rounded-full"></div>
+                                    @endif
+                                </div>
+                                <div class="flex flex-col">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-300 group-hover/msg:text-blue-400 transition-colors">{{ $msg->sender->name }}</span>
+                                        @if($msg->sender_id === $project->owner_id)
+                                            <span class="px-2 py-0.5 bg-blue-600 text-white rounded-md text-[7px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20">Créateur</span>
+                                        @endif
+                                    </div>
+                                    <span class="text-[8px] font-black text-slate-600 uppercase">{{ $msg->created_at->diffForHumans() }}</span>
+                                </div>
                             </a>
                         </div>
-                        <div class="bg-white/5 border border-white/10 p-5 rounded-2xl rounded-tl-none text-slate-300 text-sm leading-relaxed italic">
-                            {{ $msg->content }}
+                        <div class="relative">
+                            <div class="bg-white/5 border border-white/10 p-6 rounded-[2rem] rounded-tl-none text-slate-300 text-base leading-relaxed italic group-hover/msg:border-white/20 transition-all
+                                {{ $msg->sender_id === $project->owner_id ? 'border-l-4 border-l-blue-500' : '' }}">
+                                {{ $msg->content }}
+                            </div>
+                            <div class="absolute -left-2 top-0 w-4 h-4 bg-white/5 border-t border-l border-white/10 rotate-[-15deg] invisible group-hover/msg:visible"></div>
                         </div>
                     </div>
                 @empty
-                    <div class="py-12 text-center text-slate-600 font-black uppercase tracking-[0.3em] text-[10px]">Silence radio... soyez le premier à parler !</div>
+                    <div class="py-20 text-center flex flex-col items-center justify-center gap-6 flex-grow">
+                        <div class="w-20 h-20 rounded-[2.5rem] bg-white/5 flex items-center justify-center border border-white/10 text-slate-700 shadow-inner">
+                            <svg class="w-10 h-10" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="8"><path d="M200,48H56A16,16,0,0,0,40,64V184a16,16,0,0,0,16,16h81.37l33.32,29.15a4,4,0,0,0,5.31,0L200l.06,0a16,16,0,0,0,15.94-16V64A16,16,0,0,0,200,48ZM88,128a8,8,0,1,1,8,8A8,8,0,0,1,88,128Zm40,8a8,8,0,1,1,8-8A8,8,0,0,1,128,136Zm48-8a8,8,0,1,1-8,8A8,8,0,0,1,176,128Z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        </div>
+                        <p class="text-slate-600 font-black uppercase tracking-[0.4em] text-[10px]">Silence radio... soyez le premier à parler !</p>
+                    </div>
                 @endforelse
             </div>
+
+            <!-- Input area if authenticated -->
+            @auth
+            @if($project->isMember(auth()->user()) || $project->isOwner(auth()->user()))
+                <div class="relative z-10 shrink-0">
+                    <form wire:submit.prevent="sendMessage" class="p-4 bg-white/5 border border-white/10 rounded-[2rem] focus-within:border-blue-500 transition-all shadow-inner overflow-hidden flex flex-col md:flex-row items-center gap-4">
+                        <div class="hidden md:flex items-center gap-3 shrink-0 px-2">
+                            <img src="{{ auth()->user()->avatar }}" class="w-8 h-8 rounded-xl border border-white/10 shadow-lg object-cover">
+                        </div>
+                        <input wire:model="message" 
+                            type="text"
+                            placeholder="{{ $project->isOwner(auth()->user()) ? 'Partager une info, une avancée...' : 'Posez une question, proposez une idée...' }}" 
+                            class="w-full bg-transparent border-none focus:ring-0 text-base text-slate-200 placeholder:text-slate-600 truncate"
+                        >
+                        <button type="submit" 
+                            class="w-full md:w-auto shrink-0 px-6 py-3 bg-white text-slate-900 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-xl shadow-white/5 active:scale-95">
+                            Envoyer
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="relative z-10 shrink-0 text-center p-6 bg-white/5 border border-dashed border-white/10 rounded-[2rem] mb-4 group/join">
+                    <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
+                        <a href="#" wire:click.prevent="joinProject" class="text-blue-400 group-hover/join:text-blue-300 transition-colors">Rejoignez le projet</a> pour participer aux discussions
+                    </p>
+                </div>
+            @endif
+            @else
+                <div class="relative z-10 shrink-0 text-center p-6 bg-white/5 border border-dashed border-white/10 rounded-[2rem] mb-4">
+                    <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Connectez-vous pour participer</p>
+                </div>
+            @endauth
         </div>
 
     </div>
