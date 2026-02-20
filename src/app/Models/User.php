@@ -185,7 +185,8 @@ class User extends Authenticatable implements FilamentUser
 
     public function getTrustPathTo($other): array
     {
-        $path = [['type' => 'user', 'id' => $this->id, 'name' => 'Vous', 'avatar' => $this->avatar]];
+        $isMe = auth()->id() === $this->id;
+        $path = [['type' => 'user', 'id' => $this->id, 'name' => $isMe ? 'Vous' : $this->name, 'avatar' => $this->avatar]];
 
         if ($other instanceof User && $this->id === $other->id) {
             return $path;

@@ -8,6 +8,7 @@ use Livewire\Component;
 
 class Profile extends Component
 {
+    use \App\Traits\HandlesOfferActions;
     public \App\Models\User $user;
     // Proches and Skills management
     public bool $showProcheModal = false;
@@ -386,18 +387,38 @@ class Profile extends Component
             $userProjects = collect([]);
         }
 
+        $userOffers = \App\Models\ProjectOffer::whereIn('project_id', $userProjects->pluck('id'))
+            ->where('type', 'offer')
+            ->with(['project', 'informations', 'reviews'])
+            ->latest()
+            ->get();
+
+        $ownedProjectsCount = $this->user->ownedProjects()->count();
+        $ownedOffersCount = \App\Models\ProjectOffer::whereHas('project', function($q) {
+            $q->where('owner_id', $this->user->id);
+        })->where('type', 'offer')->count();
+
         return view('livewire.user.profile', [
             'groupedAchievements' => $allAchievements->groupBy(fn($ach) => $ach->skill->name),
             'networkExperts' => $networkExperts,
             'canEdit' => $this->canEdit(),
             'userProjects' => $userProjects,
+            'userOffers' => $userOffers,
+            'ownedProjectsCount' => $ownedProjectsCount,
+            'ownedOffersCount' => $ownedOffersCount,
             'activeProject' => $this->user->activeProject(),
             'allAchievements' => $allAchievements,
         ])->layoutData([
-            'title' => $this->user->name . ' - Expertises et Réseau | TrustCircle',
-            'description' => \Illuminate\Support\Str::limit('Découvrez le profil de ' . $this->user->name . ' sur TrustCircle, ses compétences validées (' . $allAchievements->count() . ' preuves) et son réseau de confiance.', 160, '...'),
+            'title' => $this->user->name . ' | Expertises & Confiance (' . $this->user->trust_score . '%) | TrustCircle',
+            'description' => \Illuminate\Support\Str::limit('Consultez le profil de ' . $this->user->name . ' : ' . $allAchievements->count() . ' compétences validées par la communauté. Score de confiance : ' . $this->user->trust_score . '%. Expertises principales : ' . $allAchievements->pluck('skill.name')->unique()->take(5)->implode(', '), 160, '...'),
             'og_image' => $this->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->user->name),
         ]);
+    }
+
+    public function startConversation()
+    {
+        if (!auth()->check()) return;
+        $this->dispatch('openConversationWith', userId: $this->user->id);
     }
 
     public function toggleProjectStatus(int $projectId)

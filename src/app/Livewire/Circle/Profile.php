@@ -6,6 +6,7 @@ use Livewire\Component;
 
 class Profile extends Component
 {
+    use \App\Traits\HandlesOfferActions;
     public \App\Models\Circle $circle;
     public string $message = '';
     public $showInformationManager = false;
@@ -75,9 +76,10 @@ class Profile extends Component
 
         if ($currentMessageCount !== $this->lastMessageCount || $currentPendingCount !== $this->lastPendingCount) {
             $this->dispatch('circle-updated');
-            $this->lastMessageCount = $currentMessageCount;
-            $this->lastPendingCount = $currentPendingCount;
         }
+        
+        $this->lastMessageCount = $currentMessageCount;
+        $this->lastPendingCount = $currentPendingCount;
     }
 
     public function sendMessage()
@@ -127,12 +129,15 @@ class Profile extends Component
             $memberOffers = collect([]);
         }
 
+        $trustScore = $this->circle->getAverageTrustScore();
+        $location = $this->circle->city ? ' à ' . $this->circle->city : '';
+        
         return view('livewire.circle.profile', [
             'memberProjects' => $memberProjects ?? collect([]),
             'memberOffers' => $memberOffers ?? collect([]),
         ])->layoutData([
-            'title' => 'Cercle ' . $this->circle->name . ($this->circle->city ? ' - ' . $this->circle->city : '') . ' | TrustCircle',
-            'description' => \Illuminate\Support\Str::limit(strip_tags($this->circle->description), 160, '...'),
+            'title' => 'Cercle ' . $this->circle->name . $location . ' | Expertise & Confiance (' . $trustScore . '%)',
+            'description' => \Illuminate\Support\Str::limit('Rejoignez le cercle ' . $this->circle->name . $location . '. Une communauté locale de confiance avec un score de fiabilité de ' . $trustScore . '%. ' . strip_tags($this->circle->description), 160, '...'),
             'og_image' => $this->circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->circle->owner->name),
         ]);
     }

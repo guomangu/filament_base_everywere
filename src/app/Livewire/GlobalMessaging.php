@@ -30,6 +30,15 @@ class GlobalMessaging extends Component
         }
     }
 
+    #[On('openConversationWith')]
+    public function openConversationWith($userId)
+    {
+        $this->isOpen = true;
+        $this->activeTab = 'private';
+        $this->selectedParticipantId = (int) $userId;
+        $this->dispatch('messagingOpened');
+    }
+
     public function selectTab($tab)
     {
         $this->activeTab = $tab;
@@ -199,7 +208,7 @@ class GlobalMessaging extends Component
                     $q->where('sender_id', $user->id)->where('receiver_id', $this->selectedParticipantId);
                 })->orWhere(function($q) use ($user) {
                     $q->where('sender_id', $this->selectedParticipantId)->where('receiver_id', $user->id);
-                })->oldest()->get()
+                })->with('sender')->oldest()->get()
             : collect();
 
         return view('livewire.global-messaging', [

@@ -8,12 +8,21 @@
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Exploration de proximité et de confiance</p>
         </div>
 
-        <div class="relative w-full md:w-64">
-            <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher une compétence..." 
-                class="w-full bg-slate-100/50 border-none rounded-2xl py-3 pl-10 pr-4 text-xs font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <div wire:loading wire:target="search" class="absolute right-3 top-1/2 -translate-y-1/2">
-                <div class="w-3 h-3 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+        <div class="flex items-center gap-4 flex-grow md:flex-grow-0">
+            @if($origin instanceof \App\Models\User && auth()->id() === $origin->id)
+                <a href="{{ route('circles.create') }}" class="shrink-0 px-4 py-3 bg-slate-900 border-2 border-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-blue-600 hover:border-blue-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 group/circle">
+                    <svg class="w-4 h-4 group-hover/circle:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 20a10.003 10.003 0 006.235-2.197m-2.322-9.047a7.334 7.334 0 011.129 3.125m-1.282-3.125a10 10 0 11-14.703 0m14.703 0c-1.347-1.625-3.323-2.651-5.547-2.651-2.224 0-4.2 1.026-5.547 2.651"/></svg>
+                    Nouveau Cercle
+                </a>
+            @endif
+
+            <div class="relative w-full md:w-64">
+                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher..." 
+                    class="w-full bg-slate-100/50 border-none rounded-2xl py-3 pl-10 pr-4 text-xs font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <div wire:loading wire:target="search" class="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div class="w-3 h-3 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+                </div>
             </div>
         </div>
     </div>

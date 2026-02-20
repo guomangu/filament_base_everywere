@@ -101,11 +101,13 @@ class Explorer extends Component
             ->values()
             ->take($this->limit)
             ->map(function($item) use ($baseUser) {
-                $path = $baseUser->getTrustPathTo($item);
+                // For the trust path, prioritize the VIEWER's connection.
+                // Fallback to the ORIGIN's connection if viewer has none (discovery mode).
+                $viewer = auth()->user();
+                $path = $viewer ? $viewer->getTrustPathTo($item) : [];
                 
-                // Add "La Terre" if countries differ
-                if ($item->proximity_type === 'earth') {
-                    array_splice($path, 1, 0, [['type' => 'earth', 'name' => 'La Terre']]);
+                if (empty($path)) {
+                    $path = $baseUser->getTrustPathTo($item);
                 }
                 
                 $item->trustPath = $path;

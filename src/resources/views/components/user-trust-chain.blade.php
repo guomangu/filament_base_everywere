@@ -7,11 +7,6 @@
         $lastNodeKey = null;
 
         foreach ($nodes as $node) {
-            $isVous = ($node['type'] === 'user' && ($node['name'] === 'Vous' || ($node['id'] ?? 0) === auth()->id()));
-            $isOtherUser = ($node['type'] === 'user' && !$isVous);
-
-            if ($isOtherUser) continue;
-
             $nodeKey = $node['type'] . '_' . ($node['id'] ?? $node['name']);
             if ($nodeKey === $lastNodeKey) continue;
             
@@ -25,7 +20,7 @@
         @foreach($filteredPath as $index => $node)
             <div class="flex items-center gap-2 shrink-0">
                 @if($node['type'] === 'user')
-                    <a href="#" class="flex items-center gap-2 bg-white/40 backdrop-blur-md border border-white/60 px-3 py-1.5 rounded-xl shadow-sm hover:bg-white hover:border-blue-500 transition-all group">
+                    <a href="{{ route('users.show', $node['id']) }}" class="flex items-center gap-2 bg-white/40 backdrop-blur-md border border-white/60 px-3 py-1.5 rounded-xl shadow-sm hover:bg-white hover:border-blue-500 transition-all group">
                         <img src="{{ $node['avatar'] }}" class="w-5 h-5 rounded-full object-cover border border-white shadow-inner group-hover:scale-110 transition-transform">
                         <span class="text-[9px] font-black uppercase tracking-tight text-slate-900 group-hover:text-blue-600">{{ $node['name'] }}</span>
                     </a>

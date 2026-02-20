@@ -192,12 +192,27 @@
                                     @foreach($activeMessages as $m)
                                         @php $isMe = $m->sender_id === auth()->id(); @endphp
                                         <div wire:key="chat-msg-row-{{ $m->id }}" @class([
-                                            'max-w-[85%] md:max-w-[70%] rounded-2xl p-4 md:p-8 italic relative group shadow-xl',
-                                            'self-end bg-blue-600 text-white rounded-br-none' => $isMe,
-                                            'self-start bg-white/10 text-white rounded-bl-none border border-white/10' => !$isMe
+                                            'flex gap-4 items-end max-w-[90%] md:max-w-[80%]',
+                                            'self-end flex-row-reverse' => $isMe,
+                                            'self-start' => !$isMe
                                         ])>
-                                            <p class="text-xs md:text-base font-semibold leading-relaxed">{{ $m->content }}</p>
-                                            <span class="text-[7px] absolute -bottom-5 right-2 uppercase font-black text-white/40">{{ $m->created_at->format('H:i') }}</span>
+                                            @if(!$isMe)
+                                                <a href="{{ route('users.show', $m->sender) }}" class="shrink-0 mb-1 group/avatar">
+                                                    <img src="{{ $m->sender->avatar ?? 'https://ui-avatars.com/api/?name='.$m->sender->name }}" class="w-8 h-8 rounded-full border border-white/20 group-hover/avatar:border-blue-500 transition-all shadow-lg">
+                                                </a>
+                                            @endif
+                                            
+                                            <div @class([
+                                                'rounded-2xl p-4 md:p-8 italic relative group shadow-xl',
+                                                'bg-blue-600 text-white rounded-br-none' => $isMe,
+                                                'bg-white/10 text-white rounded-bl-none border border-white/10' => !$isMe
+                                            ])>
+                                                @if(!$isMe)
+                                                    <div class="text-[7px] font-black uppercase text-blue-400 mb-1 tracking-widest">{{ $m->sender->name }}</div>
+                                                @endif
+                                                <p class="text-xs md:text-base font-semibold leading-relaxed">{{ $m->content }}</p>
+                                                <span class="text-[7px] absolute -bottom-5 right-2 uppercase font-black text-white/40">{{ $m->created_at->format('H:i') }}</span>
+                                            </div>
                                         </div>
                                     @endforeach
                                 </div>

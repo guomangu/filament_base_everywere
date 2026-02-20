@@ -7,13 +7,28 @@
         @php
             $pageTitle = $title ?? 'TrustCircle | Réseau de Confiance & Projets de Proximité';
             $metaDesc = $description ?? "Découvrez TrustCircle, le réseau social de confiance pour collaborer sur des projets locaux, valider des compétences et bâtir des cercles d'expertises vérifiés.";
+            $metaKeywords = $keywords ?? "réseau de confiance, projets locaux, entraide, expertises, cercles de confiance, collaboration, proximité";
             $ogImage = $og_image ?? asset('images/og-default.jpg');
             $ogType = $og_type ?? 'website';
         @endphp
 
         <title>{{ $pageTitle }}</title>
         <meta name="description" content="{{ $metaDesc }}">
-        <meta name="keywords" content="réseau de confiance, projets locaux, entraide, expertises, cercles de confiance, collaboration, proximité">
+        <meta name="keywords" content="{{ $metaKeywords }}">
+
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "TrustCircle",
+          "url": "{{ url('/') }}",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "{{ url('/?search={search_term_string}') }}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+        </script>
 
         <!-- Open Graph / Facebook -->
         <meta property="og:type" content="{{ $ogType }}">
@@ -72,7 +87,7 @@
                             </div>
                         </a>
                         
-                        <button @click="$dispatch('toggleMessaging')" 
+                        <button @click="Livewire.dispatch('toggleMessaging')" 
                                 x-data="{ unreadCount: {{ auth()->check() ? auth()->user()->receivedMessages()->whereNull('read_at')->count() : 0 }} }"
                                 x-on:unread-count-updated.window="unreadCount = $event.detail.count"
                                 class="flex items-center gap-3 px-4 py-2 md:py-3 bg-slate-900/5 hover:bg-blue-600 hover:text-white rounded-xl md:rounded-2xl transition-all group border border-slate-100/50 shadow-sm hover:shadow-blue-500/20 hover:-translate-y-0.5 active:translate-y-0 relative">

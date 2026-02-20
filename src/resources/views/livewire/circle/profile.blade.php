@@ -1,13 +1,19 @@
 <div 
     x-data="{ 
         showIndicator: false,
+        timer: null,
         playNotify() {
             let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
             audio.volume = 0.2;
-            audio.play().catch(e => console.log('Audio play failed:', e));
+            audio.play().catch(e => {});
         }
     }" 
-    x-on:circle-updated.window="showIndicator = true; playNotify(); setTimeout(() => showIndicator = false, 3000)"
+    x-on:circle-updated.window="
+        showIndicator = true; 
+        playNotify(); 
+        if(timer) clearTimeout(timer);
+        timer = setTimeout(() => showIndicator = false, 5000)
+    "
     wire:poll.5s.visible="refresh" 
     class="min-h-screen pb-12"
 >
@@ -222,21 +228,128 @@
         
         <!-- Main Content: Skill Directory -->
         <div class="lg:col-span-2 space-y-16">
+            
+            {{-- ===== LE BOARD (Nouveau Layout) ===== --}}
+            <div class="bg-slate-900 rounded-[3.5rem] p-8 md:p-12 shadow-2xl shadow-slate-900/40 text-white relative overflow-hidden group/board">
+                <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
+                
+                <div class="flex items-center justify-between mb-10 relative z-10">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black tracking-tight flex items-center gap-4">
+                            Le Board
+                            <span class="px-4 py-1.5 bg-blue-500/10 text-blue-400 text-xs rounded-full border border-blue-500/20 font-black">
+                                {{ $circle->messages->count() }} Messages
+                            </span>
+                        </h2>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">Logistique & Discussions du cercle</p>
+                    </div>
+
+                    @auth
+                        <div class="hidden md:flex items-center gap-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Live</span>
+                        </div>
+                    @endauth
+                </div>
+
+                <!-- Input area if authenticated -->
+                @auth
+                    @php 
+                        $isActiveMember = $circle->activeMembers->contains('user_id', auth()->id());
+                        $isOwner = $circle->owner_id === auth()->id();
+                    @endphp
+
+                    <div class="relative z-10 p-6 bg-white/5 border border-white/10 rounded-[2.5rem] mb-12 focus-within:border-blue-500 transition-all shadow-inner overflow-hidden">
+                        <textarea wire:model="message" 
+                            placeholder="{{ ($isActiveMember || $isOwner) ? 'Partagez une info logistique, une annonce...' : 'Posez une question en tant qu\'invité...' }}" 
+                            class="w-full bg-transparent border-none focus:ring-0 text-base text-slate-200 placeholder:text-slate-600 mb-4 resize-none min-h-[80px]"
+                            rows="3"></textarea>
+                        
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <img src="{{ auth()->user()->avatar }}" class="w-8 h-8 rounded-xl border border-white/10 shadow-lg">
+                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">{{ auth()->user()->name }}</span>
+                            </div>
+                            <button wire:click="sendMessage" 
+                                class="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-xl shadow-white/5 active:scale-95">
+                                Envoyer {{ ($isActiveMember || $isOwner) ? '' : '(Invité)' }}
+                            </button>
+                        </div>
+                    </div>
+                @else
+                    <div class="relative z-10 text-center p-12 bg-white/5 border border-dashed border-white/10 rounded-[3rem] mb-12 group/join cursor-pointer hover:bg-white/10 transition-all">
+                        <p class="text-slate-500 text-xs font-black uppercase tracking-[0.3em] group-hover/join:text-blue-400">Connectez-vous pour participer au Board</p>
+                        <svg class="w-8 h-8 mx-auto mt-4 text-white/10 group-hover/join:text-blue-500/20 transition-all" viewBox="0 0 256 256" fill="currentColor"><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80Zm-80,73.19V176a8,8,0,0,1-16,0V153.19a28,28,0,1,1,16,0ZM160,80H96V56a32,32,0,0,1,64,0Z"></path></svg>
+                    </div>
+                @endauth
+
+                <!-- Messages Feed -->
+                @php
+                    $activeMemberIds = $circle->activeMembers->pluck('user_id')->toArray();
+                @endphp
+                <div class="space-y-8 max-h-[800px] overflow-y-auto pr-6 custom-scrollbar relative z-10">
+                    @forelse($circle->messages as $msg)
+                        @php
+                            $msgIsOwner = $msg->sender_id === $circle->owner_id;
+                            $msgIsMember = in_array($msg->sender_id, $activeMemberIds);
+                            $msgIsGuest = !$msgIsOwner && !$msgIsMember;
+                        @endphp
+                        <div class="flex flex-col gap-3 group/msg">
+                            <div class="flex items-center justify-between">
+                                <a href="{{ route('users.show', $msg->sender) }}" class="flex items-center gap-3 group/user hover:opacity-80 transition-all">
+                                    <div class="relative">
+                                        <img src="{{ $msg->sender->avatar }}" class="w-8 h-8 rounded-xl ring-2 ring-white/5 group-hover/user:ring-blue-500 transition-all">
+                                        @if($msgIsOwner)
+                                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-slate-900 rounded-full"></div>
+                                        @endif
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-black uppercase tracking-widest text-slate-300 group-hover/user:text-blue-400 transition-colors">{{ $msg->sender->name }}</span>
+                                            @if($msgIsOwner)
+                                                <span class="px-2 py-0.5 bg-blue-600 text-white rounded-md text-[7px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20">Fondateur</span>
+                                            @elseif($msgIsMember)
+                                                <span class="px-2 py-0.5 bg-white/10 text-white rounded-md text-[7px] font-black uppercase tracking-widest border border-white/10">Membre</span>
+                                            @elseif($msgIsGuest)
+                                                <span class="px-2 py-0.5 bg-slate-800 text-slate-400 rounded-md text-[7px] font-black uppercase tracking-widest">Invité</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-[8px] font-black text-slate-600 uppercase">{{ $msg->created_at->diffForHumans() }}</span>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="relative">
+                                <div class="bg-white/5 border border-white/10 p-6 rounded-[2rem] rounded-tl-none text-slate-300 text-base leading-relaxed italic group-hover/msg:border-white/20 transition-all
+                                    {{ $msgIsOwner ? 'border-l-4 border-l-blue-500' : '' }}">
+                                    {{ $msg->content }}
+                                </div>
+                                <div class="absolute -left-2 top-0 w-4 h-4 bg-white/5 border-t border-l border-white/10 rotate-[-15deg] invisible group-hover/msg:visible"></div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="py-20 text-center flex flex-col items-center gap-6">
+                            <div class="w-20 h-20 rounded-[2.5rem] bg-white/5 flex items-center justify-center border border-white/10 text-slate-700">
+                                <svg class="w-10 h-10" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="8"><path d="M200,48H56A16,16,0,0,0,40,64V184a16,16,0,0,0,16,16h81.37l33.32,29.15a4,4,0,0,0,5.31,0L200l.06,0a16,16,0,0,0,15.94-16V64A16,16,0,0,0,200,48ZM88,128a8,8,0,1,1,8,8A8,8,0,0,1,88,128Zm40,8a8,8,0,1,1,8-8A8,8,0,0,1,128,136Zm48-8a8,8,0,1,1-8,8A8,8,0,0,1,176,128Z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            </div>
+                            <p class="text-slate-600 font-black uppercase tracking-[0.4em] text-[10px]">Silence radio sur le board...</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
             <div>
                 
-
-
                 {{-- ===== OFFRES DE SERVICES AGREGÉES ===== --}}
                 @if($memberOffers->count() > 0)
                     <div class="mb-12">
                         <div class="flex items-center justify-between mb-8">
-                            <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">
-                                Offre
-                                <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic uppercase">AGRÉGÉS</span>
+                            <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                                Offres Aggrégées
+                                <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full uppercase">Ses membres proposent</span>
                             </h2>
                         </div>
 
-                        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
+                        <div class="grid grid-cols-2 lg:grid-cols-2 gap-8">
                             @foreach($memberOffers as $offer)
                                 <x-offer-card 
                                     :offer="$offer" 
@@ -248,80 +361,18 @@
                         </div>
                     </div>
                 @endif
+                
                 <div class="mt-10">
                     <livewire:network.explorer :origin="$circle" />
                 </div>
             
             </div>
 
-
         </div>
 
         <!-- Sidebar: Messaging & Logistics -->
         <div class="space-y-12">
-            <div class="bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent"></div>
-                
-                <h2 class="text-3xl font-black mb-10 tracking-tight flex items-center gap-4 relative z-10">
-                    Le Board
-                    <span class="px-3 py-1 bg-white/10 text-xs rounded-full border border-white/10 font-black">{{ $circle->messages->count() }}</span>
-                </h2>
-
-                <!-- Input area if authenticated -->
-                @auth
-                    @php 
-                        $isActiveMember = $circle->activeMembers->contains('user_id', auth()->id());
-                        $isOwner = $circle->owner_id === auth()->id();
-                    @endphp
-
-                    <div class="relative z-10 p-4 bg-white/5 border border-white/10 rounded-[2.5rem] mb-10">
-                        <textarea wire:model="message" 
-                            placeholder="{{ ($isActiveMember || $isOwner) ? 'Partagez une info logistique...' : 'Posez une question en tant qu\'invité...' }}" 
-                            class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-200 placeholder:text-slate-600 mb-4 resize-none"
-                            rows="3"></textarea>
-                        
-                        <button wire:click="sendMessage" 
-                            class="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-white/5">
-                            Envoyer {{ ($isActiveMember || $isOwner) ? '' : '(Invité)' }}
-                        </button>
-                    </div>
-                @else
-                    <div class="relative z-10 text-center p-8 bg-white/5 border border-dashed border-white/10 rounded-3xl mb-10">
-                        <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Connectez-vous pour participer</p>
-                    </div>
-                @endauth
-
-                <!-- Messages Feed -->
-                @php
-                    $activeMemberIds = $circle->activeMembers->pluck('user_id')->toArray();
-                @endphp
-                <div class="space-y-6 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar relative z-10">
-                    @forelse($circle->messages as $msg)
-                        @php
-                            $isOwner = $msg->sender_id === $circle->owner_id;
-                            $isMember = in_array($msg->sender_id, $activeMemberIds);
-                            $isGuest = !$isOwner && !$isMember;
-                        @endphp
-                        <div class="flex flex-col gap-2">
-                            <div class="flex items-center justify-between">
-                                <a href="{{ route('users.show', $msg->sender) }}" class="flex items-center gap-3 group/msg hover:opacity-80 transition-all">
-                                    <img src="{{ $msg->sender->avatar }}" class="w-6 h-6 rounded-lg ring-1 ring-white/20 group-hover/msg:ring-blue-500 transition-all">
-                                    <span class="text-xs font-black uppercase tracking-widest text-slate-400 group-hover/msg:text-blue-400 transition-colors">{{ $msg->sender->name }}</span>
-                                    @if($isGuest)
-                                        <span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-md text-[8px] font-black uppercase tracking-widest border border-blue-500/20">Invité</span>
-                                    @endif
-                                    <span class="text-[9px] font-black text-slate-600 uppercase">{{ $msg->created_at->diffForHumans() }}</span>
-                                </a>
-                            </div>
-                            <div class="bg-white/5 border border-white/10 p-5 rounded-2xl rounded-tl-none text-slate-300 text-sm leading-relaxed italic">
-                                {{ $msg->content }}
-                            </div>
-                        </div>
-                    @empty
-                        <div class="py-12 text-center text-slate-600 font-black uppercase tracking-[0.3em] text-[10px]">Silence radio...</div>
-                    @endforelse
-                </div>
-            </div>
+            {{-- Board was here --}}
         </div>
     </div>
     <style>
@@ -340,4 +391,5 @@
             background: rgba(255,255,255,0.2);
         }
     </style>
+    @include('livewire.offers.modals')
 </div>

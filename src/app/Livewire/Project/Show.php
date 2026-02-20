@@ -11,18 +11,12 @@ use Illuminate\Support\Facades\Auth;
 class Show extends Component
 {
     use WithFileUploads;
+    use \App\Traits\HandlesOfferActions;
 
     public Project $project;
     
-    // Review form
-    public $reviewType = 'validate';
-    public $reviewComment = '';
+    // Review form (Note: some are now handled by trait)
     public $replyTo = null;
-
-    // Quote request form
-    public $showQuoteModal = false;
-    public $quoteOfferId = null;
-    public $quoteMessage = '';
 
     // Message form
     public $message = '';
@@ -38,11 +32,6 @@ class Show extends Component
     public $offerDescription = '';
     public $offerImages = [];
     public $offerInfos = [['label' => '', 'title' => '']];
-    
-    // Ratings & Reviews
-    public $reviewRating = 5;
-    public $activeOfferIdForReview = null;
-    public $showReviewModal = false;
     
     // Editing states
     public $showOfferForm = false;
@@ -421,127 +410,6 @@ class Show extends Component
         $this->project->refresh();
     }
 
-    public function setReviewOffer($offerId, $showModal = false)
-    {
-        // If the offerId is the same as the currently active one AND we are not asking for a modal, toggle it off.
-        if ($this->activeOfferIdForReview === $offerId && !$showModal) {
-            $this->activeOfferIdForReview = null;
-        } else {
-            $this->activeOfferIdForReview = $offerId;
-        }
-        
-        $this->showReviewModal = $showModal;
-    }
-
-    public function setQuoteOffer($offerId, $showModal = true)
-    {
-        $this->quoteOfferId = $offerId;
-        $this->showQuoteModal = $showModal;
-        
-        if ($showModal && $offerId) {
-            $offer = \App\Models\ProjectOffer::find($offerId);
-            $this->quoteMessage = "Bonjour,\n\nJe souhaiterais obtenir un devis pour l'article : " . ($offer->title ?? 'votre offre') . ".\n\nMerci par avance !";
-        }
-    }
-
-    public function submitQuoteRequest()
-    {
-        $this->validate([
-            'quoteMessage' => 'required|min:5|max:2000',
-            'quoteOfferId' => 'required|exists:project_offers,id',
-        ]);
-
-        $offer = \App\Models\ProjectOffer::findOrFail($this->quoteOfferId);
-
-        \App\Models\Message::create([
-            'project_id' => $this->project->id,
-            'sender_id' => Auth::id(),
-            'receiver_id' => $this->project->owner_id,
-            'content' => $this->quoteMessage,
-            'type' => 'chat',
-            'metadata' => [
-                'type' => 'quote_request',
-                'offer_id' => $this->quoteOfferId,
-                'offer_title' => $offer->title,
-            ],
-        ]);
-
-        $this->quoteMessage = '';
-        $this->quoteOfferId = null;
-        $this->showQuoteModal = false;
-        session()->flash('success', 'Votre demande de devis a été envoyée en message privé au propriétaire du projet !');
-    }
-
-
-    public function submitReview()
-    {
-        $this->validate([
-            'reviewComment' => 'required|min:5',
-            'reviewRating' => 'required|integer|min:1|max:5',
-        ]);
-
-        // If it's a new review (not a reply)
-        if (!$this->replyTo) {
-            $query = $this->project->reviews()
-                ->where('user_id', Auth::id())
-                ->whereNull('parent_id');
-            
-            if ($this->activeOfferIdForReview) {
-                $query->where('project_offer_id', $this->activeOfferIdForReview);
-            }
-
-            if ($query->exists()) {
-                session()->flash('error', 'Vous avez déjà laissé un avis sur cet article.');
-                return;
-            }
-        } else {
-            // If it's a reply, only admins can reply
-            if (!$this->project->canManage(Auth::user())) {
-                session()->flash('error', 'Seuls les administrateurs du projet peuvent répondre aux avis.');
-                return;
-            }
-        }
-
-        ProjectReview::create([
-            'project_id' => $this->project->id,
-            'project_offer_id' => $this->activeOfferIdForReview,
-            'user_id' => Auth::id(),
-            'type' => $this->reviewType,
-            'rating' => $this->reviewRating,
-            'comment' => $this->reviewComment,
-            'parent_id' => $this->replyTo,
-        ]);
-
-        $this->reviewComment = '';
-        $this->reviewRating = 5;
-        $this->replyTo = null;
-        $this->activeOfferIdForReview = null;
-        $this->showReviewModal = false;
-        session()->flash('success', $this->replyTo ? 'Réponse publiée !' : 'Avis publié !');
-        $this->project->refresh();
-    }
-
-    public function deleteReview($reviewId)
-    {
-        $review = ProjectReview::findOrFail($reviewId);
-        
-        // Only owner or project admin can delete
-        if ($review->user_id !== Auth::id() && !$this->project->canManage(Auth::user())) {
-            session()->flash('error', 'Action non autorisée.');
-            return;
-        }
-
-        // Lock check: if it's a top-level review and has replies, it's locked
-        if ($review->isTopLevel() && $review->replies()->exists()) {
-            session()->flash('error', 'Cet avis est verrouillé car un administrateur y a répondu.');
-            return;
-        }
-
-        $review->delete();
-        session()->flash('success', 'Avis supprimé.');
-        $this->project->refresh();
-    }
-
     public function setReplyTo($reviewId)
     {
         $this->replyTo = $reviewId;
@@ -583,9 +451,13 @@ class Show extends Component
 
     public function render()
     {
+        $offerCount = $this->project->offers->count();
+        $offersText = $offerCount > 0 ? ' (' . $offerCount . ' offres disponibles)' : '';
+        $location = $this->project->city ? ' à ' . $this->project->city : '';
+
         return view('livewire.project.show')->layoutData([
-            'title' => $this->project->title . ($this->project->city ? ' - ' . $this->project->city : '') . ' | Projet sur TrustCircle',
-            'description' => \Illuminate\Support\Str::limit(strip_tags($this->project->description), 160, '...'),
+            'title' => 'Projet : ' . $this->project->title . $location . $offersText . ' | TrustCircle',
+            'description' => \Illuminate\Support\Str::limit('Découvrez le projet "' . $this->project->title . '"' . $location . '. ' . ($offerCount > 0 ? 'Consultez nos ' . $offerCount . ' offres de services. ' : '') . strip_tags($this->project->description), 160, '...'),
             'og_image' => $this->project->owner->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->project->owner->name),
         ]);
     }

@@ -7,6 +7,7 @@ use Livewire\Attributes\Url;
 
 class Home extends Component
 {
+    use \App\Traits\HandlesOfferActions;
     #[Url]
     public $search = '';
     public $lat;
@@ -64,17 +65,14 @@ class Home extends Component
             }
         });
 
-        // 2. Fetch Projects
-        $projectQuery = \App\Models\Project::with(['owner', 'activeMembers', 'offers', 'demands', 'skills']);
+        // 2. Fetch Offers
+        $offerQuery = \App\Models\ProjectOffer::where('type', 'offer')
+            ->join('projects', 'project_offers.project_id', '=', 'projects.id')
+            ->select('project_offers.*', 'projects.coordinates', 'projects.address', 'projects.owner_id')
+            ->with(['project.owner', 'project.activeMembers', 'informations', 'reviews']);
 
-        // Project Accessibility (Open projects only for now, or owned/member)
-        $projectQuery->where(function($q) {
-            $q->where('is_open', true);
-            if (auth()->check()) {
-                $q->orWhere('owner_id', auth()->id())
-                  ->orWhereHas('activeMembers', fn($mq) => $mq->where('memberable_id', auth()->id())->where('memberable_type', \App\Models\User::class));
-            }
-        });
+        // Offer Accessibility (Link to open projects)
+        $offerQuery->where('projects.is_open', true);
 
         // 3. Search Logic (Universal Smart Search)
         if (!empty($this->search)) {
@@ -93,33 +91,29 @@ class Home extends Component
                   ->orWhereHas('achievements.skill', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
             });
 
-            // Filter Projects
-            $projectQuery->where(function($q) use ($searchTerm) {
-                $q->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                  ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm])
-                  ->orWhereRaw('LOWER(address) LIKE ?', [$searchTerm])
-                  ->orWhereHas('owner', fn($uq) => $uq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
-                  ->orWhereHas('skills', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
-                  ->orWhereHas('allOffers', function($oq) use ($searchTerm) {
-                      $oq->whereRaw('LOWER(title) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(description) LIKE ?', [$searchTerm]);
-                  });
+            // Filter Offers
+            $offerQuery->where(function($q) use ($searchTerm) {
+                $q->whereRaw('LOWER(project_offers.title) LIKE ?', [$searchTerm])
+                  ->orWhereRaw('LOWER(project_offers.description) LIKE ?', [$searchTerm])
+                  ->orWhereRaw('LOWER(projects.title) LIKE ?', [$searchTerm])
+                  ->orWhereRaw('LOWER(projects.address) LIKE ?', [$searchTerm]);
             });
         }
 
         // 4. Proximity Logic
         if ($this->lat && $this->lng) {
-            $distanceRaw = "(6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coordinates, '$.lat')))))";
+            $distanceRaw = "(6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(projects.coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(projects.coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(projects.coordinates, '$.lat')))))";
+            $circleDistanceRaw = "(6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coordinates, '$.lat')))))";
             
-            $circleQuery->selectRaw("*, $distanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
-            $projectQuery->selectRaw("*, $distanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
+            $circleQuery->selectRaw("*, $circleDistanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
+            $offerQuery->selectRaw("$distanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
         }
 
         // 5. Execute and Merge
         $circles = $circleQuery->get();
-        $projects = $projectQuery->get();
+        $offers = $offerQuery->get();
 
-        $allResults = $circles->concat($projects);
+        $allResults = $circles->concat($offers);
 
         // 6. Proximity Sorting
         if ($this->lat && $this->lng) {
@@ -129,10 +123,10 @@ class Home extends Component
         }
 
         // 7. Limit and Format
-        $formattedResults = $allResults->take(20)->map(function($entity) {
+        $formattedResults = $allResults->take(32)->map(function($entity) {
             // Determine type
             $entity->is_circle = $entity instanceof \App\Models\Circle;
-            $entity->is_project = $entity instanceof \App\Models\Project;
+            $entity->is_offer = $entity instanceof \App\Models\ProjectOffer;
 
             // Smart Distance Label
             if (!empty($entity->coordinates) && (isset($entity->coordinates['lat']) && $entity->coordinates['lat'] != 0)) {
@@ -161,20 +155,23 @@ class Home extends Component
                     if (stripos(mb_strtolower($entity->name), $search) !== false) $entity->matching_context = "Cercle trouvé";
                     else $entity->matching_context = "Expertise associée";
                 } else {
-                    if (stripos(mb_strtolower($entity->title), $search) !== false) $entity->matching_context = "Projet trouvé";
-                    else $entity->matching_context = "Besoins ou Offres";
+                    if (stripos(mb_strtolower($entity->title), $search) !== false) $entity->matching_context = "Offre trouvée";
+                    else $entity->matching_context = "Projet associé";
                 }
             }
 
             return $entity;
         });
 
-        $dynamicTitle = 'TrustCircle | Découvrez les Cercles et Projets';
-        $dynamicDesc = 'Rejoignez TrustCircle pour découvrir des cercles d\'expertises et des projets locaux basés sur la confiance.';
+        $dynamicTitle = 'TrustCircle | Réseau de Confiance & Projets de Proximité';
+        $dynamicDesc = 'Trouvez des experts vérifiés et soutenez des initiatives locales. TrustCircle connecte les talents via des cercles de confiance pour une collaboration transparente.';
 
         if ($this->search) {
-            $dynamicTitle = 'Résultats pour "' . $this->search . '" | TrustCircle';
-            $dynamicDesc = 'Découvrez tous les cercles et projets correspondant à "' . $this->search . '" sur TrustCircle. Collaboration et proximité.';
+            $dynamicTitle = '🔍 ' . ucfirst($this->search) . ' : Experts et Offres de Confiance | TrustCircle';
+            $dynamicDesc = 'Recherche en cours pour "' . $this->search . '". Découvrez les meilleurs talents et opportunités locales correspondant à votre besoin sur TrustCircle.';
+        } elseif ($this->locationName) {
+            $dynamicTitle = '📍 À Proximité de ' . $this->locationName . ' | Initiatives & Talents | TrustCircle';
+            $dynamicDesc = 'Explorez les cercles de confiance et offres de services à ' . $this->locationName . '. Connectez-vous avec votre communauté locale pour bâtir demain.';
         }
 
         return view('livewire.home', [

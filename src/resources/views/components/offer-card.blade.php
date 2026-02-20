@@ -41,13 +41,13 @@
         @endif
         
         @if($quoteAction)
-            <div wire:click="setQuoteOffer({{ $offer->id }})" class="absolute inset-0 z-20 cursor-pointer group-hover/item:bg-blue-600/5 transition-colors"></div>
+            <div wire:click="setQuoteOffer({{ $offer->id }})" class="absolute inset-0 z-10 cursor-pointer group-hover/item:bg-blue-600/5 transition-colors"></div>
         @endif
     </div>
 
     <div class="p-6 md:p-8 flex flex-col flex-grow relative">
         @if($showProjectLink && $offer->project)
-            <a href="{{ route('projects.show', $offer->project) }}" class="text-[8px] md:text-[9px] font-black text-blue-500 uppercase tracking-[0.2em] mb-3 hover:underline">
+            <a href="{{ route('projects.show', $offer->project) }}" class="relative z-20 text-[8px] md:text-[9px] font-black text-blue-500 uppercase tracking-[0.2em] mb-3 hover:underline">
                 {{ $offer->project->title }}
             </a>
         @endif
