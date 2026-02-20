@@ -142,16 +142,18 @@
                             </h3>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Offres & Demandes de services</p>
                         </div>
-                                    <button wire:click="startCreatingProject('offer')" 
-                                            class="flex-grow inline-flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
-                                            title="Proposer une Offre">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                        Proposer une Offre
-                                    </button>
+                                    @auth
+                                        @if(auth()->id() === $user->id)
+                                            <button wire:click="startCreatingProject('offer')" 
+                                                    class="flex-grow inline-flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
+                                                    title="Proposer une Offre">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                                Proposer une Offre
+                                            </button>
+                                        @endif
+                                    @endauth
                                 </div>
-                            @endif
-                        @endauth
-                    </div>
+                            </div>
 
                     @if($isCreatingProject)
                         <div class="mb-8 bg-white/80 backdrop-blur-xl border-2 border-blue-500 p-8 rounded-[3.5rem] shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">

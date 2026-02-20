@@ -9,7 +9,7 @@
     }" 
     x-on:circle-updated.window="showIndicator = true; playNotify(); setTimeout(() => showIndicator = false, 3000)"
     wire:poll.5s.visible="refresh" 
-    class="min-h-screen bg-slate-50/50 pb-12"
+    class="min-h-screen pb-12"
 >
     <!-- Top-right Loading Indicator (Only on change detection) -->
     <div x-show="showIndicator" 
@@ -37,7 +37,7 @@
             <div class="absolute bottom-0 left-0 w-[40%] aspect-square bg-indigo-500/5 rounded-full blur-[120px]"></div>
         </div>
 
-        <div class="max-w-7xl mx-auto px-6">
+        <div class="max-w-7xl mx-auto">
             <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[3rem] md:rounded-[4rem] p-6 md:p-10 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
                 <!-- Top Badge Status -->
                 <div class="flex flex-wrap items-center gap-2 md:gap-3 mb-8 md:absolute md:top-10 md:right-10 md:mb-0">
@@ -218,7 +218,7 @@
     </div>
 
     <!-- Content Grid -->
-    <div class="max-w-7xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+    <div class="max-w-7xl mx-auto mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
         
         <!-- Main Content: Skill Directory -->
         <div class="lg:col-span-2 space-y-16">
@@ -231,12 +231,12 @@
                     <div class="mb-12">
                         <div class="flex items-center justify-between mb-8">
                             <h2 class="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">
-                                Offre et Recrutement
+                                Offre
                                 <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full not-italic uppercase">AGRÉGÉS</span>
                             </h2>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
                             @foreach($memberOffers as $offer)
                                 <x-offer-card 
                                     :offer="$offer" 
