@@ -72,13 +72,20 @@
                             </div>
                         </a>
                         
-                        <button @click="$dispatch('toggleMessaging')" class="flex items-center gap-3 px-4 py-2 md:py-3 bg-slate-900/5 hover:bg-blue-600 hover:text-white rounded-xl md:rounded-2xl transition-all group border border-slate-100/50 shadow-sm hover:shadow-blue-500/20 hover:-translate-y-0.5 active:translate-y-0">
+                        <button @click="$dispatch('toggleMessaging')" class="flex items-center gap-3 px-4 py-2 md:py-3 bg-slate-900/5 hover:bg-blue-600 hover:text-white rounded-xl md:rounded-2xl transition-all group border border-slate-100/50 shadow-sm hover:shadow-blue-500/20 hover:-translate-y-0.5 active:translate-y-0 relative">
                             <div class="relative">
-                                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
                                 @auth
-                                    @php $unreadCount = auth()->user()->receivedMessages()->whereNull('project_id')->whereNull('circle_id')->count(); @endphp
+                                    @php $unreadCount = auth()->user()->receivedMessages()->whereNull('read_at')->count(); @endphp
                                     @if($unreadCount > 0)
-                                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                                        <span class="absolute -top-1 -right-1 flex h-3 w-3 md:h-4 md:w-4">
+                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                            <span class="relative inline-flex rounded-full h-3 w-3 md:h-4 md:w-4 bg-red-500 border border-white items-center justify-center text-[7px] md:text-[9px] font-black text-white leading-none">
+                                                {{ $unreadCount > 9 ? '+' : $unreadCount }}
+                                            </span>
+                                        </span>
                                     @endif
                                 @endauth
                             </div>
@@ -124,7 +131,7 @@
             </div>
         </main>
 
-        @livewire('global-messaging')
+        <livewire:global-messaging />
         @livewireScripts
         @filamentScripts
     </body>

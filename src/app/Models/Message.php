@@ -19,17 +19,18 @@ class Message extends Model
         'content',
         'type',
         'metadata',
+        'read_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'id' => 'integer',
-            'circle_id' => 'integer',
             'project_id' => 'integer',
+            'circle_id' => 'integer',
             'sender_id' => 'integer',
             'receiver_id' => 'integer',
             'metadata' => 'array',
+            'read_at' => 'datetime',
         ];
     }
 
