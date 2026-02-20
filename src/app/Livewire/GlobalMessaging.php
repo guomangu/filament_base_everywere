@@ -17,6 +17,10 @@ class GlobalMessaging extends Component
     public $selectedParticipantId = null;
     public $messageText = '';
 
+    // For change detection
+    public $lastUnreadCount = 0;
+    public $lastForumActivity = null;
+
     #[On('toggleMessaging')]
     public function toggle()
     {
@@ -34,13 +38,17 @@ class GlobalMessaging extends Component
 
     public function selectConversation($id)
     {
-        $this->selectedParticipantId = (int) $id;
+        $this->selectedParticipantId = $id ? (int) $id : null;
         
         // Mark as read
-        Message::where('sender_id', $this->selectedParticipantId)
-               ->where('receiver_id', Auth::id())
-               ->whereNull('read_at')
-               ->update(['read_at' => now()]);
+        if ($this->selectedParticipantId) {
+            Message::where('sender_id', $this->selectedParticipantId)
+                   ->where('receiver_id', Auth::id())
+                   ->whereNull('read_at')
+                   ->update(['read_at' => now()]);
+            
+            $this->syncUnreadCount();
+        }
     }
 
     public function sendMessage()
@@ -55,6 +63,61 @@ class GlobalMessaging extends Component
         ]);
 
         $this->messageText = '';
+        $this->dispatch('messagingOpened'); // For scrolling
+    }
+
+    public function refresh()
+    {
+        if (!Auth::check()) return;
+
+        $user = Auth::user();
+
+        // 1. Detect New Unread Messages
+        $currentUnreadCount = Message::where('receiver_id', $user->id)
+                                    ->whereNull('read_at')
+                                    ->count();
+
+        // 2. Detect New Forum Activity
+        $latestProjectMsg = Message::whereHas('project', function($q) use ($user) {
+            $q->whereHas('members', function($sub) use ($user) {
+                $sub->where('memberable_id', $user->id)->where('status', 'active');
+            })->orWhere('owner_id', $user->id);
+        })->latest()->first();
+
+        $latestCircleMsg = Message::whereHas('circle', function($q) use ($user) {
+            $q->whereHas('members', function($sub) use ($user) {
+                $sub->where('user_id', $user->id)->where('status', 'active');
+            })->orWhere('owner_id', $user->id);
+        })->latest()->first();
+
+        $currentForumActivity = max(
+            $latestProjectMsg?->created_at?->timestamp ?? 0,
+            $latestCircleMsg?->created_at?->timestamp ?? 0
+        );
+
+        // 3. Dispatch Notifications if something is new
+        if ($currentUnreadCount > $this->lastUnreadCount || ($this->lastForumActivity !== null && $currentForumActivity > $this->lastForumActivity)) {
+            $this->dispatch('global-messaging-updated');
+        }
+
+        // 4. Always sync the navigation badge if unread count changed
+        if ($currentUnreadCount !== $this->lastUnreadCount) {
+            $this->syncUnreadCount();
+        }
+
+        $this->lastUnreadCount = $currentUnreadCount;
+        $this->lastForumActivity = $currentForumActivity;
+    }
+
+    protected function syncUnreadCount()
+    {
+        if (!Auth::check()) return;
+        
+        $count = Message::where('receiver_id', Auth::id())
+                       ->whereNull('read_at')
+                       ->count();
+        
+        $this->dispatch('unread-count-updated', count: $count);
     }
 
     public function render()
@@ -65,10 +128,14 @@ class GlobalMessaging extends Component
 
         $user = Auth::user();
 
-        // Private conversations: simpler structure for the view
+        // Initialize last activity on first render
+        if ($this->lastForumActivity === null) {
+            $this->refresh();
+        }
+
+        // Private conversations
         $rawConversations = Message::where(function($query) use ($user) {
-                $query->where('sender_id', $user->id)
-                      ->whereNotNull('receiver_id');
+                $query->where('sender_id', $user->id)->whereNotNull('receiver_id');
             })
             ->orWhere(function($query) use ($user) {
                 $query->where('receiver_id', $user->id);
@@ -92,16 +159,10 @@ class GlobalMessaging extends Component
                     'latest_time' => $latest->created_at->diffForHumans(),
                     'is_mine' => $latest->sender_id === $user->id,
                     'unread_count' => $msgs->where('receiver_id', $user->id)->whereNull('read_at')->count(),
+                    'latest_timestamp' => $latest->created_at->timestamp,
                 ];
             })
-            ->sortByDesc(function($c) {
-                // Ensure sorting by actual timestamp of the latest message
-                return Message::where(function($q) use ($c) {
-                    $q->where('sender_id', auth()->id())->where('receiver_id', $c['id']);
-                })->orWhere(function($q) use ($c) {
-                    $q->where('sender_id', $c['id'])->where('receiver_id', auth()->id());
-                })->latest()->first()?->created_at;
-            });
+            ->sortByDesc('latest_timestamp');
 
         // Forums
         $projects = Project::whereHas('members', function($q) use ($user) {
@@ -112,7 +173,8 @@ class GlobalMessaging extends Component
             ->get()
             ->map(function($p) {
                 $p->forum_type = 'project';
-                $p->latest_activity = $p->messages->first()?->created_at ?? $p->created_at;
+                $p->forum_name = $p->title;
+                $p->latest_activity_dt = $p->messages->first()?->created_at ?? $p->created_at;
                 return $p;
             });
 
@@ -124,11 +186,12 @@ class GlobalMessaging extends Component
             ->get()
             ->map(function($c) {
                 $c->forum_type = 'circle';
-                $c->latest_activity = $c->messages->first()?->created_at ?? $c->created_at;
+                $c->forum_name = $c->name;
+                $c->latest_activity_dt = $c->messages->first()?->created_at ?? $c->created_at;
                 return $c;
             });
 
-        $forums = $projects->concat($circles)->sortByDesc('latest_activity');
+        $forums = $projects->concat($circles)->sortByDesc('latest_activity_dt');
 
         // Active conversation messages
         $activeMessages = $this->selectedParticipantId 

@@ -142,20 +142,11 @@
                             </h3>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Offres & Demandes de services</p>
                         </div>
-                        @auth
-                            @if(auth()->id() === $user->id)
-                                <div class="flex items-center gap-2">
                                     <button wire:click="startCreatingProject('offer')" 
-                                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                                            class="flex-grow inline-flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
                                             title="Proposer une Offre">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                        Offre
-                                    </button>
-                                    <button wire:click="startCreatingProject('demand')" 
-                                            class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20"
-                                            title="Exprimer un Besoin">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                                        Besoin
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                        Proposer une Offre
                                     </button>
                                 </div>
                             @endif
@@ -166,7 +157,7 @@
                         <div class="mb-8 bg-white/80 backdrop-blur-xl border-2 border-blue-500 p-8 rounded-[3.5rem] shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
                             <div class="flex items-center justify-between mb-4 px-2">
                                 <span class="text-[12px] font-black text-blue-600 uppercase tracking-widest">
-                                    {{ $projectType === 'offer' ? 'Proposer une Offre' : 'Exprimer un Besoin' }}
+                                    Proposer une Offre
                                 </span>
                                 <button wire:click="cancelProjectCreation" class="text-slate-400 hover:text-red-500 transition-colors">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -176,7 +167,7 @@
                                 <input wire:model="projectTitle" 
                                        wire:keydown.enter="confirmProjectCreation"
                                        type="text" 
-                                       placeholder="Titre de votre {{ $projectType === 'offer' ? 'offre' : 'besoin' }}..." 
+                                       placeholder="Titre de votre offre..." 
                                        autofocus
                                        class="w-full bg-white border-2 border-slate-100 focus:border-blue-500 focus:ring-0 rounded-3xl p-6 text-xl font-black tracking-tight placeholder:text-slate-300 shadow-inner">
                                 <button wire:click="confirmProjectCreation" class="absolute right-3 top-3 bottom-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">

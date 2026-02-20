@@ -1,4 +1,35 @@
-<div id="global-messaging-root" x-data="{ open: $wire.entangle('isOpen') }" x-cloak>
+<div id="global-messaging-root" 
+     x-data="{ 
+        open: @entangle('isOpen'),
+        showIndicator: false,
+        playNotify() {
+            let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audio.volume = 0.2;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        }
+     }" 
+     x-on:global-messaging-updated.window="showIndicator = true; playNotify(); setTimeout(() => showIndicator = false, 3000)"
+     wire:poll.5s="refresh">
+
+    <!-- Top-right Loading Indicator (Global Messaging Content Detect) -->
+    <div x-show="showIndicator" 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-[-20px]"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-[-20px]"
+        class="fixed top-24 right-6 z-[1100]"
+    >
+        <div class="flex items-center gap-3 bg-white border border-blue-100 px-5 py-3 rounded-2xl shadow-2xl transition-all border-b-4 border-b-blue-500">
+            <div class="relative">
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-ping absolute -top-1 -right-1"></div>
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <span class="text-[11px] font-black text-slate-900 uppercase tracking-widest leading-none">Nouveau message !</span>
+        </div>
+    </div>
+
     @if($isOpen)
         <div class="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-500 flex flex-col pt-4 md:pt-10">
             
@@ -7,22 +38,20 @@
                 <div>
                     <h2 class="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase leading-none">Messagerie Globale</h2>
                     <div class="flex items-center gap-4 mt-2">
-                        <button wire:click="selectTab('private')" 
-                                wire:key="tab-nav-private"
-                                @class([
-                                    'text-[10px] font-black uppercase tracking-widest transition-all px-4 py-2 rounded-full',
-                                    'bg-white text-slate-900 shadow-xl' => $activeTab === 'private',
-                                    'text-white/40 hover:text-white' => $activeTab !== 'private'
-                                ])>
+                        <button wire:click="selectTab('private')" wire:key="tab-nav-private"
+                            @class([
+                                'text-[10px] font-black uppercase tracking-widest transition-all px-4 py-2 rounded-full',
+                                'bg-white text-slate-900 shadow-xl' => $activeTab === 'private',
+                                'text-white/40 hover:text-white' => $activeTab !== 'private'
+                            ])>
                             Privé
                         </button>
-                        <button wire:click="selectTab('forums')" 
-                                wire:key="tab-nav-forums"
-                                @class([
-                                    'text-[10px] font-black uppercase tracking-widest transition-all px-4 py-2 rounded-full',
-                                    'bg-white text-slate-900 shadow-xl' => $activeTab === 'forums',
-                                    'text-white/40 hover:text-white' => $activeTab !== 'forums'
-                                ])>
+                        <button wire:click="selectTab('forums')" wire:key="tab-nav-forums"
+                            @class([
+                                'text-[10px] font-black uppercase tracking-widest transition-all px-4 py-2 rounded-full',
+                                'bg-white text-slate-900 shadow-xl' => $activeTab === 'forums',
+                                'text-white/40 hover:text-white' => $activeTab !== 'forums'
+                            ])>
                             Forums
                         </button>
                     </div>
@@ -36,7 +65,7 @@
             <div class="flex-grow max-w-7xl mx-auto w-full px-4 md:px-6 pb-6 overflow-hidden">
                 <div class="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[3rem] w-full h-full flex flex-col md:flex-row overflow-hidden shadow-3xl">
                     
-                    <!-- Sidebar: Hidden on mobile when a conversation is selected -->
+                    <!-- Sidebar -->
                     <div @class([
                         'w-full md:w-1/3 border-b md:border-b-0 md:border-r border-white/10 overflow-y-auto no-scrollbar shrink-0 h-full transition-all',
                         'hidden md:block' => $selectedParticipantId && $activeTab === 'private',
@@ -46,7 +75,7 @@
                             @if($activeTab === 'private')
                                 @forelse($conversations as $c)
                                     <button wire:click="selectConversation({{ $c['id'] }})" 
-                                            wire:key="conv-item-btn-{{ $c['id'] }}"
+                                            wire:key="conv-item-btn-{{ $c['id'] }}-{{ $c['latest_timestamp'] }}"
                                             @class([
                                                 'w-full text-left p-4 md:p-6 rounded-[2rem] transition-all group relative',
                                                 'bg-white shadow-2xl scale-[1.02]' => (int)$selectedParticipantId === $c['id'],
@@ -91,7 +120,7 @@
                                         $latestForumMsg = $forum->messages->first();
                                     @endphp
                                     <a href="{{ $isProject ? route('projects.show', $forum) : route('circles.show', $forum) }}" 
-                                       wire:key="forum-link-item-{{ $forum->forum_type }}-{{ $forum->id }}"
+                                       wire:key="forum-link-item-{{ $forum->forum_type }}-{{ $forum->id }}-{{ $forum->latest_activity_dt->timestamp }}"
                                        class="block w-full text-left p-4 md:p-6 rounded-[2.5rem] bg-white/5 hover:bg-white/10 transition-all group border border-white/5">
                                         <div class="flex items-center gap-4">
                                             <div class="shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center overflow-hidden">
@@ -103,9 +132,9 @@
                                             </div>
                                             <div class="flex-grow min-w-0">
                                                 <div class="flex items-center justify-between mb-1">
-                                                    <h4 class="text-[10px] font-black text-white uppercase tracking-widest truncate">{{ $forum->title }}</h4>
+                                                    <h4 class="text-[10px] md:text-sm font-black text-white uppercase tracking-widest truncate">{{ $forum->forum_name }}</h4>
                                                     <span class="text-[8px] font-bold text-slate-400 uppercase bg-white/5 px-2 py-0.5 rounded-md">
-                                                        {{ \Carbon\Carbon::parse($forum->latest_activity)->diffForHumans() }}
+                                                        {{ $forum->latest_activity_dt->diffForHumans() }}
                                                     </span>
                                                 </div>
                                                 <div class="flex items-center gap-2">
@@ -116,7 +145,7 @@
                                                     ])>
                                                         {{ $isProject ? 'Projet' : 'Cercle' }}
                                                     </span>
-                                                    <p class="text-[9px] font-medium text-slate-400 italic truncate flex-grow">
+                                                    <p class="text-[10px] md:text-xs font-semibold text-slate-300 italic truncate flex-grow">
                                                         {{ $latestForumMsg ? '"' . $latestForumMsg->content . '"' : 'Aucun message' }}
                                                     </p>
                                                 </div>
@@ -132,7 +161,7 @@
                         </div>
                     </div>
 
-                    <!-- Chat Area: Hidden on mobile when NO conversation is selected -->
+                    <!-- Chat Area -->
                     <div @class([
                         'flex-grow flex flex-col h-full bg-slate-900/40 relative transition-all',
                         'hidden md:flex' => !$selectedParticipantId,
@@ -140,7 +169,6 @@
                     ])>
                         @if($selectedParticipantId && $selectedParticipant)
                             <div wire:key="chat-box-container-{{ $selectedParticipantId }}" class="flex flex-col h-full overflow-hidden">
-                                <!-- Chat Header -->
                                 <div class="p-6 md:p-10 border-b border-white/5 flex items-center justify-between shrink-0">
                                     <div class="flex items-center gap-4">
                                         <button wire:click="selectConversation(null)" class="md:hidden text-white/40 hover:text-white transition-colors p-2 -ml-2">
@@ -157,10 +185,10 @@
                                     </div>
                                 </div>
 
-                                <!-- Messages -->
                                 <div class="flex-grow overflow-y-auto p-6 md:p-10 space-y-6 flex flex-col no-scrollbar" 
                                      id="chat-scroller"
-                                     x-init="$nextTick(() => { $el.scrollTop = $el.scrollHeight }); $watch('open', value => { if(value) setTimeout(() => $el.scrollTop = $el.scrollHeight, 100) })">
+                                     x-init="$nextTick(() => { $el.scrollTop = $el.scrollHeight }); $watch('open', value => { if(value) setTimeout(() => $el.scrollTop = $el.scrollHeight, 100) }); Livewire.on('messagingOpened', () => { setTimeout(() => $el.scrollTop = $el.scrollHeight, 100) });"
+                                     x-on:messagingOpened.window="setTimeout(() => $el.scrollTop = $el.scrollHeight, 100)">
                                     @foreach($activeMessages as $m)
                                         @php $isMe = $m->sender_id === auth()->id(); @endphp
                                         <div wire:key="chat-msg-row-{{ $m->id }}" @class([
@@ -174,7 +202,6 @@
                                     @endforeach
                                 </div>
 
-                                <!-- Input Area -->
                                 <div class="p-6 md:p-10 shrink-0 bg-white/5 border-t border-white/5">
                                     <form wire:submit.prevent="sendMessage" class="relative group">
                                         <input wire:model="messageText" type="text" placeholder="Répondre..." 

@@ -238,67 +238,12 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             @foreach($memberOffers as $offer)
-                                <div class="bg-white/60 backdrop-blur-3xl border border-white/60 p-5 rounded-[2.5rem] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 group">
-                                    @if($offer->images && count($offer->images) > 0)
-                                        <div class="relative h-40 mb-4 overflow-hidden rounded-[2rem]">
-                                            <img src="{{ Storage::url($offer->images[0]) }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                                            <div class="absolute top-4 left-4">
-                                                @if($offer->isOffer())
-                                                    <span class="px-3 py-1 bg-white/90 backdrop-blur-sm text-[8px] font-black uppercase tracking-widest text-blue-600 rounded-lg shadow-sm">Offre</span>
-                                                @else
-                                                    <span class="px-3 py-1 bg-white/90 backdrop-blur-sm text-[8px] font-black uppercase tracking-widest text-purple-600 rounded-lg shadow-sm font-black italic">Demande</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    @else
-                                        <div class="h-40 mb-4 bg-slate-50 flex items-center justify-center rounded-[2rem] border border-slate-100 group-hover:bg-blue-50 transition-colors duration-500 relative">
-                                            <div class="absolute top-4 left-4">
-                                                @if($offer->isOffer())
-                                                    <span class="px-3 py-1 bg-white text-[8px] font-black uppercase tracking-widest text-blue-600 rounded-lg shadow-sm border border-slate-100">Offre</span>
-                                                @else
-                                                    <span class="px-3 py-1 bg-white text-[8px] font-black uppercase tracking-widest text-purple-600 rounded-lg shadow-sm border border-slate-100 font-black italic">Demande</span>
-                                                @endif
-                                            </div>
-                                            <svg class="w-12 h-12 text-slate-200 group-hover:text-blue-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                @if($offer->isOffer())
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                                @else
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-                                                @endif
-                                            </svg>
-                                        </div>
-                                    @endif
-
-                                    <div class="px-2">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <a href="{{ route('projects.show', $offer->project) }}" class="text-[8px] font-black text-blue-500 uppercase tracking-widest hover:underline">{{ $offer->project->title }}</a>
-                                        </div>
-                                        <h4 class="text-sm font-black text-slate-900 uppercase tracking-tight mb-2 group-hover:text-blue-600 transition-colors">
-                                            {{ $offer->title }}
-                                        </h4>
-                                        <p class="text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-2 mb-4">
-                                            {{ $offer->description }}
-                                        </p>
-
-                                        @if($offer->informations->count() > 0)
-                                            <div class="flex flex-wrap gap-1.5 pt-4 border-t border-slate-100">
-                                                @foreach($offer->informations as $info)
-                                                    <div class="flex items-center gap-1.5 px-2 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-tight">
-                                                        @if($info->icon)
-                                                             <div class="w-2.5 h-2.5">
-                                                                {!! $info->icon !!}
-                                                             </div>
-                                                        @endif
-                                                        @if($info->label)
-                                                            <span class="opacity-40 italic">{{ $info->label }}:</span>
-                                                        @endif
-                                                        <span>{{ $info->title }}</span>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
+                                <x-offer-card 
+                                    :offer="$offer" 
+                                    :showProjectLink="true"
+                                    :quoteAction="true"
+                                    :reviewAction="false"
+                                />
                             @endforeach
                         </div>
                     </div>

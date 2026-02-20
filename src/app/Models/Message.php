@@ -39,6 +39,11 @@ class Message extends Model
         return $this->belongsTo(Circle::class);
     }
 
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_id');
