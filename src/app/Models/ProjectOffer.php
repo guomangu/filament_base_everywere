@@ -26,6 +26,7 @@ class ProjectOffer extends Model
             'id' => 'integer',
             'project_id' => 'integer',
             'images' => 'array',
+            'rating' => 'integer', // If added to offer directly or virtual
         ];
     }
 
@@ -35,9 +36,30 @@ class ProjectOffer extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function skills(): BelongsToMany
+    {
+        return $this->belongsToMany(Skill::class, 'project_offer_skill', 'project_offer_id', 'skill_id');
+    }
+
+    public function reviews(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProjectReview::class, 'project_offer_id');
+    }
+
     public function informations(): MorphMany
     {
         return $this->morphMany(Information::class, 'informable');
+    }
+
+    // Attributes
+    public function getAverageRatingAttribute()
+    {
+        return $this->reviews()->whereNull('parent_id')->avg('rating') ?: 0;
+    }
+
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->whereNull('parent_id')->count();
     }
 
     // Scopes

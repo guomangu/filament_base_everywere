@@ -13,12 +13,16 @@ class Show extends Component
     use WithFileUploads;
 
     public Project $project;
-    public $activeTab = 'overview'; // overview, offers, demands, reviews, messages
     
     // Review form
     public $reviewType = 'validate';
     public $reviewComment = '';
     public $replyTo = null;
+
+    // Quote request form
+    public $showQuoteModal = false;
+    public $quoteOfferId = null;
+    public $quoteMessage = '';
 
     // Message form
     public $message = '';
@@ -30,21 +34,19 @@ class Show extends Component
     public $showMemberManager = false;
 
     // Progressive management (Petit à Petit)
-    public $showOfferForm = false;
-    public $showDemandForm = false;
     public $offerTitle = '';
     public $offerDescription = '';
     public $offerImages = [];
     public $offerInfos = [['label' => '', 'title' => '']];
     
-    public $demandTitle = '';
-    public $demandDescription = '';
-    public $demandImages = [];
-    public $demandInfos = [['label' => '', 'title' => '']];
+    // Ratings & Reviews
+    public $reviewRating = 5;
+    public $activeOfferIdForReview = null;
+    public $showReviewModal = false;
     
     // Editing states
+    public $showOfferForm = false;
     public $editingOfferId = null;
-    public $editingDemandId = null;
     
     // Smart Skill Selector (Now for Project)
     public $selectedSkills = []; // Format: ['Skill name 1', 'Skill name 2']
@@ -58,8 +60,9 @@ class Show extends Component
     public function mount(Project $project)
     {
         $this->project = $project;
+        $this->lastMessageCount = $this->project->messages()->count();
+        $this->lastPendingCount = $this->project->members()->where('status', 'pending')->count();
         $this->refresh();
-        $this->lastMessageCount = $this->project->messages->count();
         $this->selectedSkills = $this->project->skills->pluck('name')->toArray();
         $this->address = $this->project->address;
     }
@@ -71,16 +74,14 @@ class Show extends Component
                 'owner',
                 'activeMembers.memberable',
                 'members.memberable',
-                'offers',
-                'demands',
-                'skills',
+                'offers' => fn($q) => $q->with(['skills', 'reviews.user', 'reviews.replies.user', 'informations']),
                 'reviews.user',
                 'reviews.replies.user',
                 'messages' => fn($q) => $q->with('sender')->latest()->take(30),
                 'informations'
             ]);
 
-            $currentMessageCount = $this->project->messages->count();
+            $currentMessageCount = $this->project->messages()->count();
             $currentPendingCount = $this->project->members()->where('status', 'pending')->count();
 
             if ($currentMessageCount !== $this->lastMessageCount || $currentPendingCount !== $this->lastPendingCount) {
@@ -184,7 +185,7 @@ class Show extends Component
             'offerDescription' => 'nullable',
             'offerImages.*' => 'image|max:2048',
             'offerInfos.*.label' => 'nullable|string|max:50',
-            'offerInfos.*.title' => 'required_with:offerInfos.*.label|string|max:255',
+            'offerInfos.*.title' => 'nullable|required_with:offerInfos.*.label|string|max:255',
         ]);
 
         $imagePaths = [];
@@ -236,111 +237,6 @@ class Show extends Component
         $this->project->refresh();
         session()->flash('success', $isUpdate ? 'Offre mise à jour !' : 'Offre ajoutée !');
     }
-
-    public function editDemand($id)
-    {
-        $demand = \App\Models\ProjectOffer::with('informations')->findOrFail($id);
-        if (!$this->project->canManage(Auth::user())) return;
-
-        $this->editingDemandId = $id;
-        $this->demandTitle = $demand->title;
-        $this->demandDescription = $demand->description;
-        
-        $this->demandInfos = $demand->informations->map(fn($info) => [
-            'label' => $info->label,
-            'title' => $info->title
-        ])->toArray();
-
-        if (empty($this->demandInfos)) {
-            $this->demandInfos = [['label' => '', 'title' => '']];
-        }
-
-        $this->showDemandForm = true;
-    }
-
-    public function addDemandInfo()
-    {
-        $this->demandInfos[] = ['label' => '', 'title' => ''];
-    }
-
-    public function removeDemandInfo($index)
-    {
-        unset($this->demandInfos[$index]);
-        $this->demandInfos = array_values($this->demandInfos);
-    }
-
-    public function deleteDemand($id)
-    {
-        $demand = \App\Models\ProjectOffer::findOrFail($id);
-        if (!$this->project->canManage(Auth::user())) return;
-
-        $demand->delete();
-        $this->project->refresh();
-        session()->flash('success', 'Demande supprimée.');
-    }
-
-    public function addDemand()
-    {
-        if (!$this->project->canManage(Auth::user())) return;
-
-        $this->validate([
-            'demandTitle' => 'required|min:3',
-            'demandDescription' => 'nullable',
-            'demandImages.*' => 'image|max:2048',
-            'demandInfos.*.label' => 'nullable|string|max:50',
-            'demandInfos.*.title' => 'required_with:demandInfos.*.label|string|max:255',
-        ]);
-
-        $imagePaths = [];
-        if (!empty($this->demandImages)) {
-            foreach ($this->demandImages as $image) {
-                $imagePaths[] = $image->store('project-demands', 'public');
-            }
-        }
-
-        $data = [
-            'title' => $this->demandTitle,
-            'description' => $this->demandDescription,
-            'type' => 'demand',
-        ];
-
-        if (!empty($imagePaths)) {
-            $data['images'] = $imagePaths;
-        }
-
-        $isUpdate = (bool)$this->editingDemandId;
-        if ($this->editingDemandId) {
-            $projectDemand = \App\Models\ProjectOffer::findOrFail($this->editingDemandId);
-            if (!isset($data['images']) && $projectDemand->images) {
-                unset($data['images']);
-            }
-            $projectDemand->update($data);
-        } else {
-            $projectDemand = $this->project->allOffers()->create($data);
-        }
-
-        // Sync Information
-        $projectDemand->informations()->delete();
-        foreach ($this->demandInfos as $info) {
-            if (!empty($info['title'])) {
-                $projectDemand->informations()->create([
-                    'label' => $info['label'],
-                    'title' => $info['title'],
-                    'author_id' => Auth::id(),
-                ]);
-            }
-        }
-        
-        $this->demandTitle = '';
-        $this->demandDescription = '';
-        $this->demandInfos = [['label' => '', 'title' => '']];
-        $this->demandImages = [];
-        $this->showDemandForm = false;
-        $this->editingDemandId = null;
-        $this->project->refresh();
-        session()->flash('success', $isUpdate ? 'Demande mise à jour !' : 'Demande ajoutée !');
-    }
-
     public function getTeamMembers()
     {
         return $this->project->activeMembers()
@@ -525,21 +421,77 @@ class Show extends Component
         $this->project->refresh();
     }
 
+    public function setReviewOffer($offerId, $showModal = false)
+    {
+        // If the offerId is the same as the currently active one AND we are not asking for a modal, toggle it off.
+        if ($this->activeOfferIdForReview === $offerId && !$showModal) {
+            $this->activeOfferIdForReview = null;
+        } else {
+            $this->activeOfferIdForReview = $offerId;
+        }
+        
+        $this->showReviewModal = $showModal;
+    }
+
+    public function setQuoteOffer($offerId, $showModal = true)
+    {
+        $this->quoteOfferId = $offerId;
+        $this->showQuoteModal = $showModal;
+        
+        if ($showModal && $offerId) {
+            $offer = \App\Models\ProjectOffer::find($offerId);
+            $this->quoteMessage = "Bonjour,\n\nJe souhaiterais obtenir un devis pour l'article : " . ($offer->title ?? 'votre offre') . ".\n\nMerci par avance !";
+        }
+    }
+
+    public function submitQuoteRequest()
+    {
+        $this->validate([
+            'quoteMessage' => 'required|min:5|max:2000',
+            'quoteOfferId' => 'required|exists:project_offers,id',
+        ]);
+
+        $offer = \App\Models\ProjectOffer::findOrFail($this->quoteOfferId);
+
+        \App\Models\Message::create([
+            'project_id' => $this->project->id,
+            'sender_id' => Auth::id(),
+            'receiver_id' => $this->project->owner_id,
+            'content' => $this->quoteMessage,
+            'type' => 'chat',
+            'metadata' => [
+                'type' => 'quote_request',
+                'offer_id' => $this->quoteOfferId,
+                'offer_title' => $offer->title,
+            ],
+        ]);
+
+        $this->quoteMessage = '';
+        $this->quoteOfferId = null;
+        $this->showQuoteModal = false;
+        session()->flash('success', 'Votre demande de devis a été envoyée en message privé au propriétaire du projet !');
+    }
+
+
     public function submitReview()
     {
         $this->validate([
-            'reviewComment' => 'required|min:10',
+            'reviewComment' => 'required|min:5',
+            'reviewRating' => 'required|integer|min:1|max:5',
         ]);
 
         // If it's a new review (not a reply)
         if (!$this->replyTo) {
-            $hasAlreadyReviewed = $this->project->reviews()
+            $query = $this->project->reviews()
                 ->where('user_id', Auth::id())
-                ->whereNull('parent_id')
-                ->exists();
+                ->whereNull('parent_id');
+            
+            if ($this->activeOfferIdForReview) {
+                $query->where('project_offer_id', $this->activeOfferIdForReview);
+            }
 
-            if ($hasAlreadyReviewed) {
-                session()->flash('error', 'Vous avez déjà laissé un avis sur ce projet.');
+            if ($query->exists()) {
+                session()->flash('error', 'Vous avez déjà laissé un avis sur cet article.');
                 return;
             }
         } else {
@@ -552,14 +504,19 @@ class Show extends Component
 
         ProjectReview::create([
             'project_id' => $this->project->id,
+            'project_offer_id' => $this->activeOfferIdForReview,
             'user_id' => Auth::id(),
             'type' => $this->reviewType,
+            'rating' => $this->reviewRating,
             'comment' => $this->reviewComment,
             'parent_id' => $this->replyTo,
         ]);
 
         $this->reviewComment = '';
+        $this->reviewRating = 5;
         $this->replyTo = null;
+        $this->activeOfferIdForReview = null;
+        $this->showReviewModal = false;
         session()->flash('success', $this->replyTo ? 'Réponse publiée !' : 'Avis publié !');
         $this->project->refresh();
     }
@@ -588,7 +545,6 @@ class Show extends Component
     public function setReplyTo($reviewId)
     {
         $this->replyTo = $reviewId;
-        $this->activeTab = 'reviews';
     }
 
     public function sendMessage()
@@ -611,10 +567,17 @@ class Show extends Component
     {
         if (strlen($this->skillSearch) < 1) return collect();
 
-        return \App\Models\Skill::where('name', 'like', $this->skillSearch . '%')
+        $searchTerm = '%' . $this->skillSearch . '%';
+
+        return \App\Models\Skill::where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', $searchTerm)
+                  ->orWhereHas('achievements', function($aq) use ($searchTerm) {
+                      $aq->where('title', 'like', $searchTerm);
+                  });
+            })
             ->whereNotIn('name', $this->selectedSkills)
             ->orderBy('name')
-            ->take(5)
+            ->take(8)
             ->get();
     }
 

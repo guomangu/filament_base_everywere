@@ -17,6 +17,8 @@ class ProjectReview extends Model
         'type',
         'comment',
         'parent_id',
+        'rating',
+        'project_offer_id',
     ];
 
     protected function casts(): array
@@ -48,6 +50,11 @@ class ProjectReview extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(ProjectReview::class, 'parent_id');
+    }
+
+    public function offer(): BelongsTo
+    {
+        return $this->belongsTo(ProjectOffer::class, 'project_offer_id');
     }
 
     // Helper methods

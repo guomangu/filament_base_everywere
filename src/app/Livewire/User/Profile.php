@@ -309,7 +309,7 @@ class Profile extends Component
     {
         if (auth()->id() !== $this->user->id) return;
         $this->projectType = $type;
-        $this->projectTitle = '';
+        $this->projectTitle = $this->user->name;
         $this->isCreatingProject = true;
     }
 

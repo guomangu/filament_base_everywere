@@ -81,9 +81,9 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
+    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
         <!-- Sidebar -->
-        <div class="lg:col-span-10 space-y-8">
+        <div class="lg:col-span-4 space-y-8">
             <!-- Stats -->
             <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-8 shadow-2xl shadow-blue-500/5">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Métriques de Confiance</h3>
@@ -144,12 +144,48 @@
                         </div>
                         @auth
                             @if(auth()->id() === $user->id)
-                                <button wire:click="startCreatingProject('offer')" class="w-10 h-10 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-all shadow-lg shadow-blue-500/20" title="Nouvelle Offre">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button wire:click="startCreatingProject('offer')" 
+                                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                                            title="Proposer une Offre">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                        Offre
+                                    </button>
+                                    <button wire:click="startCreatingProject('demand')" 
+                                            class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20"
+                                            title="Exprimer un Besoin">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        Besoin
+                                    </button>
+                                </div>
                             @endif
                         @endauth
                     </div>
+
+                    @if($isCreatingProject)
+                        <div class="mb-8 bg-white/80 backdrop-blur-xl border-2 border-blue-500 p-8 rounded-[3.5rem] shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div class="flex items-center justify-between mb-4 px-2">
+                                <span class="text-[12px] font-black text-blue-600 uppercase tracking-widest">
+                                    {{ $projectType === 'offer' ? 'Proposer une Offre' : 'Exprimer un Besoin' }}
+                                </span>
+                                <button wire:click="cancelProjectCreation" class="text-slate-400 hover:text-red-500 transition-colors">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <input wire:model="projectTitle" 
+                                       wire:keydown.enter="confirmProjectCreation"
+                                       type="text" 
+                                       placeholder="Titre de votre {{ $projectType === 'offer' ? 'offre' : 'besoin' }}..." 
+                                       autofocus
+                                       class="w-full bg-white border-2 border-slate-100 focus:border-blue-500 focus:ring-0 rounded-3xl p-6 text-xl font-black tracking-tight placeholder:text-slate-300 shadow-inner">
+                                <button wire:click="confirmProjectCreation" class="absolute right-3 top-3 bottom-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                                    Lancer le Projet
+                                </button>
+                            </div>
+                            @error('projectTitle') <span class="text-red-500 text-[10px] font-black uppercase mt-3 block pl-6">{{ $message }}</span> @enderror
+                        </div>
+                    @endif
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @foreach($userProjects as $project)
@@ -224,20 +260,45 @@
                 </div>
             @elseif(auth()->check() && auth()->id() === $user->id)
                 <div class="bg-white/40 backdrop-blur-3xl border-2 border-dashed border-slate-200 rounded-[3.5rem] p-10 text-center">
-                    <div class="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    </div>
-                    <p class="text-slate-400 font-black uppercase tracking-[0.3em] text-xs mb-4">Aucun projet encore lancé</p>
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button wire:click="startCreatingProject('offer')" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                            Proposer une Offre
-                        </button>
-                        <button wire:click="startCreatingProject('demand')" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                            Exprimer un Besoin
-                        </button>
-                    </div>
+                    @if($isCreatingProject)
+                        <div class="max-w-md mx-auto">
+                            <div class="flex items-center justify-between mb-4 px-2">
+                                <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                                    {{ $projectType === 'offer' ? 'Nouvelle Offre' : 'Nouveau Besoin' }}
+                                </span>
+                                <button wire:click="cancelProjectCreation" class="text-slate-400 hover:text-red-500 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <input wire:model="projectTitle" 
+                                       wire:keydown.enter="confirmProjectCreation"
+                                       type="text" 
+                                       placeholder="Titre de votre {{ $projectType === 'offer' ? 'offre' : 'besoin' }}..." 
+                                       autofocus
+                                       class="w-full bg-white border-2 border-blue-500 focus:ring-0 rounded-2xl p-4 text-lg font-black tracking-tight placeholder:text-slate-300 shadow-2xl">
+                                <button wire:click="confirmProjectCreation" class="absolute right-2 top-2 bottom-2 px-6 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all">
+                                    Lancer
+                                </button>
+                            </div>
+                            @error('projectTitle') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block pl-4">{{ $message }}</span> @enderror
+                        </div>
+                    @else
+                        <div class="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <p class="text-slate-400 font-black uppercase tracking-[0.3em] text-xs mb-4">Aucun projet encore lancé</p>
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button wire:click="startCreatingProject('offer')" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                Proposer une Offre
+                            </button>
+                            <button wire:click="startCreatingProject('demand')" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                Exprimer un Besoin
+                            </button>
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -319,13 +380,13 @@
                 @forelse($groupedAchievements as $skillName => $achievements)
                     <div class="relative">
                         <!-- Skill Header -->
-                        <div class="flex items-center gap-6 mb-8">
-                            <div class="w-16 h-16 bg-slate-900 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl rotate-3">
-                                <span class="text-xl font-black uppercase">{{ substr($skillName, 0, 1) }}</span>
+                        <div class="flex flex-wrap items-center gap-4 md:gap-6 mb-8">
+                            <div class="w-12 h-12 md:w-16 md:h-16 bg-slate-900 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center text-white shadow-xl rotate-3 shrink-0">
+                                <span class="text-lg md:text-xl font-black uppercase">{{ substr($skillName, 0, 1) }}</span>
                             </div>
-                            <div class="flex-grow">
-                                <div class="flex items-center gap-4 mb-2">
-                                    <h3 class="text-2xl font-black text-slate-900 leading-none uppercase tracking-tight">{{ $skillName }}</h3>
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-center gap-3 md:gap-4 mb-1 md:mb-2">
+                                    <h3 class="text-xl md:text-2xl font-black text-slate-900 leading-none uppercase tracking-tight truncate">{{ $skillName }}</h3>
                                     @auth
                                         @if($canEdit)
                                             @php 
@@ -333,8 +394,8 @@
                                                 $firstAch = $achievements->first(); 
                                                 $procheIdForBtn = $firstAch->proche_id;
                                             @endphp
-                                            <button wire:click="addProofForSkill('{{ $skillName }}', {{ $procheIdForBtn ?? 'null' }})" class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-blue-500/20 group/btn">
-                                                <svg class="w-5 h-5 group-hover/btn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                            <button wire:click="addProofForSkill('{{ $skillName }}', {{ $procheIdForBtn ?? 'null' }})" class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-blue-500/20 group/btn shrink-0">
+                                                <svg class="w-4 h-4 md:w-5 h-5 group-hover/btn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
                                             </button>
                                         @endif
                                     @endauth
@@ -345,35 +406,26 @@
                                     $maxYear = $realizedDates->count() ? $realizedDates->max()->format('Y') : null;
                                 @endphp
                                 <div class="flex items-center gap-2">
-                                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        {{ $achievements->reject(fn($a) => $a->title === '__SKELETON__')->count() }} Preuve(s) certifiée(s)
+                                    <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
+                                    <span class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
+                                        {{ $achievements->reject(fn($a) => $a->title === '__SKELETON__')->count() }} Preuve(s)
                                         @if($minYear && $maxYear)
                                             • {{ $minYear === $maxYear ? $minYear : "{$minYear} - {$maxYear}" }}
                                         @endif
                                     </span>
                                 </div>
                             </div>
-                            
-                            @auth
-                                @php $trustPath = auth()->user()->getTrustPathTo($user); @endphp
-                                @if(count($trustPath) > 0)
-                                    <div class="mt-4 lg:mt-6 w-full max-w-[280px]">
-                                        <x-user-trust-chain :path="$trustPath" />
-                                    </div>
-                                @endif
-                            @endauth
                         </div>
 
                         <!-- Proofs under this skill -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pl-10 md:pl-20 relative">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pl-6 md:pl-20 relative">
                             <!-- Timeline Connector -->
-                            <div class="absolute left-8 md:left-[4.5rem] top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-100 to-transparent"></div>
+                            <div class="absolute left-4 md:left-[4.5rem] top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-100 to-transparent"></div>
                             
                             @foreach($achievements->reject(fn($a) => $a->title === '__SKELETON__') as $achievement)
                                 <div class="group relative">
                                     <!-- Point -->
-                                    <div class="absolute -left-[4.5rem] md:-left-[5rem] top-8 w-4 h-4 rounded-full bg-white border-4 border-slate-900 shadow-lg z-10 group-hover:bg-blue-600 group-hover:border-blue-200 transition-all duration-500"></div>
+                                    <div class="absolute -left-[2.75rem] md:-left-[5rem] top-8 w-3 h-3 md:w-4 md:h-4 rounded-full bg-white border-[3px] md:border-4 border-slate-900 shadow-lg z-10 group-hover:bg-blue-600 group-hover:border-blue-200 transition-all duration-500"></div>
 
                                     <div class="relative bg-white/60 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] hover:bg-white transition-all duration-500 group-hover:shadow-[0_40px_80px_-15px_rgba(59,130,246,0.08)]">
                                         <div class="flex items-start justify-between mb-6">

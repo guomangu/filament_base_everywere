@@ -64,16 +64,26 @@
         <nav x-data="{ open: false }" class="bg-white/40 backdrop-blur-2xl sticky top-0 z-50 border-b border-white/20 print:hidden">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-24">
-                    <!-- Left: Logo -->
-                    <div class="flex items-center flex-shrink-0">
-                        <a href="/" class="flex items-center space-x-3 group">
+                    <!-- Left: Logo & Messaging Trigger -->
+                    <div class="flex items-center flex-shrink-0 gap-4">
+                        <a href="/" class="flex items-center group">
                             <div class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl md:rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 group-hover:rotate-12 transition-all duration-500">
                                 <svg class="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             </div>
-                            <span class="text-xl md:text-2xl font-black tracking-tighter text-slate-900 group-hover:text-blue-600 transition-colors">
-                                Trust<span class="text-blue-600 group-hover:text-slate-900 transition-colors">Circle</span>
-                            </span>
                         </a>
+                        
+                        <button @click="$dispatch('toggleMessaging')" class="flex items-center gap-3 px-4 py-2 md:py-3 bg-slate-900/5 hover:bg-blue-600 hover:text-white rounded-xl md:rounded-2xl transition-all group border border-slate-100/50 shadow-sm hover:shadow-blue-500/20 hover:-translate-y-0.5 active:translate-y-0">
+                            <div class="relative">
+                                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                @auth
+                                    @php $unreadCount = auth()->user()->receivedMessages()->whereNull('project_id')->whereNull('circle_id')->count(); @endphp
+                                    @if($unreadCount > 0)
+                                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                                    @endif
+                                @endauth
+                            </div>
+                            <span class="text-[10px] md:text-xs font-black uppercase tracking-widest hidden sm:inline">Messagerie</span>
+                        </button>
                     </div>
 
                     <!-- Right: Auth & Profile (Universal) -->
@@ -114,6 +124,7 @@
             </div>
         </main>
 
+        @livewire('global-messaging')
         @livewireScripts
         @filamentScripts
     </body>

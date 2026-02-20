@@ -226,6 +226,49 @@ class User extends Authenticatable implements FilamentUser
                 ]);
             }
 
+            // 1.6 Degree: Common Country (Bridging Regions)
+            $myCountries = $this->activeJoinedCircles->pluck('country')->filter()->unique();
+            $targetCountries = $target->activeJoinedCircles->pluck('country')->filter()->unique();
+            $commonCountries = $myCountries->intersect($targetCountries);
+
+            if ($commonCountries->isNotEmpty()) {
+                $countryName = $commonCountries->first();
+                $myCircle = $this->activeJoinedCircles->where('country', $countryName)->first();
+                $targetCircle = $target->activeJoinedCircles->where('country', $countryName)->first();
+
+                $middleNodes = [];
+                $middleNodes[] = ['type' => 'circle', 'id' => $myCircle->id, 'name' => $myCircle->name];
+                if ($myCircle->region) $middleNodes[] = ['type' => 'region', 'name' => $myCircle->region];
+                $middleNodes[] = ['type' => 'country', 'name' => $countryName];
+                if ($targetCircle->region && $targetCircle->region !== $myCircle->region) $middleNodes[] = ['type' => 'region', 'name' => $targetCircle->region];
+                $middleNodes[] = ['type' => 'circle', 'id' => $targetCircle->id, 'name' => $targetCircle->name];
+
+                return array_merge($path, $middleNodes, [
+                    ['type' => 'user', 'id' => $target->id, 'name' => $target->name, 'avatar' => $target->avatar]
+                ]);
+            }
+
+            // 1.7 Degree: Global Bridging (La Terre)
+            if ($myCountries->isNotEmpty() && $targetCountries->isNotEmpty()) {
+                $myCircle = $this->activeJoinedCircles->first();
+                $targetCircle = $target->activeJoinedCircles->first();
+
+                $middleNodes = [];
+                $middleNodes[] = ['type' => 'circle', 'id' => $myCircle->id, 'name' => $myCircle->name];
+                if ($myCircle->region) $middleNodes[] = ['type' => 'region', 'name' => $myCircle->region];
+                if ($myCircle->country) $middleNodes[] = ['type' => 'country', 'name' => $myCircle->country];
+                
+                $middleNodes[] = ['type' => 'earth', 'name' => 'La Terre'];
+
+                if ($targetCircle->country) $middleNodes[] = ['type' => 'country', 'name' => $targetCircle->country];
+                if ($targetCircle->region) $middleNodes[] = ['type' => 'region', 'name' => $targetCircle->region];
+                $middleNodes[] = ['type' => 'circle', 'id' => $targetCircle->id, 'name' => $targetCircle->name];
+
+                return array_merge($path, $middleNodes, [
+                    ['type' => 'user', 'id' => $target->id, 'name' => $target->name, 'avatar' => $target->avatar]
+                ]);
+            }
+
             // 2nd Degree: Intermediaries
             $intermediaries = CircleMember::whereIn('circle_id', $myCircleIds)
                 ->where('status', 'active')
@@ -281,6 +324,46 @@ class User extends Authenticatable implements FilamentUser
                     ['type' => 'user', 'id' => $interMember->user_id, 'name' => $interMember->user->name, 'avatar' => $interMember->user->avatar],
                     ['type' => 'circle', 'id' => $other->id, 'name' => $other->name]
                 ]);
+            }
+
+            // 2.5 Geographical Bridge for Circles
+            $myCountries = $this->activeJoinedCircles->pluck('country')->filter()->unique();
+            if ($myCountries->contains($other->country)) {
+                $countryName = $other->country;
+                $myCircle = $this->activeJoinedCircles->where('country', $countryName)->first();
+                
+                $middleNodes = [];
+                $middleNodes[] = ['type' => 'circle', 'id' => $myCircle->id, 'name' => $myCircle->name];
+                
+                // If same region
+                if ($myCircle->region === $other->region && $myCircle->region) {
+                    $middleNodes[] = ['type' => 'region', 'name' => $myCircle->region];
+                } else {
+                    // Different regions, bridge via Country
+                    if ($myCircle->region) $middleNodes[] = ['type' => 'region', 'name' => $myCircle->region];
+                    $middleNodes[] = ['type' => 'country', 'name' => $countryName];
+                    if ($other->region) $middleNodes[] = ['type' => 'region', 'name' => $other->region];
+                }
+                
+                $middleNodes[] = ['type' => 'circle', 'id' => $other->id, 'name' => $other->name];
+                return array_merge($path, $middleNodes);
+            }
+
+            // 2.6 Global Bridge for Circles
+            if ($myCountries->isNotEmpty() && $other->country) {
+                $myCircle = $this->activeJoinedCircles->first();
+                $middleNodes = [];
+                $middleNodes[] = ['type' => 'circle', 'id' => $myCircle->id, 'name' => $myCircle->name];
+                if ($myCircle->region) $middleNodes[] = ['type' => 'region', 'name' => $myCircle->region];
+                if ($myCircle->country) $middleNodes[] = ['type' => 'country', 'name' => $myCircle->country];
+                
+                $middleNodes[] = ['type' => 'earth', 'name' => 'La Terre'];
+                
+                if ($other->country) $middleNodes[] = ['type' => 'country', 'name' => $other->country];
+                if ($other->region) $middleNodes[] = ['type' => 'region', 'name' => $other->region];
+                $middleNodes[] = ['type' => 'circle', 'id' => $other->id, 'name' => $other->name];
+                
+                return array_merge($path, $middleNodes);
             }
 
             // 3. Indirect: Path to owner, then Circle

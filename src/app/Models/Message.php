@@ -14,6 +14,7 @@ class Message extends Model
         'circle_id',
         'project_id',
         'sender_id',
+        'receiver_id',
         'title',
         'content',
         'type',
@@ -27,6 +28,7 @@ class Message extends Model
             'circle_id' => 'integer',
             'project_id' => 'integer',
             'sender_id' => 'integer',
+            'receiver_id' => 'integer',
             'metadata' => 'array',
         ];
     }
@@ -39,5 +41,10 @@ class Message extends Model
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function receiver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'receiver_id');
     }
 }
