@@ -69,71 +69,7 @@
     </div>
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
-        <!-- Sidebar -->
-        <div class="lg:col-span-6 space-y-8">
-
-
-            <!-- Reseaux (Discovery) -->
-            @auth
-                @if(auth()->id() === $user->id)
-                    <div class="space-y-6">
-                        <livewire:network.explorer :origin="$user" />
-                    </div>
-                @endif
-            @endauth
-            <!-- Mes Proches (Managed Proches) -->
-            @if($user->id === auth()->id() && $user->proches->count() > 0)
-                <div class="bg-blue-600 rounded-[3.5rem] p-10 text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden mt-10">
-                    <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/10 to-transparent"></div>
-                    <div class="flex items-center justify-between mb-8 relative z-10">
-                        <h3 class="text-2xl font-black tracking-tight">Mes Proches</h3>
-                        <button wire:click="openProcheModal" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-blue-600 flex items-center justify-center transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                        </button>
-                    </div>
-                    <div class="space-y-4 relative z-10">
-                        @foreach($user->proches as $proche)
-                            <div class="p-5 bg-white/10 border border-white/10 rounded-3xl hover:bg-white/20 transition-all group/p">
-                                <div class="flex items-center justify-between gap-4">
-                                    <div class="flex items-center gap-4 flex-grow min-w-0">
-                                        <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center font-black text-xl border-2 border-white/20">
-                                            {{ substr($proche->name, 0, 1) }}
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="text-sm font-black uppercase tracking-tight truncate">{{ $proche->name }}</div>
-                                            <div class="text-[9px] font-bold text-blue-200 uppercase tracking-widest">{{ $proche->achievements->count() }} compétence(s)</div>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <button wire:click="openCreateModal({{ $proche->id }})" class="p-3 bg-white/10 hover:bg-white text-white hover:text-blue-600 rounded-2xl transition-all shadow-sm" title="Ajouter une compétence">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                        </button>
-                                        
-                                        @if($proche->transfer_token)
-                                            <div class="bg-white/90 px-3 py-1.5 rounded-xl flex flex-col items-center">
-                                                <span class="text-[7px] font-black text-slate-500 uppercase leading-none mb-1">Code</span>
-                                                <span class="text-xs font-black text-blue-600 leading-none">{{ $proche->transfer_code }}</span>
-                                            </div>
-                                        @else
-                                            <button wire:click="generateTransfer({{ $proche->id }})" class="p-3 bg-white/10 hover:bg-white text-white hover:text-blue-600 rounded-2xl transition-all shadow-sm" title="Transférer le compte">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                                            </button>
-                                        @endif
-                                    </div>
-                                </div>
-                                @if($proche->transfer_token)
-                                    <div class="mt-4 pt-4 border-t border-white/10">
-                                        <p class="text-[8px] font-bold text-blue-100 uppercase tracking-widest leading-relaxed break-all">
-                                            Transfert : <span class="select-all bg-blue-700/50 px-1 rounded">{{ url('/proches/claim/'.$proche->transfer_token) }}</span>
-                                        </p>
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-        </div>
+        
 
         <!-- Portfolio: Skill-Centric View -->
         <div class="lg:col-span-6 space-y-12">
@@ -363,7 +299,7 @@
                         </div>
 
                         <!-- Proofs under this skill -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pl-6 md:pl-20 relative">
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-6 md:gap-8 pl-6 md:pl-20 relative">
                             <!-- Timeline Connector -->
                             <div class="absolute left-4 md:left-[4.5rem] top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-100 to-transparent"></div>
                             
@@ -436,17 +372,6 @@
                                             <livewire:information.manager :model="$achievement" :key="'ach-info-'.$achievement->id" />
                                         </div>
                                         <p class="text-slate-500 text-sm font-medium mb-8 leading-relaxed line-clamp-2 italic">{{ $achievement->description }}</p>
-
-                                        <div class="pt-6 border-t border-slate-50 flex items-center gap-3">
-                                            <div class="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                            </div>
-                                            @if($achievement->circle)
-                                                <a href="{{ route('circles.show', $achievement->circle) }}" class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate hover:text-blue-600 transition-colors">{{ $achievement->circle->name }}</a>
-                                            @else
-                                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">External Proof</span>
-                                            @endif
-                                        </div>
                                     </div>
                                 </div>
                             @endforeach
@@ -472,6 +397,72 @@
                     </a>
                 </div>
             </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-6 space-y-8">
+
+
+            <!-- Reseaux (Discovery) -->
+            @auth
+                @if(auth()->id() === $user->id)
+                    <div class="space-y-6">
+                        <livewire:network.explorer :origin="$user" />
+                    </div>
+                @endif
+            @endauth
+            <!-- Mes Proches (Managed Proches) -->
+            @if($user->id === auth()->id() && $user->proches->count() > 0)
+                <div class="bg-blue-600 rounded-[3.5rem] p-10 text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden mt-10">
+                    <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/10 to-transparent"></div>
+                    <div class="flex items-center justify-between mb-8 relative z-10">
+                        <h3 class="text-2xl font-black tracking-tight">Mes Proches</h3>
+                        <button wire:click="openProcheModal" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-blue-600 flex items-center justify-center transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                    </div>
+                    <div class="space-y-4 relative z-10">
+                        @foreach($user->proches as $proche)
+                            <div class="p-5 bg-white/10 border border-white/10 rounded-3xl hover:bg-white/20 transition-all group/p">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="flex items-center gap-4 flex-grow min-w-0">
+                                        <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center font-black text-xl border-2 border-white/20">
+                                            {{ substr($proche->name, 0, 1) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-black uppercase tracking-tight truncate">{{ $proche->name }}</div>
+                                            <div class="text-[9px] font-bold text-blue-200 uppercase tracking-widest">{{ $proche->achievements->count() }} compétence(s)</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button wire:click="openCreateModal({{ $proche->id }})" class="p-3 bg-white/10 hover:bg-white text-white hover:text-blue-600 rounded-2xl transition-all shadow-sm" title="Ajouter une compétence">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                        </button>
+                                        
+                                        @if($proche->transfer_token)
+                                            <div class="bg-white/90 px-3 py-1.5 rounded-xl flex flex-col items-center">
+                                                <span class="text-[7px] font-black text-slate-500 uppercase leading-none mb-1">Code</span>
+                                                <span class="text-xs font-black text-blue-600 leading-none">{{ $proche->transfer_code }}</span>
+                                            </div>
+                                        @else
+                                            <button wire:click="generateTransfer({{ $proche->id }})" class="p-3 bg-white/10 hover:bg-white text-white hover:text-blue-600 rounded-2xl transition-all shadow-sm" title="Transférer le compte">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                                @if($proche->transfer_token)
+                                    <div class="mt-4 pt-4 border-t border-white/10">
+                                        <p class="text-[8px] font-bold text-blue-100 uppercase tracking-widest leading-relaxed break-all">
+                                            Transfert : <span class="select-all bg-blue-700/50 px-1 rounded">{{ url('/proches/claim/'.$proche->transfer_token) }}</span>
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

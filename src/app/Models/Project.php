@@ -338,7 +338,8 @@ class Project extends Model
 
         if ($count >= 4) return $parts[2];
         if ($count === 3) return $parts[1];
-        if ($count === 2) return $parts[0];
-        
+        if ($count === 2 || $count === 1) return $parts[0];
+
+        return null;
     }
 }
