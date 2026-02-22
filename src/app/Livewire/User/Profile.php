@@ -48,6 +48,7 @@ class Profile extends Component
     public bool $isCreatingProject = false;
     public string $projectType = '';
     public string $projectTitle = '';
+    public ?\App\Models\Project $draftProject = null;
 
     protected $rules = [
         'skillName' => 'required_if:step,1|min:2',
@@ -528,5 +529,70 @@ class Profile extends Component
 
         $this->reset(['taggingRealisationId', 'taggingRealisationType', 'searchSkill']);
         $this->dispatch('notify', ['message' => 'Compétence ajoutée !', 'type' => 'success']);
+    }
+
+    public function initProjectCreation()
+    {
+        if (!$this->canEdit()) return;
+        
+        $this->cancelProjectCreation(); // Clean up
+
+        $this->draftProject = \App\Models\Project::create([
+            'title' => 'Brouillon...',
+            'description' => '',
+            'owner_id' => $this->user->id,
+            'status' => 'brouillon',
+            'metadata' => ['status' => 'brouillon'],
+        ]);
+
+        $this->draftProject->addMember(auth()->user(), 'admin');
+        $this->isCreatingProject = true;
+    }
+
+    public function cancelProjectCreation()
+    {
+        if ($this->draftProject) {
+            $this->draftProject->delete();
+            $this->reset('draftProject');
+        }
+        $this->reset(['projectTitle', 'isCreatingProject']);
+    }
+
+    public function confirmProjectCreation()
+    {
+        if (!$this->canEdit()) return;
+        
+        $this->validate([
+            'projectTitle' => 'required|min:3|max:255',
+        ]);
+
+        if ($this->draftProject) {
+            $this->draftProject->update([
+                'title' => $this->projectTitle,
+                'status' => 'actuelle',
+                'metadata' => ['status' => 'actuelle'],
+            ]);
+            $project = $this->draftProject;
+        } else {
+            $project = \App\Models\Project::create([
+                'title' => $this->projectTitle,
+                'owner_id' => $this->user->id,
+                'status' => 'actuelle',
+                'metadata' => ['status' => 'actuelle'],
+            ]);
+            $project->addMember(auth()->user(), 'admin');
+        }
+
+        // Create first message
+        \App\Models\Message::create([
+            'project_id' => $project->id,
+            'sender_id' => auth()->id(),
+            'content' => "Nouvelle réalisation lancée depuis le profil de " . $this->user->name . ".",
+            'type' => 'chat',
+        ]);
+
+        $this->reset(['draftProject', 'projectTitle', 'isCreatingProject']);
+        session()->flash('success', 'Réalisation lancée !');
+        return redirect()->route('projects.show', $project);
     }
 }

@@ -90,12 +90,11 @@
                             </p>
                         @endif
 
-                        {{-- Skills Tags --}}
                         <div class="flex flex-wrap items-center gap-2 mb-8">
                             @foreach($project->skills as $skill)
-                                <span class="px-3 py-1 bg-white border border-slate-200 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-600">
+                                <a href="{{ route('mission.show', $skill) }}" class="px-3 py-1 bg-white border border-slate-200 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-all">
                                     #{{ $skill->name }}
-                                </span>
+                                </a>
                             @endforeach
                             @if($project->canManage(auth()->user()) && $project->status === 'actuelle')
                                 @if($showSkillTagForm)
@@ -163,7 +162,7 @@
                                     </div>
                                 </a>
 
-                                @foreach($project->activeMembers as $member)
+                                @foreach($project->activeMembers->reject(fn($m) => $m->memberable_id === $project->owner_id && $m->memberable_type === get_class($project->owner)) as $member)
                                     <a href="{{ route('users.show', $member->memberable) }}" class="flex items-center gap-3">
                                         <img src="{{ $member->memberable->avatar_url }}" class="w-10 h-10 rounded-xl ring-2 ring-white/10 opacity-70 hover:opacity-100 transition-opacity">
                                         <div>
@@ -197,14 +196,7 @@
         {{-- ---- OFFRES (BOUTIQUE) ---- --}}
         <div>
                 <div class="mb-12">
-                    @if(!$showOfferForm)
-                        <button wire:click="$set('showOfferForm', true)" class="w-full py-10 bg-white border-2 border-dashed border-blue-200 text-blue-600 rounded-[3rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-blue-50 transition-all flex items-center justify-center gap-6 group">
-                            <span class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-12 transition-all shadow-lg shadow-blue-500/5">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                            </span>
-                            Nouvel Article en Boutique
-                        </button>
-                    @else
+                    @if($showOfferForm)
                         <div class="bg-slate-900 rounded-[3.5rem] p-10 text-white shadow-3xl animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden group/form">
                              <div class="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px]"></div>
                              <h4 class="text-sm font-black uppercase tracking-[0.3em] mb-10 text-blue-400 relative z-10 flex items-center justify-between">

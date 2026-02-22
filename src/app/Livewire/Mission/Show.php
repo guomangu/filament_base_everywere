@@ -19,6 +19,8 @@ class Show extends Component
     public ?Project $draftProject = null;
     public array $selectedSkillIds = [];
     public $availableSkills = [];
+    public bool $showCreationForm = false;
+    public string $newSkillName = '';
 
     public function mount(Skill $skill)
     {
@@ -37,9 +39,11 @@ class Show extends Component
             'description' => '',
             'owner_id' => Auth::id(),
             'skill_id' => $this->skill->id,
-            'status' => 'actuelle',
-            'metadata' => ['status' => 'actuelle'],
+            'status' => 'brouillon',
+            'metadata' => ['status' => 'brouillon'],
         ]);
+        
+        $this->showCreationForm = true;
         
         // As a draft, maybe don't add member yet or add him so he can see it if he refreshes (but we will delete on cancel)
         $this->draftProject->addMember(Auth::user(), 'admin');
@@ -51,7 +55,7 @@ class Show extends Component
             $this->draftProject->delete();
             $this->reset('draftProject');
         }
-        $this->reset(['title', 'description', 'status', 'realizedAt', 'selectedSkillIds']);
+        $this->reset(['title', 'description', 'status', 'realizedAt', 'selectedSkillIds', 'showCreationForm']);
     }
 
     public function createRealisation()
@@ -88,7 +92,23 @@ class Show extends Component
             $project->addMember(Auth::user(), 'admin');
         }
 
-        $project->skills()->sync($this->selectedSkillIds);
+        // Create and sync skills
+        $finalSkillIds = $this->selectedSkillIds;
+        
+        // Handle potentially comma separated new skills or single new skill
+        if (!empty($this->newSkillName)) {
+            $newSkills = array_map('trim', explode(',', $this->newSkillName));
+            foreach ($newSkills as $name) {
+                if (empty($name)) continue;
+                $skill = Skill::firstOrCreate(
+                    ['name' => mb_convert_case($name, MB_CASE_TITLE, "UTF-8")],
+                    ['slug' => \Illuminate\Support\Str::slug($name)]
+                );
+                $finalSkillIds[] = $skill->id;
+            }
+        }
+
+        $project->skills()->sync(array_unique($finalSkillIds));
 
         // Automatic creation of private conversation/first message
         Message::create([
@@ -105,7 +125,7 @@ class Show extends Component
     public function render()
     {
         $currentRealisations = $this->skill->projects()
-            ->where('status', 'actuelle')
+            ->whereIn('status', ['actuelle', 'verrouillée'])
             ->with(['owner', 'activeMembers.memberable'])
             ->latest()
             ->get();

@@ -53,6 +53,8 @@ class Show extends Component
     // Réalisation specific
     public $additionalSkillName = '';
     public $showSkillTagForm = false;
+    
+    protected $isInitialLoad = true;
 
     public function mount(Project $project)
     {
@@ -105,10 +107,14 @@ class Show extends Component
             $currentMessageCount = $this->project->messages()->count();
             $currentPendingCount = $this->project->members()->where('status', 'pending')->count();
 
-            if ($currentMessageCount !== $this->lastMessageCount || $currentPendingCount !== $this->lastPendingCount) {
+            if (!$this->isInitialLoad && ($currentMessageCount !== $this->lastMessageCount || $currentPendingCount !== $this->lastPendingCount)) {
                 $this->dispatch('project-updated');
                 $this->lastMessageCount = $currentMessageCount;
                 $this->lastPendingCount = $currentPendingCount;
+            } else {
+                $this->lastMessageCount = $currentMessageCount;
+                $this->lastPendingCount = $currentPendingCount;
+                $this->isInitialLoad = false;
             }
         } catch (\Exception $e) {
             // Silently fail for polling

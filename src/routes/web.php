@@ -21,6 +21,9 @@ Route::middleware('auth')->group(function () {
 // Public Show pages
 Route::get('/mission/{skill}', \App\Livewire\Mission\Show::class)->name('mission.show');
 Route::get('/réalisation/{project}', \App\Livewire\Project\Show::class)->name('projects.show');
+Route::get('/realisation/{project}', function ($project) {
+    return redirect()->route('projects.show', $project);
+});
 
 Route::get('/proches/claim/{token}', \App\Livewire\User\Claim::class)->name('proches.claim');
 
