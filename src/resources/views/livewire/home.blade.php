@@ -103,7 +103,7 @@ class="min-h-screen bg-slate-50/50">
                     $avatar = $item->owner->avatar ?? '';
                     $name = $item->name;
                     $score = $item->average_trust_score ?? $item->trust_score ?? 0;
-                    $activeMembers = $item->members ? $item->members->take(6) : collect();
+                    $activeMembers = $item->members ? $item->members->where('status', 'active')->unique('user_id')->take(6) : collect();
                 @endphp
                 <div class="bg-white/80 backdrop-blur-3xl border border-slate-100 rounded-[3rem] p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all group overflow-hidden relative flex flex-col h-full ring-1 ring-white/50">
                     <div class="flex items-center gap-6 mb-8">
@@ -161,9 +161,9 @@ class="min-h-screen bg-slate-50/50">
                                 
                                 {{-- Skills for this specific user --}}
                                 <div class="flex flex-wrap gap-1.5 pl-1">
-                                    @foreach($member->user->achievements->take(4) as $achievement)
-                                        <a href="{{ route('mission.show', $achievement->skill) }}" class="px-2.5 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[8px] font-black uppercase tracking-tight shadow-sm hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
-                                            {{ $achievement->skill->name }}
+                                    @foreach($member->user->achievements->pluck('skill')->unique('id')->take(4) as $skill)
+                                        <a href="{{ route('mission.show', $skill) }}" class="px-2.5 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[8px] font-black uppercase tracking-tight shadow-sm hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
+                                            {{ $skill->name }}
                                         </a>
                                     @endforeach
                                 </div>

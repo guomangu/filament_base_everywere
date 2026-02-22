@@ -75,7 +75,7 @@
         <div class="lg:col-span-6 space-y-12">
             
             {{-- ===== MES PROJETS / OFFRES ===== --}}
-            @if(($userProjects->count() > 0 && auth()->id() === $user->id) || ($userOffers->count() > 0 && auth()->id() !== $user->id))
+            @if($userProjects->count() > 0 || ($userOffers->count() > 0 && auth()->id() !== $user->id))
                 <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-8 shadow-2xl shadow-blue-500/5 mb-12">
                     <div class="flex items-center justify-between mb-8">
                         <div>
@@ -85,7 +85,7 @@
                                     Réalisations
                                     <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">{{ $userProjects->count() }}</span>
                                 @else
-                                    Missions en cours
+                                    Missions & Réalisations
                                     <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">{{ $userProjects->count() }}</span>
                                 @endif
                             </h3>
@@ -93,7 +93,7 @@
                                 @if(auth()->id() === $user->id)
                                     Mes participations et contrats
                                 @else
-                                    Ses collaborations actives
+                                    Ses collaborations et projets actifs
                                 @endif
                             </p>
                         </div>
@@ -133,103 +133,126 @@
                                     <span wire:loading wire:target="confirmProjectCreation">Lancement...</span>
                                 </button>
                             </div>
-                            </div>
-                            @error('projectTitle') <span class="text-red-500 text-[10px] font-black uppercase mt-3 block pl-6">{{ $message }}</span> @enderror
-
-                            @if($draftProject)
-                                <div class="mt-6 border border-slate-100 rounded-[2.5rem] p-8 bg-slate-50/50">
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">Fichiers & Liens de preuve (Optionnel)</span>
-                                    <livewire:information.manager :model="$draftProject" :key="'info-manager-draft-profile-'.$draftProject->id" />
-                                </div>
-                            @endif
                         </div>
+                        @error('projectTitle') <span class="text-red-500 text-[10px] font-black uppercase mt-3 block pl-6">{{ $message }}</span> @enderror
+
+                        @if($draftProject)
+                            <div class="mt-6 border border-slate-100 rounded-[2.5rem] p-8 bg-slate-50/50">
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">Fichiers & Liens de preuve (Optionnel)</span>
+                                <livewire:information.manager :model="$draftProject" :key="'info-manager-draft-profile-'.$draftProject->id" />
+                            </div>
+                        @endif
                     @endif
+                
 
-                    @if(auth()->id() === $user->id)
-                        {{-- Projects Grid for Owner --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($userProjects as $project)
-                                <div class="relative group h-full">
-                                        <div class="flex flex-col relative h-full bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
-                                        <a href="{{ route('projects.show', $project) }}" class="absolute inset-0 z-10 rounded-3xl" title="Voir la réalisation"></a>
-                                        
-                                        <div class="flex flex-col relative h-full z-20 pointer-events-none">
-                                            <div class="flex items-start justify-between mb-4">
-                                                <div class="flex-1 min-w-0">
-                                                    <h4 class="text-base font-black text-slate-900 uppercase tracking-tight truncate group-hover:text-blue-600 transition-colors">
-                                                        {{ $project->title }}
-                                                    </h4>
-                                                    @if($project->skill)
-                                                        <a href="{{ route('mission.show', $project->skill) }}" class="inline-block px-2 py-0.5 bg-slate-900 text-white text-[7px] font-black uppercase rounded-md mb-1 hover:bg-blue-600 transition-colors pointer-events-auto relative z-30">{{ $project->skill->name }}</a>
+                    {{-- Projects Grid --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($userProjects as $project)
+                            <div class="relative group h-full">
+                                <div class="flex flex-col relative h-full bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
+                                    <a href="{{ route('projects.show', $project) }}" class="absolute inset-0 z-10 rounded-3xl" title="Voir la réalisation"></a>
+                                    
+                                    <div class="flex flex-col relative h-full z-20 pointer-events-none">
+                                        <div class="flex items-start justify-between mb-4">
+                                            <div class="flex-1 min-w-0">
+                                                <h4 class="text-base font-black text-slate-900 uppercase tracking-tight truncate group-hover:text-blue-600 transition-colors">
+                                                    {{ $project->title }}
+                                                </h4>
+                                                @if($project->skill)
+                                                    <a href="{{ route('mission.show', $project->skill) }}" class="inline-block px-2 py-0.5 bg-slate-900 text-white text-[7px] font-black uppercase rounded-md mb-1 hover:bg-blue-600 transition-colors pointer-events-auto relative z-30">{{ $project->skill->name }}</a>
+                                                @endif
+                                            </div>
+                                            <div class="ml-3 flex-shrink-0">
+                                                @php
+                                                    $statusColors = [
+                                                        'actuelle' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                                        'verrouillée' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                                        'terminée' => 'bg-green-50 text-green-700 border-green-200',
+                                                        'annulée' => 'bg-red-50 text-red-700 border-red-200',
+                                                    ];
+                                                @endphp
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 {{ $statusColors[$project->status] ?? 'bg-slate-50 text-slate-700' }} border rounded-lg">
+                                                    @if($project->status === 'actuelle')
+                                                        <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
                                                     @endif
-                                                </div>
-                                                <div class="ml-3 flex-shrink-0">
-                                                    @php
-                                                        $statusColors = [
-                                                            'actuelle' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                                            'verrouillée' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                                            'terminée' => 'bg-green-50 text-green-700 border-green-200',
-                                                            'annulée' => 'bg-red-50 text-red-700 border-red-200',
-                                                        ];
-                                                    @endphp
-                                                    <span class="inline-flex items-center gap-1 px-2 py-1 {{ $statusColors[$project->status] ?? 'bg-slate-50 text-slate-700' }} border rounded-lg">
-                                                        @if($project->status === 'actuelle')
-                                                            <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                                                        @endif
-                                                        <span class="text-[8px] font-black uppercase">{{ $project->status }}</span>
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div class="grid grid-cols-2 gap-2 mb-4">
-                                                <div class="bg-white/60 rounded-xl p-2 text-center border border-slate-100">
-                                                    <div class="text-xs font-black text-slate-900">{{ $project->activeMembers->count() + 1 }}</div>
-                                                    <div class="text-[7px] font-black text-slate-400 uppercase">Participants</div>
-                                                </div>
-                                                <div class="bg-blue-50/60 rounded-xl p-2 text-center border border-blue-100">
-                                                    <div class="text-xs font-black text-blue-600">{{ $project->messages->count() }}</div>
-                                                    <div class="text-[7px] font-black text-blue-400 uppercase">Messages</div>
-                                                </div>
-                                            </div>
-
-                                            <div class="flex items-center gap-2 pt-3 border-t border-slate-100 mt-auto">
-                                                <a href="{{ route('users.show', $project->owner) }}" class="flex items-center gap-2 group/owner pointer-events-auto relative z-30">
-                                                    <img src="{{ $project->owner->avatar_url }}" class="w-6 h-6 rounded-lg object-cover border border-slate-200 group-hover/owner:border-blue-500 transition-all">
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="text-[9px] font-black text-slate-900 uppercase truncate group-hover/owner:text-blue-600 transition-colors">{{ $project->owner->name }}</div>
-                                                        <div class="text-[7px] font-black text-slate-400 uppercase">Responsable</div>
-                                                    </div>
-                                                </a>
-                                                <svg class="w-4 h-4 text-slate-300 ml-auto group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                                    <span class="text-[8px] font-black uppercase">{{ $project->status }}</span>
+                                                </span>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {{-- Toggle button for owner/admin --}}
-                                    @auth
-                                        @if($project->canManage(auth()->user()))
-                                            <button wire:click="toggleProjectStatus({{ $project->id }})" 
-                                                    class="absolute top-4 right-4 z-30 w-8 h-8 rounded-xl bg-white shadow-xl flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100 pointer-events-auto">
+                                        <div class="grid grid-cols-2 gap-2 mb-4">
+                                            <div class="bg-white/60 rounded-xl p-2 text-center border border-slate-100">
+                                                <div class="text-xs font-black text-slate-900">{{ $project->activeMembers->count() + 1 }}</div>
+                                                <div class="text-[7px] font-black text-slate-400 uppercase">Participants</div>
+                                            </div>
+                                            <div class="bg-blue-50/60 rounded-xl p-2 text-center border border-blue-100">
+                                                <div class="text-xs font-black text-blue-600">{{ $project->messages->count() }}</div>
+                                                <div class="text-[7px] font-black text-blue-400 uppercase">Messages</div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Join Button for Visitors --}}
+                                        @auth
+                                            @if(auth()->id() !== $user->id && $project->status === 'actuelle' && !$project->isMember(auth()->user()) && !$project->isOwner(auth()->user()))
+                                                <div class="mb-4 pointer-events-auto relative z-30">
+                                                    <button wire:click="joinProject({{ $project->id }})" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20">
+                                                        Rejoindre cette mission
+                                                    </button>
+                                                </div>
+                                            @elseif(auth()->id() !== $user->id && ($project->isMember(auth()->user()) || $project->isOwner(auth()->user())))
+                                                <div class="mb-4 pointer-events-auto relative z-30">
+                                                    <div class="w-full py-2 bg-green-50 text-green-600 border border-green-100 rounded-xl text-[9px] font-black uppercase tracking-widest text-center">
+                                                        Vous participez
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @endauth
+
+                                        <div class="flex items-center gap-2 pt-3 border-t border-slate-100 mt-auto">
+                                            <a href="{{ route('users.show', $project->owner) }}" class="flex items-center gap-2 group/owner pointer-events-auto relative z-30">
+                                                <img src="{{ $project->owner->avatar_url }}" class="w-6 h-6 rounded-lg object-cover border border-slate-200 group-hover/owner:border-blue-500 transition-all">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-[9px] font-black text-slate-900 uppercase truncate group-hover/owner:text-blue-600 transition-colors">{{ $project->owner->name }}</div>
+                                                    <div class="text-[7px] font-black text-slate-400 uppercase">Responsable</div>
+                                                </div>
+                                            </a>
+                                            <svg class="w-4 h-4 text-slate-300 ml-auto group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Dropdown Menu for owner/admin --}}
+                                @auth
+                                    @if($project->canManage(auth()->user()))
+                                        <div x-data="{ open: false }" class="absolute top-4 right-4 z-40">
+                                            <button @click="open = !open" 
+                                                    class="w-8 h-8 rounded-xl bg-white shadow-xl flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100 pointer-events-auto">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
                                             </button>
-                                        @endif
-                                    @endauth
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        {{-- Nothing to show for others if no open projects, or just list projects --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($userProjects as $project)
-                                <a href="{{ route('projects.show', $project) }}" class="block bg-white border border-slate-100 p-4 rounded-2xl">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-bold">{{ $project->title }}</span>
-                                        <span class="text-[8px] font-black uppercase px-2 py-1 bg-blue-50 text-blue-600 rounded-lg">{{ $project->status }}</span>
-                                    </div>
-                                </a>
-                            @endforeach
-                        </div>
-                    @endif
+                                            <div x-show="open" @click.away="open = false" 
+                                                x-transition:enter="transition ease-out duration-100"
+                                                x-transition:enter-start="transform opacity-0 scale-95"
+                                                x-transition:enter-end="transform opacity-100 scale-100"
+                                                class="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 pointer-events-auto">
+                                                <button wire:click="editItem('project', {{ $project->id }})" @click="open = false" class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors">
+                                                    Modifier
+                                                </button>
+                                                <button wire:click="toggleProjectStatus({{ $project->id }})" @click="open = false" class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors">
+                                                    Changer le statut
+                                                </button>
+                                                <div class="border-t border-slate-50 my-1"></div>
+                                                <button wire:click="deleteProject({{ $project->id }})" 
+                                                        wire:confirm="Êtes-vous sûr de vouloir supprimer cette réalisation ?"
+                                                        @click="open = false" class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors">
+                                                    Supprimer
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endauth
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             @elseif(auth()->check() && auth()->id() === $user->id)
                 <div class="bg-white/40 backdrop-blur-3xl border-2 border-dashed border-slate-200 rounded-[3.5rem] p-10 text-center mb-12">
@@ -333,6 +356,37 @@
                                         @endif
 
                                         <div class="absolute inset-0 bg-gradient-to-br {{ $type === 'project' ? 'from-purple-600/5' : 'from-blue-600/5' }} to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+                                        
+                                        {{-- Dropdown Menu for owner/admin --}}
+                                        @auth
+                                            @php 
+                                                $canManage = ($type === 'project' && $model->canManage(auth()->user())) || 
+                                                             ($type === 'achievement' && ($this->canEdit() || $model->user_id === auth()->id()));
+                                            @endphp
+                                            @if($canManage)
+                                                <div x-data="{ open: false }" class="absolute top-8 right-8 z-40">
+                                                    <button @click="open = !open" 
+                                                            class="w-8 h-8 rounded-xl bg-white/80 shadow-xl flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all opacity-0 group-hover/card:opacity-100 pointer-events-auto">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                                                    </button>
+                                                    <div x-show="open" @click.away="open = false" 
+                                                        x-transition:enter="transition ease-out duration-100"
+                                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                                        class="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 pointer-events-auto">
+                                                        <button wire:click="editItem('{{ $type }}', {{ $model->id }})" @click="open = false" class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors">
+                                                            Modifier
+                                                        </button>
+                                                        <div class="border-t border-slate-50 my-1"></div>
+                                                        <button wire:click="{{ $type === 'project' ? 'deleteProject' : 'deleteAchievement' }}({{ $model->id }})" 
+                                                                wire:confirm="Êtes-vous sûr de vouloir supprimer cette {{ $type === 'project' ? 'réalisation' : 'expertise' }} ?"
+                                                                @click="open = false" class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors">
+                                                            Supprimer
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @endauth
                                         
                                         <div class="relative z-20 pointer-events-none">
                                             <div class="flex flex-col gap-1">
@@ -919,4 +973,49 @@
             </div>
         </div>
     @include('livewire.offers.modals')
+
+    {{-- Edit Modal --}}
+    @if($showEditModal)
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+            <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white p-8 animate-in zoom-in-95 duration-300">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-2xl font-black text-slate-900 tracking-tight italic">
+                        Modifier {{ $editingType === 'project' ? 'la réalisation' : 'l\'expertise' }}
+                    </h3>
+                    <button wire:click="cancelEdit" class="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Titre</label>
+                        <input type="text" wire:model="editTitle" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm">
+                        @error('editTitle') <span class="text-red-500 text-[10px] font-bold mt-1 ml-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Description</label>
+                        <textarea wire:model="editDescription" rows="4" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm resize-none"></textarea>
+                        @error('editDescription') <span class="text-red-500 text-[10px] font-bold mt-1 ml-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Date de réalisation</label>
+                        <input type="date" wire:model="editDate" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm">
+                        @error('editDate') <span class="text-red-500 text-[10px] font-bold mt-1 ml-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button wire:click="cancelEdit" class="flex-1 py-4 bg-slate-50 text-slate-400 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-all">
+                            Annuler
+                        </button>
+                        <button wire:click="saveEdit" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                            Enregistrer les modifications
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

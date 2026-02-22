@@ -106,15 +106,50 @@
 
                     <!-- Actions -->
                     <div class="lg:w-72 space-y-4">
-                        <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white">
-                            <a href="{{ route('users.show', $circle->owner) }}" class="flex items-center gap-4 mb-3 group/owner transition-all">
-                                <img src="{{ $circle->owner->avatar }}" class="w-12 h-12 rounded-2xl ring-2 ring-white/10 group-hover/owner:ring-blue-500 transition-all">
-                                <div>
-                                    <div class="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Fondateur</div>
-                                    <div class="text-sm font-bold group-hover/owner:text-blue-400 transition-colors">{{ $circle->owner->name }}</div>
+                        <div class="p-6 bg-white/60 backdrop-blur-xl border border-white/60 rounded-[2.5rem] shadow-xl">
+                            <div class="flex items-center justify-between mb-6 px-2">
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Membres du Cercle</span>
+                                <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full ring-1 ring-blue-100">{{ $circle->activeMembers->count() + 1 }}</span>
+                            </div>
+
+                            <div class="space-y-3 mb-8 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+                                {{-- Owner (Fondateur) --}}
+                                <div class="flex items-center gap-3 p-3 bg-slate-900 rounded-2xl text-white shadow-lg relative group/m">
+                                    <a href="{{ route('users.show', $circle->owner) }}" class="shrink-0 relative">
+                                        <img src="{{ $circle->owner->avatar }}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-white/10 group-hover/m:ring-blue-400 transition-all">
+                                        <div class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-blue-600 rounded-full border-2 border-slate-900 flex items-center justify-center" title="Fondateur">
+                                            <span class="text-[7px] font-black uppercase">F</span>
+                                        </div>
+                                    </a>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="text-[11px] font-black truncate">{{ $circle->owner->name }}</div>
+                                        <div class="flex flex-wrap gap-1.5 mt-1">
+                                            @foreach($circle->owner->achievements->pluck('skill')->unique('id')->take(2) as $skill)
+                                                <span class="text-[8px] font-black text-blue-400 uppercase tracking-tight">{{ $skill->name }}</span>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 </div>
-                            </a>
-                            <x-user-skills-tags :user="$circle->owner" limit="3" class="mb-4 scale-90 origin-left" />
+
+                                {{-- Active Members --}}
+                                @foreach($circle->activeMembers as $member)
+                                    @if($member->user_id !== $circle->owner_id)
+                                        <div class="flex items-center gap-3 p-3 bg-white/50 border border-slate-100 rounded-2xl group/m hover:bg-white hover:border-blue-500/30 transition-all">
+                                            <a href="{{ route('users.show', $member->user) }}" class="shrink-0">
+                                                <img src="{{ $member->user->avatar }}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-transparent group-hover/m:ring-blue-500 transition-all">
+                                            </a>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-[11px] font-black text-slate-900 truncate group-hover/m:text-blue-600 transition-colors">{{ $member->user->name }}</div>
+                                                <div class="flex flex-wrap gap-1.5 mt-1">
+                                                    @foreach($member->user->achievements->pluck('skill')->unique('id')->take(2) as $skill)
+                                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-tight">{{ $skill->name }}</span>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
                            
                            @auth
                                 @php 
@@ -124,27 +159,27 @@
 
                                 @if($isOwner)
                                     <div class="space-y-3">
-                                        <a href="{{ route('circles.edit', $circle) }}" class="block text-center py-4 bg-white/10 hover:bg-white/20 rounded-2xl font-black text-sm tracking-widest uppercase transition-all text-white border border-white/5">
+                                        <a href="{{ route('circles.edit', $circle) }}" class="block text-center py-4 bg-slate-900 hover:bg-blue-600 rounded-2xl font-black text-xs tracking-widest uppercase transition-all text-white shadow-xl shadow-slate-900/10">
                                             Configuration
                                         </a>
                                         
                                         @php $pendingRequests = $circle->members()->where('status', 'pending')->with('user')->get(); @endphp
                                         @if($pendingRequests->count() > 0)
-                                            <div class="pt-4 border-t border-white/10">
-                                                <div class="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-4">Demandes d'accès ({{ $pendingRequests->count() }})</div>
-                                                <div class="space-y-3">
+                                            <div class="pt-4 border-t border-slate-100">
+                                                <div class="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-4">Demandes ({{ $pendingRequests->count() }})</div>
+                                                <div class="space-y-2">
                                                     @foreach($pendingRequests as $req)
-                                                        <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                                                        <div class="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
                                                             <div class="flex items-center gap-2">
-                                                                <img src="{{ $req->user->avatar }}" class="w-6 h-6 rounded-lg">
-                                                                <span class="text-[10px] font-bold truncate max-w-[80px]">{{ $req->user->name }}</span>
+                                                                <img src="{{ $req->user->avatar }}" class="w-6 h-6 rounded-lg object-cover">
+                                                                <span class="text-[9px] font-black text-slate-900 truncate max-w-[70px]">{{ $req->user->name }}</span>
                                                             </div>
                                                             <div class="flex gap-1">
-                                                                <button wire:click="toggleApprove({{ $req->id }}, 'active')" class="p-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500 transition-colors">
+                                                                <button wire:click="toggleApprove({{ $req->id }}, 'active')" class="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all">
                                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                                                                 </button>
-                                                                <button wire:click="toggleApprove({{ $req->id }}, 'rejected')" class="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500 transition-colors">
-                                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                                <button wire:click="toggleApprove({{ $req->id }}, 'rejected')" class="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-50 hover:text-white transition-all">
+                                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -160,25 +195,25 @@
 
                                     @if($membership && $membership->status === 'active')
                                         <div class="space-y-3">
-                                            <div class="w-full text-center py-4 bg-green-500/10 rounded-2xl font-black text-sm tracking-widest uppercase text-green-400 border border-green-500/20">
-                                                Membre Actif
+                                            <div class="w-full text-center py-4 bg-green-50 text-green-600 rounded-2xl font-black text-[10px] tracking-widest uppercase border border-green-100">
+                                                Vous êtes membre
                                             </div>
-                                            <button wire:click="leaveCircle" class="w-full text-center py-2 text-slate-500 hover:text-red-400 font-bold text-[10px] uppercase tracking-widest transition-colors">
+                                            <button wire:click="leaveCircle" class="w-full text-center py-2 text-slate-400 hover:text-red-500 font-black text-[9px] uppercase tracking-widest transition-colors">
                                                 Quitter le cercle
                                             </button>
                                         </div>
                                     @elseif($membership && $membership->status === 'pending')
-                                        <div class="w-full text-center py-4 bg-amber-500/10 rounded-2xl font-black text-sm tracking-widest uppercase text-amber-400 border border-amber-500/20">
+                                        <div class="w-full text-center py-4 bg-amber-50 text-amber-600 rounded-2xl font-black text-[10px] tracking-widest uppercase border border-amber-100">
                                             Demande en attente
                                         </div>
                                     @else
-                                        <button wire:click="joinCircle" class="w-full text-center py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20">
-                                            Demander à rejoindre
+                                        <button wire:click="joinCircle" class="w-full text-center py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-xs tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20 text-white">
+                                            Rejoindre le Cercle
                                         </button>
                                     @endif
                                 @endif
                             @else
-                                <a href="/admin/login" class="block text-center py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-sm tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20">
+                                <a href="{{ route('login') }}" class="block text-center py-4 bg-slate-900 hover:bg-blue-600 rounded-2xl font-black text-xs tracking-widest uppercase transition-all shadow-xl shadow-slate-900/10 text-white">
                                     Se Connecter
                                 </a>
                             @endauth

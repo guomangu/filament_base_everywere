@@ -259,7 +259,7 @@
             <section>
                 <h2 class="text-2xl font-black uppercase tracking-tighter mb-8 flex items-center gap-3">
                     <span class="w-2 h-8 bg-slate-930 rounded-full"></span>
-                    Honneurs & Succès
+                    Réalisations Terminées
                 </h2>
                 
                 @if($finishedRealisations->isEmpty())

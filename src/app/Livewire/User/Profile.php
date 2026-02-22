@@ -50,6 +50,14 @@ class Profile extends Component
     public string $projectTitle = '';
     public ?\App\Models\Project $draftProject = null;
 
+    // Editing properties
+    public bool $showEditModal = false;
+    public $editingId;
+    public ?string $editingType = null;
+    public string $editTitle = '';
+    public string $editDescription = '';
+    public $editDate;
+
     protected $rules = [
         'skillName' => 'required_if:step,1|min:2',
         'proofTitle' => 'required_if:step,2|min:3',
@@ -594,5 +602,94 @@ class Profile extends Component
         $this->reset(['draftProject', 'projectTitle', 'isCreatingProject']);
         session()->flash('success', 'Réalisation lancée !');
         return redirect()->route('projects.show', $project);
+    }
+
+    public function joinProject(int $projectId)
+    {
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        $project = Project::findOrFail($projectId);
+        
+        if ($project->isMember(auth()->user()) || $project->isOwner(auth()->user())) {
+            $this->dispatch('notify', ['message' => 'Vous participez déjà à cette réalisation.', 'type' => 'info']);
+            return;
+        }
+
+        $project->addMember(auth()->user(), 'member', 'active');
+        
+        $this->dispatch('notify', ['message' => 'Vous avez rejoint la réalisation !', 'type' => 'success']);
+        
+        // Optionally redirect to the project page
+        return redirect()->route('projects.show', $project);
+    }
+
+    public function deleteProject(int $id)
+    {
+        $project = \App\Models\Project::findOrFail($id);
+        if (!$project->canManage(auth()->user())) return;
+        
+        $project->delete();
+        session()->flash('success', 'Réalisation supprimée.');
+    }
+
+    public function deleteAchievement(int $id)
+    {
+        $achievement = \App\Models\Achievement::findOrFail($id);
+        if (!$this->canEdit() && $achievement->user_id !== auth()->id()) return;
+        
+        $achievement->delete();
+        session()->flash('success', 'Expertise supprimée.');
+    }
+
+    public function editItem(string $type, int $id)
+    {
+        $this->editingType = $type;
+        $this->editingId = $id;
+
+        if ($type === 'project') {
+            $item = \App\Models\Project::findOrFail($id);
+            if (!$item->canManage(auth()->user())) return;
+        } else {
+            $item = \App\Models\Achievement::findOrFail($id);
+            if (!$this->canEdit() && $item->user_id !== auth()->id()) return;
+        }
+
+        $this->editTitle = $item->title;
+        $this->editDescription = $item->description;
+        $this->editDate = $item->realized_at ? $item->realized_at->format('Y-m-d') : null;
+        $this->showEditModal = true;
+    }
+
+    public function saveEdit()
+    {
+        $this->validate([
+            'editTitle' => 'required|min:3|max:255',
+            'editDescription' => 'nullable|max:2000',
+            'editDate' => 'nullable|date',
+        ]);
+
+        if ($this->editingType === 'project') {
+            $item = \App\Models\Project::findOrFail($this->editingId);
+            if (!$item->canManage(auth()->user())) return;
+        } else {
+            $item = \App\Models\Achievement::findOrFail($this->editingId);
+            if (!$this->canEdit() && $item->user_id !== auth()->id()) return;
+        }
+
+        $item->update([
+            'title' => $this->editTitle,
+            'description' => $this->editDescription,
+            'realized_at' => $this->editDate,
+        ]);
+
+        $this->cancelEdit();
+        session()->flash('success', 'Modifications enregistrées.');
+    }
+
+    public function cancelEdit()
+    {
+        $this->reset(['showEditModal', 'editingId', 'editingType', 'editTitle', 'editDescription', 'editDate']);
     }
 }
