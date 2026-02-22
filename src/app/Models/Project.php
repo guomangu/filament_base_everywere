@@ -20,6 +20,10 @@ class Project extends Model
         'is_open',
         'address',
         'coordinates',
+        'skill_id',
+        'status',
+        'realized_at',
+        'locked_at',
     ];
 
     protected function casts(): array
@@ -29,7 +33,15 @@ class Project extends Model
             'owner_id' => 'integer',
             'is_open' => 'boolean',
             'coordinates' => 'array',
+            'skill_id' => 'integer',
+            'realized_at' => 'datetime',
+            'locked_at' => 'datetime',
         ];
+    }
+
+    public function skill(): BelongsTo
+    {
+        return $this->belongsTo(Skill::class);
     }
 
     // Relations
@@ -80,12 +92,12 @@ class Project extends Model
 
     public function messages(): HasMany
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(Message::class)->latest();
     }
 
     public function informations(): MorphMany
     {
-        return $this->morphMany(Information::class, 'informable');
+        return $this->morphMany(Information::class, 'informable')->latest();
     }
 
     // Scopes
@@ -164,11 +176,15 @@ class Project extends Model
 
     public function isOwner($user): bool
     {
-        return $this->owner_id === $user->id;
+        return $user && $this->owner_id === $user->id;
     }
 
     public function canManage($user): bool
     {
+        if (!$user) {
+            return false;
+        }
+
         if ($this->isOwner($user)) {
             return true;
         }

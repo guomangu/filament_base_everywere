@@ -1,396 +1,285 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 font-['Inter'] selection:bg-blue-100 antialiased print:contents">
+<div class="min-h-screen bg-slate-50 font-['Inter'] selection:bg-slate-200 antialiased print:bg-white">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         
         @media print {
-            /* Hide everything except CV */
             .no-print { display: none !important; }
-            
-            /* Reset body and html */
-            html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            /* Page setup - A4 with small internal margins */
-            @page {
-                size: A4 portrait;
-                margin: 8mm;
-            }
-            
-            /* Container adjustments */
-            .cv-wrapper {
-                background: white !important;
-                min-height: 0 !important;
-                padding: 0 !important;
-            }
-            
-            .a4-container {
-                width: 100% !important;
-                max-width: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-                min-height: 0 !important;
-                max-height: none !important;
-                overflow: visible !important;
-            }
-            
-            /* Condensed spacing for print */
-            .print-compact-header {
-                padding: 8mm 10mm !important;
-            }
-            
-            .print-compact-main {
-                padding: 6mm 10mm !important;
-            }
-            
-            .print-compact-sidebar {
-                padding: 6mm 8mm !important;
-            }
-            
-            .print-compact-section {
-                margin-bottom: 4mm !important;
-            }
-            
-            .print-compact-spacing {
-                gap: 3mm !important;
-            }
-            
-            /* Reduce font sizes slightly for print */
-            .print-text-sm {
-                font-size: 8px !important;
-                line-height: 1.3 !important;
-            }
-            
-            .print-text-xs {
-                font-size: 7px !important;
-                line-height: 1.2 !important;
-            }
-            
-            /* Hide decorative elements */
-            .bg-mesh {
-                display: none !important;
-            }
-            
-            /* Ensure single page */
-            .a4-container {
-                page-break-after: avoid !important;
-                page-break-inside: avoid !important;
-            }
-            
-            .a4-container > * {
-                page-break-inside: avoid !important;
-            }
+            html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+            @page { size: A4; margin: 10mm; }
+            .cv-container { box-shadow: none !important; border: none !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
         }
 
-        .a4-container {
+        .cv-container {
             width: 210mm;
             min-height: 297mm;
             margin: 2rem auto;
             background: white;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-            position: relative;
-            overflow: hidden;
-            border: 1px solid #f1f5f9;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
         }
 
-        .bg-mesh {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(at 100% 0%, rgba(37, 99, 235, 0.05) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(30, 41, 59, 0.05) 0px, transparent 50%);
-            z-index: 0;
-            pointer-events: none;
-        }
+        .qr-small { width: 60px; height: 60px; }
+        .qr-large { width: 120px; height: 120px; }
     </style>
 
     <!-- Controls -->
-    <div class="no-print fixed top-6 right-6 flex items-center gap-4 z-50">
-        <button onclick="window.print()" class="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-2xl shadow-slate-900/20 group flex items-center gap-3">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4"/></svg>
+    <div class="no-print fixed top-6 right-6 flex items-center gap-3 z-50">
+        <button onclick="window.print()" class="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:scale-105 transition-all shadow-lg flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4"/></svg>
             Imprimer / PDF
         </button>
-        <a href="{{ $this->type === 'user' ? route('users.show', $user) : ($this->type === 'circle' ? route('circles.show', $circle) : route('projects.show', $project)) }}" class="p-4 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:text-slate-900 transition-all shadow-xl">
+        <a href="{{ $this->type === 'user' ? route('users.show', $user) : ($this->type === 'mission' ? route('mission.show', $skill) : route('projects.show', $project)) }}" class="p-3 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </a>
     </div>
 
-    <!-- CV Container -->
-    <div class="a4-container flex flex-col relative">
-        <div class="bg-mesh"></div>
+    <div class="cv-container">
+        <!-- Top Bar / Border Accent -->
+        <div class="h-2 bg-slate-900"></div>
 
-        <!-- Header -->
-        <header class="relative z-10 px-10 py-6 print-compact-header flex items-center justify-between border-b border-slate-50">
-            <div class="flex items-center gap-4">
-                <div class="relative">
-                    <img src="{{ $type === 'user' ? $user->avatar : ($type === 'circle' ? ($circle->owner->avatar ?? '') : ($project->owner->avatar ?? '')) }}" class="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-lg">
-                    <div class="absolute -bottom-1 -right-1 w-9 h-9 bg-slate-900 rounded-lg flex flex-col items-center justify-center text-white border-2 border-white shadow-lg">
-                        <span class="text-[5px] font-black uppercase opacity-60">Score</span>
-                        <span class="text-xs font-black">{{ $type === 'user' ? $user->trust_score : ($type === 'circle' ? $circle->getAverageTrustScore() : $project->getAverageTrustScore()) }}</span>
+        <!-- Main Header -->
+        <header class="p-10 border-b border-slate-100 flex justify-between items-start">
+            <div class="flex gap-8 items-center">
+                <div class="relative shrink-0">
+                    @php
+                        $avatar = match($type) {
+                            'user' => $user->avatar,
+                            'mission' => 'https://ui-avatars.com/api/?name='.urlencode($skill->name).'&background=0f172a&color=fff&size=200',
+                            'project' => $project->owner->avatar ?? 'https://ui-avatars.com/api/?name='.urlencode($project->title).'&background=3b82f6&color=fff&size=200',
+                        };
+                    @endphp
+                    <img src="{{ $avatar }}" class="w-32 h-32 rounded-2xl object-cover border-4 border-slate-50 shadow-sm">
+                    <div class="absolute -bottom-3 -right-3 bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-black shadow-lg">
+                        {{ match($type) {
+                            'user' => $user->trust_score . '%',
+                            'mission' => 'Mission',
+                            'project' => 'Projet',
+                        } }}
                     </div>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-tight mb-1">
-                        {{ $type === 'user' ? $user->name : ($type === 'circle' ? $circle->name : $project->title) }}
+                    <h1 class="text-4xl font-black text-slate-900 tracking-tight uppercase leading-none mb-3">
+                        {{ match($type) {
+                            'user' => $user->name,
+                            'mission' => $skill->name,
+                            'project' => $project->title,
+                        } }}
                     </h1>
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-4 text-slate-500 font-semibold text-sm">
                         @if($type === 'user')
-                            <span class="text-xs font-black text-blue-600 uppercase tracking-widest py-1.5 px-3 bg-blue-50 rounded-lg">Bâtisseur Certifié</span>
-                        @elseif($type === 'circle')
-                            <span class="text-xs font-black text-blue-600 uppercase tracking-widest py-1.5 px-3 bg-blue-50 rounded-lg">Cercle d'Experts</span>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                Membre Vérifié TrustCircle
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                {{ $user->location ?? 'Global' }}
+                            </div>
+                        @elseif($type === 'mission')
+                            <span class="text-blue-600 uppercase tracking-widest text-xs">Aptitude & Compétence Clef</span>
                         @else
-                            <span class="text-xs font-black text-blue-600 uppercase tracking-widest py-1.5 px-3 bg-blue-50 rounded-lg">Projet Innovant</span>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-black uppercase text-slate-600">{{ $project->status }}</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                                {{ $project->address ?? 'Global' }}
+                            </div>
                         @endif
-                        <span class="text-xs font-bold text-slate-400 flex items-center gap-2">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            @if($type === 'circle' && $circle->address_tags)
-                                @foreach($circle->address_tags as $tag)
-                                    <span class="inline-flex items-center px-1 py-0.5 rounded bg-slate-100 text-[8px] font-bold text-slate-500 uppercase tracking-tighter">
-                                        {{ $tag }}
-                                    </span>
-                                    @if(!$loop->last)
-                                        <span class="text-[8px] text-slate-300 font-bold">&lt;</span>
-                                    @endif
-                                @endforeach
-                            @else
-                                {{ $type === 'user' ? ($user->location ?? 'Global') : ($type === 'circle' ? ($circle->formatted_address ?? 'Global') : ($project->address ?? 'Global')) }}
-                            @endif
-                        </span>
                     </div>
                 </div>
             </div>
-            
-            <div class="text-right flex flex-col items-end gap-2">
-                <div class="text-xs font-black text-slate-900 uppercase tracking-[0.2em] leading-none mb-4">Généré via TrustCircle</div>
-            </div>
 
+            <div class="text-right">
+                @php
+                    $url = match($type) {
+                        'user' => route('users.show', $user),
+                        'mission' => route('mission.show', $skill),
+                        'project' => route('projects.show', $project),
+                    };
+                    $qr = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . urlencode(url($url));
+                @endphp
+                <img src="{{ $qr }}" class="qr-large border-2 border-slate-100 rounded-xl p-1 bg-white inline-block">
+                <p class="text-[8px] font-black uppercase text-slate-400 mt-2 tracking-widest">Scanner le Profil</p>
+            </div>
         </header>
 
-        <!-- Content Grid -->
-        <main class="relative z-10 flex-grow grid grid-cols-12">
+        <!-- Body -->
+        <div class="flex-grow flex">
             <!-- Sidebar -->
-            <div class="col-span-4 bg-slate-50/50 border-r border-slate-100 p-6 print-compact-sidebar space-y-6 print-compact-spacing">
-                <!-- Bio -->
+            <aside class="w-72 border-r border-slate-50 bg-slate-50/30 p-8 space-y-8">
+                <!-- Bio/Desc -->
                 <section>
-                    <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Résumé</h3>
-                    <p class="text-[10px] text-slate-500 font-medium leading-relaxed italic">
-                        "{{ $type === 'user' ? ($user->bio ?? 'Aucune biographie disponible.') : ($type === 'circle' ? ($circle->description ?? 'Ce cercle n\'a pas encore de description.') : ($project->description ?? 'Ce projet n\'a pas encore de description.')) }}"
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">À Propos</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed font-medium">
+                        {{ match($type) {
+                            'user' => $user->bio ?? 'Aucune biographie.',
+                            'mission' => $skill->description ?? 'Description de la mission à venir.',
+                            'project' => $project->description,
+                        } }}
                     </p>
                 </section>
 
-                <!-- Expertise Scores -->
+                <!-- Informations / Contact -->
+                @php
+                    $infos = match($type) {
+                        'user' => $user->informations,
+                        'project' => $project->informations,
+                        'mission' => collect(), // Skills might not have direct infos yet
+                    };
+                @endphp
+                @if($infos->count() > 0)
                 <section>
-                    <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
-                        {{ $type === 'project' ? 'Expertise Collective' : 'Expertise Certifiée' }}
-                    </h3>
-                    <div class="space-y-3">
-                        @php 
-                            $skills = match($type) {
-                                'user' => $user->achievements->groupBy('skill_id'),
-                                'circle' => $circle->getAllMemberAchievements()->groupBy('skill_id'),
-                                'project' => $project->getAllMemberAchievements()->groupBy('skill_id'),
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Informations & Liens</h3>
+                    <div class="space-y-6">
+                        @foreach($infos as $info)
+                            <div class="flex gap-4 items-start">
+                                @php
+                                    $isLink = preg_match('/https?:\/\/[^\s]+/', $info->label);
+                                @endphp
+                                @if($isLink)
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ urlencode($info->label) }}" class="qr-small shadow-sm border border-slate-100 rounded-lg shrink-0">
+                                @else
+                                    <div class="qr-small flex items-center justify-center bg-white border border-slate-100 rounded-lg shrink-0 text-slate-300">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                @endif
+                                <div class="min-w-0">
+                                    <h4 class="text-[10px] font-black text-slate-900 uppercase truncate mb-0.5">{{ $info->title }}</h4>
+                                    <p class="text-[8px] font-bold text-slate-500 break-words leading-tight">{{ $info->label }}</p>
+                                    @if($isLink)
+                                        <a href="{{ $info->label }}" class="inline-block mt-1 text-[8px] font-black text-blue-600 uppercase no-print underline">Ouvrir le lien</a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+                @endif
+
+                <!-- Stats -->
+                <section>
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Indicateurs de Confiance</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        @php
+                            $valsCount = match($type) {
+                                'user' => $user->validationsReceived->where('type', 'validate')->count(),
+                                'project' => $project->getAllMemberValidations()->where('type', 'validate')->count(),
+                                'mission' => 0, // Should we show total validations for this skill across site?
+                            };
+                            $rejsCount = match($type) {
+                                'user' => $user->validationsReceived->where('type', 'reject')->count(),
+                                'project' => $project->getAllMemberValidations()->where('type', 'reject')->count(),
+                                'mission' => 0,
                             };
                         @endphp
-                        @foreach($skills->take(6) as $skillId => $proofs)
-                            <div>
-                                <div class="flex justify-between items-end mb-2">
-                                    <span class="text-[9px] font-black text-slate-900 uppercase tracking-widest">{{ $proofs->first()->skill->name }}</span>
-                                    <span class="text-[10px] font-black text-blue-600">{{ $proofs->count() }} Preuves</span>
-                                </div>
-                                <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-blue-600 rounded-full" style="width: {{ min(100, $proofs->count() * 20) }}%"></div>
-                                </div>
-                                @if($type === 'circle' || $type === 'project')
-                                    <!-- Show members who have this skill -->
-                                    <div class="flex flex-wrap gap-1 mt-1.5">
-                                        @php
-                                            $model = $type === 'circle' ? $circle : $project;
-                                            $skillMembers = collect();
-                                            // Get owner if they have this skill
-                                            if($model->owner->achievements->where('skill_id', $skillId)->count() > 0) {
-                                                $skillMembers->push($model->owner);
-                                            }
-                                            // Get active members with this skill
-                                            foreach($model->activeMembers as $member) {
-                                                $memberUser = $type === 'circle' ? $member->user : $member->memberable;
-                                                if($memberUser && $memberUser->achievements->where('skill_id', $skillId)->count() > 0) {
-                                                    $skillMembers->push($memberUser);
-                                                }
-                                            }
-                                            $skillMembers = $skillMembers->unique('id')->take(4);
-                                        @endphp
-                                        @foreach($skillMembers as $skillUser)
-                                            <div class="flex items-center gap-1 px-1.5 py-0.5 bg-white border border-slate-200 rounded-md">
-                                                <img src="{{ $skillUser->avatar }}" class="w-3 h-3 rounded-full">
-                                                <span class="text-[6px] font-black text-slate-600 uppercase">{{ $skillUser->name }}</span>
+                        <div class="bg-white p-3 rounded-xl border border-slate-100 text-center">
+                            <div class="text-[8px] font-black text-slate-400 uppercase mb-1">Validé</div>
+                            <div class="text-lg font-black text-green-600">+{{ $valsCount }}</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-100 text-center">
+                            <div class="text-[8px] font-black text-slate-400 uppercase mb-1">Alertes</div>
+                            <div class="text-lg font-black text-red-600">-{{ $rejsCount }}</div>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Main Panel -->
+            <main class="flex-grow p-10 space-y-10">
+                @if($type === 'user')
+                    <!-- User Achievements -->
+                    <section>
+                        <h2 class="text-lg font-black text-slate-900 border-b-2 border-slate-900 pb-2 mb-6 uppercase tracking-tight">Timeline des Réalisations</h2>
+                        <div class="space-y-8">
+                            @foreach($user->achievements->sortByDesc('realized_at') as $ach)
+                                <div class="relative pl-8 border-l-2 border-slate-100 pb-2">
+                                    <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-900 border-4 border-white"></div>
+                                    <div class="flex justify-between items-start mb-1">
+                                        <h4 class="font-black text-slate-900 uppercase tracking-tight">{{ $ach->title }}</h4>
+                                        <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded italic">{{ $ach->realized_at ? $ach->realized_at->format('M Y') : 'N/A' }}</span>
+                                    </div>
+                                    <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">{{ $ach->skill->name }}</div>
+                                    <p class="text-xs text-slate-600 leading-relaxed font-medium mb-4">{{ $ach->description }}</p>
+                                    
+                                    <!-- Validations with comments -->
+                                    <div class="grid grid-cols-2 gap-3">
+                                        @foreach($ach->validations->where('type', 'validate')->whereNotNull('comment')->take(2) as $val)
+                                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                                <div class="flex items-center gap-2 mb-1.5">
+                                                    <img src="{{ $val->user->avatar }}" class="w-4 h-4 rounded-full border border-white">
+                                                    <span class="text-[8px] font-black text-slate-900 uppercase">{{ $val->user->name }}</span>
+                                                </div>
+                                                <p class="text-[9px] text-slate-500 font-medium italic leading-snug">"{{ $val->comment }}"</p>
                                             </div>
                                         @endforeach
                                     </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </section>
-
-                <!-- Status & Metrics -->
-                <section>
-                    <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Confiance Digitale</h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="p-3 bg-white border border-slate-100 rounded-lg">
-                            <span class="text-[6px] font-black text-slate-400 uppercase block mb-0.5">Validations</span>
-                            <span class="text-base font-black text-green-600">+{{ $type === 'user' ? $user->validationsReceived->where('type', 'validate')->count() : ($type === 'circle' ? $circle->getAllMemberValidations()->where('type', 'validate')->count() : $project->getAllMemberValidations()->where('type', 'validate')->count()) }}</span>
-                        </div>
-                        <div class="p-3 bg-white border border-slate-100 rounded-lg">
-                            <span class="text-[6px] font-black text-slate-400 uppercase block mb-0.5">Réfutations</span>
-                            <span class="text-base font-black text-red-600">-{{ $type === 'user' ? $user->validationsReceived->where('type', 'reject')->count() : ($type === 'circle' ? $circle->getAllMemberValidations()->where('type', 'reject')->count() : $project->getAllMemberValidations()->where('type', 'reject')->count()) }}</span>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Contact Information -->
-                <section>
-                    <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Contact & Liens</h3>
-                    <div class="space-y-1.5">
-                        @php
-                            $infos = match($type) {
-                                'user' => $user->informations,
-                                'circle' => $circle->getAllMemberInformation(),
-                                'project' => $project->getAllMemberInformation(),
-                            };
-                        @endphp
-                        @foreach($infos as $info)
-                            <div class="flex items-center gap-1.5 text-[8px]">
-                                <svg class="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                                <div class="flex-grow">
-                                    <div class="font-black text-slate-900 uppercase tracking-wider">{{ $info->title }}</div>
-                                    <div class="text-slate-500 font-medium break-all">{{ parse_url($info->label, PHP_URL_HOST) ?? $info->label }}</div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </section>
-
-                <!-- QR Code -->
-                <section>
-                    <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Vérification</h3>
-                    @php
-                        $profileUrl = match($type) {
-                            'user' => route('users.show', $user),
-                            'circle' => route('circles.show', $circle),
-                            'project' => route('projects.show', $project),
-                        };
-                        $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode(url($profileUrl));
-                    @endphp
-                    <div class="bg-white p-2 rounded-xl border border-slate-200 inline-block">
-                        <img src="{{ $qrCodeUrl }}" alt="QR Code" class="w-16 h-16">
-                    </div>
-                    <p class="text-[6px] font-black text-slate-400 uppercase mt-1">Scanner pour vérifier</p>
-                </section>
-            </div>
-
-            <!-- Main Content -->
-            <div class="col-span-8 p-12 print-compact-main space-y-8 print-compact-spacing">
-                @if($type === 'project')
-                    <!-- Project Offers -->
+                            @endforeach
+                        </div>
+                    </section>
+                @elseif($type === 'mission')
+                    <!-- Mission / Skill Overview -->
                     <section>
-                        <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-4 flex items-center gap-4">
-                            Ce que nous offrons
-                            <div class="h-px bg-blue-100 flex-grow"></div>
-                        </h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            @forelse($project->offers as $offer)
-                                <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-3 flex gap-4 items-start">
-                                    @if($offer->images && count($offer->images) > 0)
-                                        <img src="{{ Storage::url($offer->images[0]) }}" class="w-12 h-12 rounded-xl object-cover shadow-sm bg-white border border-blue-100 shrink-0">
-                                    @else
-                                        <div class="w-12 h-12 rounded-xl bg-white border border-blue-100 flex items-center justify-center text-blue-200 shrink-0">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <h2 class="text-lg font-black text-slate-900 border-b-2 border-slate-900 pb-2 mb-6 uppercase tracking-tight">Réalisations de la Mission</h2>
+                        <div class="grid grid-cols-1 gap-4">
+                            @foreach($skill->projects as $p)
+                                <div class="p-6 bg-slate-50 border border-slate-200 rounded-2xl">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="flex items-center gap-4">
+                                            <img src="{{ $p->owner->avatar }}" class="w-10 h-10 rounded-xl border-2 border-white shadow-sm">
+                                            <div>
+                                                <h4 class="font-black text-slate-900 uppercase tracking-tight">{{ $p->title }}</h4>
+                                                <div class="text-[10px] font-black text-slate-400 uppercase">Par {{ $p->owner->name }} • {{ $p->status }}</div>
+                                            </div>
                                         </div>
-                                    @endif
-                                    <div class="min-w-0">
-                                        <h4 class="text-[10px] font-black text-slate-900 uppercase tracking-tight mb-0.5 truncate">{{ $offer->title }}</h4>
-                                        <p class="text-[8px] text-slate-600 font-medium leading-tight line-clamp-3">{{ $offer->description }}</p>
+                                        <div class="text-right">
+                                            <span class="text-xs font-black text-blue-600">{{ $p->activeMembers->count() + 1 }} Experts</span>
+                                        </div>
                                     </div>
+                                    <p class="text-xs text-slate-600 leading-relaxed font-medium line-clamp-2">{{ $p->description }}</p>
                                 </div>
-                            @empty
-                                <p class="text-[10px] items-center italic text-slate-400 uppercase tracking-widest text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">Aucune offre active pour le moment</p>
-                            @endforelse
+                            @endforeach
                         </div>
                     </section>
-
-                    <!-- Project Demands -->
+                @elseif($type === 'project')
+                    <!-- Project Realisation Detail -->
                     <section>
-                        <h3 class="text-[10px] font-black text-purple-600 uppercase tracking-[0.3em] mb-4 flex items-center gap-4">
-                            Nos Besoins & Demandes
-                            <div class="h-px bg-purple-100 flex-grow"></div>
-                        </h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            @forelse($project->demands as $demand)
-                                <div class="bg-purple-50/50 border border-purple-100 rounded-2xl p-3 flex gap-4 items-start">
-                                    <div class="w-12 h-12 rounded-xl bg-white border border-purple-100 flex items-center justify-center text-purple-200 shrink-0">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <h4 class="text-[10px] font-black text-slate-900 uppercase tracking-tight mb-0.5 truncate">{{ $demand->title }}</h4>
-                                        <p class="text-[8px] text-slate-600 font-medium leading-tight line-clamp-3">{{ $demand->description }}</p>
+                        <h2 class="text-lg font-black text-slate-900 border-b-2 border-slate-900 pb-2 mb-6 uppercase tracking-tight">Équipe & Engagement</h2>
+                        <div class="grid grid-cols-2 gap-4 mb-8">
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-4">
+                                <img src="{{ $project->owner->avatar }}" class="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm">
+                                <div>
+                                    <div class="text-[10px] font-black text-slate-400 uppercase">Propriétaire</div>
+                                    <div class="font-black text-slate-900 uppercase tracking-tight">{{ $project->owner->name }}</div>
+                                </div>
+                            </div>
+                            @foreach($project->activeMembers as $m)
+                                <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-4">
+                                    <img src="{{ $m->memberable->avatar }}" class="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm">
+                                    <div>
+                                        <div class="text-[10px] font-black text-slate-400 uppercase">Membre Actif</div>
+                                        <div class="font-black text-slate-900 uppercase tracking-tight">{{ $m->memberable->name }}</div>
                                     </div>
                                 </div>
-                            @empty
-                                <p class="text-[10px] items-center italic text-slate-400 uppercase tracking-widest text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">Aucune demande active pour le moment</p>
-                            @endforelse
+                            @endforeach
                         </div>
-                    </section>
-                @else
-                    <!-- Achievements / Experience (For Users and Circles) -->
-                    <section>
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-4">
-                            Timeline des Réalisations
-                            <div class="h-px bg-slate-100 flex-grow"></div>
-                        </h3>
 
-                        <div class="space-y-8 print-compact-spacing">
-                            @php 
-                                $list = match($type) {
-                                    'user' => $user->achievements->sortByDesc('realized_at'),
-                                    'circle' => $circle->getAllMemberAchievements()->sortByDesc('realized_at'),
-                                };
-                            @endphp
-
-                            @foreach($list->take(8) as $ach)
-                                <div class="relative pl-6 before:absolute before:left-0 before:top-1 before:w-1.5 before:h-1.5 before:bg-blue-600 before:rounded-full before:z-10 after:absolute after:left-[2px] after:top-3 after:w-[1px] after:h-[calc(100%+1rem)] after:bg-slate-100 last:after:hidden">
-                                    <div class="flex justify-between items-start mb-0.5">
-                                        <h4 class="text-xs font-black text-slate-900 uppercase tracking-tight">{{ $ach->title }}</h4>
-                                        <span class="text-[8px] font-black text-slate-400 uppercase">{{ $ach->realized_at ? \Carbon\Carbon::parse($ach->realized_at)->translatedFormat('M Y') : 'Date inconnue' }}</span>
+                        <h2 class="text-lg font-black text-slate-900 border-b-2 border-slate-900 pb-2 mb-6 uppercase tracking-tight">Offres de Compétences</h2>
+                        <div class="grid grid-cols-1 gap-4">
+                            @foreach($project->offers as $offer)
+                                <div class="p-5 border-2 border-slate-100 rounded-2xl">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-black text-slate-900 uppercase tracking-tight">{{ $offer->title }}</h4>
+                                        <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase tracking-widest">Offre active</span>
                                     </div>
-                                    <div class="text-[8px] font-bold text-blue-500 uppercase tracking-widest mb-1">{{ $ach->skill->name }}</div>
-                                    <p class="text-[9px] text-slate-500 font-medium leading-relaxed">{{ $ach->description }}</p>
-                                    
-                                    @php
-                                        $positiveValidations = $ach->validations
-                                            ->where('type', 'validate')
-                                            ->filter(fn($v) => !empty($v->comment))
-                                            ->take(3);
-                                    @endphp
-
-                                    @if($positiveValidations->count() > 0)
-                                        <div class="mt-2 space-y-1.5">
-                                            @foreach($positiveValidations as $val)
-                                                <div class="bg-green-50/50 border border-green-100 rounded-lg p-2">
-                                                    <div class="flex items-center gap-1.5 mb-1">
-                                                        <img src="{{ $val->user->avatar }}" class="w-3 h-3 rounded-full border border-green-200">
-                                                        <span class="text-[7px] font-black text-green-700 uppercase">{{ $val->user->name }}</span>
-                                                        <svg class="w-2.5 h-2.5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                                                    </div>
-                                                    <p class="text-[8px] text-slate-600 font-medium leading-relaxed italic">"{{ $val->comment }}"</p>
+                                    <p class="text-xs text-slate-500 leading-relaxed italic mb-4">"{{ $offer->description }}"</p>
+                                    @if($offer->informations->count() > 0)
+                                        <div class="flex flex-wrap gap-3">
+                                            @foreach($offer->informations as $info)
+                                                <div class="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg border border-slate-100">
+                                                    <span class="text-[8px] font-black text-slate-400 uppercase">{{ $info->title }}:</span>
+                                                    <span class="text-[8px] font-bold text-slate-800">{{ $info->label }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -400,15 +289,16 @@
                         </div>
                     </section>
                 @endif
-
-            </div>
-        </main>
+            </main>
+        </div>
 
         <!-- Footer -->
-        <footer class="relative z-10 p-12 border-t border-slate-50 flex items-center justify-between text-[8px] font-black text-slate-300 uppercase tracking-[0.5em]">
-            <span>Généré numériquement par TrustCircle</span>
-            <span>Certifié Factuel par Preuve Sociale</span>
-            <span>{{ now()->format('d/m/Y') }}</span>
+        <footer class="p-10 border-t border-slate-100 flex justify-between items-center text-[8px] font-black text-slate-300 uppercase tracking-[0.5em]">
+            <div>© TrustCircle • Preuve de Confiance Numérique</div>
+            <div class="flex gap-8">
+                <span>Généré {{ now()->format('d/m/Y H:i') }}</span>
+                <span>Copie Certifiée</span>
+            </div>
         </footer>
     </div>
 </div>

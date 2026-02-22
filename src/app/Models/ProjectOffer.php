@@ -48,7 +48,7 @@ class ProjectOffer extends Model
 
     public function informations(): MorphMany
     {
-        return $this->morphMany(Information::class, 'informable');
+        return $this->morphMany(Information::class, 'informable')->latest();
     }
 
     // Attributes

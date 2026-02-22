@@ -47,4 +47,9 @@ class Skill extends Model
     {
         return $this->belongsToMany(ProjectOffer::class, 'project_offer_skill');
     }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
 }

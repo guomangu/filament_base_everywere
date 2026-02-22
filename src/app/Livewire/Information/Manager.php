@@ -35,7 +35,7 @@ class Manager extends Component
     public function updatedNewImage()
     {
         $this->validate([
-            'newImage' => 'image|max:5120', // 5MB max
+            'newImage' => 'image|max:10240', // 10MB max
         ]);
 
         $path = $this->newImage->store('informations', 'public');

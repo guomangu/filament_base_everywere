@@ -210,6 +210,57 @@
                                                 @if(!$isMe)
                                                     <div class="text-[7px] font-black uppercase text-blue-400 mb-1 tracking-widest">{{ $m->sender->name }}</div>
                                                 @endif
+                                                
+                                                {{-- Attachment Render --}}
+                                                @if($m->metadata && isset($m->metadata['attachment']))
+                                                    @php $att = $m->metadata['attachment']; @endphp
+                                                    <div class="mb-4">
+                                                        <a href="{{ 
+                                                            $att['type'] === 'user' ? route('users.show', $att['id']) : 
+                                                            ($att['type'] === 'circle' ? route('circles.show', $att['id']) : 
+                                                            ($att['type'] === 'project' ? route('projects.show', $att['id']) : 
+                                                            ($att['type'] === 'skill' ? route('mission.show', $att['id']) : '#'))) 
+                                                        }}" class="block p-3 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all group/att">
+                                                            <div class="flex items-center gap-3">
+                                                                <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 group-hover/att:scale-110 transition-transform">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.823a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.102-1.101"/></svg>
+                                                                </div>
+                                                                <div class="min-w-0">
+                                                                    <div class="text-[7px] font-black uppercase opacity-50 tracking-widest">{{ $att['type'] }}</div>
+                                                                    <div class="text-[10px] font-bold truncate">{{ $att['name'] }}</div>
+                                                                </div>
+                                                            </div>
+                                                        </a>
+                                                    </div>
+                                                @endif
+
+                                                {{-- File Attachment Render --}}
+                                                @if($m->metadata && isset($m->metadata['file']))
+                                                    @php $file = $m->metadata['file']; @endphp
+                                                    <div class="mt-4 mb-4">
+                                                        @if(Str::startsWith($file['type'] ?? '', 'image/'))
+                                                            <div class="relative group/file overflow-hidden rounded-2xl border border-white/10 shadow-lg">
+                                                                <img src="{{ Storage::url($file['path']) }}" alt="{{ $file['name'] }}" class="w-full max-h-[300px] object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onclick="window.open('{{ Storage::url($file['path']) }}', '_blank')">
+                                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/file:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                                                    <a href="{{ Storage::url($file['path']) }}" download="{{ $file['name'] }}" class="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all">
+                                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        @else
+                                                            <a href="{{ Storage::url($file['path']) }}" download="{{ $file['name'] }}" class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group/file">
+                                                                <div class="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500">
+                                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                                                </div>
+                                                                <div class="min-w-0 flex-1">
+                                                                    <div class="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1">{{ strtoupper(explode('/', $file['type'])[1] ?? 'FILE') }}</div>
+                                                                    <div class="text-[10px] font-black text-white truncate">{{ $file['name'] }}</div>
+                                                                </div>
+                                                            </a>
+                                                        @endif
+                                                    </div>
+                                                @endif
+
                                                 <p class="text-xs md:text-base font-semibold leading-relaxed">{{ $m->content }}</p>
                                                 <span class="text-[7px] absolute -bottom-5 right-2 uppercase font-black text-white/40">{{ $m->created_at->format('H:i') }}</span>
                                             </div>
@@ -218,13 +269,133 @@
                                 </div>
 
                                 <div class="p-6 md:p-10 shrink-0 bg-white/5 border-t border-white/5">
-                                    <form wire:submit.prevent="sendMessage" class="relative group">
-                                        <input wire:model="messageText" type="text" placeholder="Répondre..." 
-                                               class="w-full bg-white/10 border-2 border-white/10 focus:border-blue-500 rounded-full p-6 md:p-8 text-sm md:text-lg font-bold italic text-white shadow-2xl transition-all placeholder:text-white/20">
-                                        <button type="submit" class="absolute right-3 top-3 bottom-3 px-8 bg-blue-600 hover:bg-white hover:text-blue-600 text-white rounded-full font-black text-[10px] uppercase transition-all shadow-xl active:scale-95">
-                                            Envoyer
+                                    <div class="relative" 
+                                        x-data="{ 
+                                            showMentions: false, 
+                                            mentionSearch: '',
+                                            items: @js($contextItems),
+                                            get filteredItems() {
+                                                if (!this.mentionSearch) return this.items;
+                                                return this.items.filter(i => i.name.toLowerCase().includes(this.mentionSearch.toLowerCase()));
+                                            },
+                                            handleInput(e) {
+                                                const val = e.target.value;
+                                                const cursor = e.target.selectionStart;
+                                                const lastAt = val.lastIndexOf('@', cursor - 1);
+                                                if (lastAt !== -1 && (lastAt === 0 || val[lastAt - 1] === ' ')) {
+                                                    this.showMentions = true;
+                                                    this.mentionSearch = val.substring(lastAt + 1, cursor);
+                                                } else {
+                                                    this.showMentions = false;
+                                                }
+                                            },
+                                            selectItem(item) {
+                                                @this.selectAttachment(item.type, item.id, item.name);
+                                                const val = $refs.globalMsgInput.value;
+                                                const cursor = $refs.globalMsgInput.selectionStart;
+                                                const lastAt = val.lastIndexOf('@', cursor - 1);
+                                                const newVal = val.substring(0, lastAt) + val.substring(cursor);
+                                                @this.set('messageText', newVal);
+                                                this.showMentions = false;
+                                                $refs.globalMsgInput.focus();
+                                            }
+                                        }"
+                                    >
+                                        <!-- Attachment Badge -->
+                                        @if($attachment)
+                                            <div class="absolute left-10 -top-12 flex items-center gap-2 px-3 py-1.5 bg-blue-600 rounded-xl shadow-lg border border-white/20 animate-in slide-in-from-bottom-2 duration-300 z-10">
+                                                <span class="text-[8px] font-black text-white uppercase tracking-widest">PJ : {{ $attachment['name'] }}</span>
+                                                <button type="button" wire:click="removeAttachment" class="p-0.5 hover:bg-white/20 rounded-md transition-colors text-white">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </button>
+                                            </div>
+                                        @endif
+
+                                        <!-- Mentions Dropdown -->
+                                        <div x-show="showMentions && filteredItems.length > 0" 
+                                            x-transition
+                                            class="absolute bottom-full left-10 mb-4 w-64 bg-slate-800 border border-white/10 rounded-2xl shadow-3xl overflow-hidden z-[100]"
+                                            style="display: none;">
+                                            <div class="p-2 border-b border-white/5 bg-slate-900/50">
+                                                <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest px-2">Autour de vous</span>
+                                            </div>
+                                            <div class="max-h-48 overflow-y-auto no-scrollbar">
+                                                <template x-for="item in filteredItems" :key="item.type + item.id">
+                                                    <button @click="selectItem(item)" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-600 transition-colors text-left group">
+                                                        <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-white/10 text-white/40 group-hover:bg-white/20 group-hover:text-white">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.823a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.102-1.101"/></svg>
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <div class="text-[7px] font-black uppercase tracking-widest opacity-50 text-white" x-text="item.type"></div>
+                                                            <div class="text-[10px] font-bold text-white truncate" x-text="item.name"></div>
+                                                        </div>
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </div>
+
+                                        <form wire:submit.prevent="sendMessage" class="flex items-center gap-4 bg-white/10 border-2 border-white/10 focus-within:border-blue-500 rounded-full px-6 py-2 transition-all">
+                                            <!-- Mobile Plus Button for Mentions -->
+                                        <button type="button" 
+                                            @click="showMentions = !showMentions"
+                                            class="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-blue-400 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all active:scale-95"
+                                            title="Attacher un objet">
+                                            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                                         </button>
-                                    </form>
+
+                                        <!-- File Upload Button -->
+                                        <div class="relative flex items-center">
+                                            <input type="file" wire:model="upload" class="hidden" x-ref="globalFileInput">
+                                            <button type="button" 
+                                                @click="$refs.globalFileInput.click()"
+                                                class="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-blue-400 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all active:scale-95"
+                                                title="Envoyer une image ou un PDF">
+                                                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                            </button>
+                                            
+                                            <div wire:loading wire:target="upload" class="absolute -top-1 -right-1">
+                                                <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex-grow relative">
+                                            <!-- Attachment Badges Container -->
+                                            <div class="absolute left-0 -top-12 flex items-center gap-3 z-20">
+                                                <!-- Mentions Attachment Badge -->
+                                                @if($attachment)
+                                                    <div class="flex items-center gap-2 px-3 py-2 bg-blue-600 rounded-xl shadow-lg border border-white/20 animate-in slide-in-from-bottom-2 duration-300">
+                                                        <span class="text-[8px] font-black text-white uppercase tracking-widest">OBJET : {{ $attachment['name'] }}</span>
+                                                        <button type="button" wire:click="removeAttachment" class="p-0.5 hover:bg-white/20 rounded-md transition-colors text-white">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                        </button>
+                                                    </div>
+                                                @endif
+
+                                                <!-- File Preview Badge -->
+                                                @if($upload)
+                                                    <div class="flex items-center gap-2 px-3 py-2 bg-blue-600 rounded-xl shadow-lg border border-white/20 animate-in slide-in-from-bottom-2 duration-300">
+                                                        <span class="text-[8px] font-black text-white uppercase tracking-widest truncate max-w-[150px]">FICHIER : {{ $upload->getClientOriginalName() }}</span>
+                                                        <button type="button" wire:click="$set('upload', null)" class="p-0.5 hover:bg-white/20 rounded-md transition-colors text-white">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                        </button>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <input wire:model="messageText" 
+                                                x-ref="globalMsgInput"
+                                                @input="handleInput"
+                                                @keydown.escape="showMentions = false"
+                                                type="text" 
+                                                placeholder="Répondre..." 
+                                                class="w-full bg-transparent border-none focus:ring-0 text-sm md:text-lg font-bold italic text-white placeholder:text-white/20 py-4 md:py-6">
+                                        </div>
+                                            
+                                            <button type="submit" class="shrink-0 px-8 py-3 md:py-4 bg-blue-600 hover:bg-white hover:text-blue-600 text-white rounded-full font-black text-[10px] uppercase transition-all shadow-xl active:scale-95">
+                                                Envoyer
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         @else

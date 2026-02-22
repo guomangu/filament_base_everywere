@@ -76,34 +76,34 @@
                     </div>
                 </div>
 
-                <!-- Membres du cercle -->
-                <div class="mb-4">
-                    <div class="flex flex-wrap gap-2">
-                        @foreach($activeMembers as $member)
-                            <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-2 bg-slate-50 border border-slate-100 pl-1 pr-3 py-1 rounded-xl group/m hover:bg-white hover:border-blue-500 transition-all shadow-sm">
-                                <img src="{{ $member->user->avatar }}" class="w-6 h-6 rounded-lg object-cover group-hover/m:scale-110 transition-transform shadow-sm">
-                                <span class="text-[9px] font-black text-slate-700 uppercase tracking-tight group-hover/m:text-blue-600 truncate max-w-[80px]">{{ $member->user->name }}</span>
+                <!-- Membres du cercle avec leurs expertises -->
+                <div class="flex flex-col gap-4 mb-4 flex-1">
+                    @foreach($activeMembers as $member)
+                        <div class="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-100 rounded-2xl group/m hover:bg-white hover:border-blue-500 transition-all shadow-sm">
+                            <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-3">
+                                <img src="{{ $member->user->avatar }}" class="w-8 h-8 rounded-xl object-cover group-hover/m:scale-110 transition-transform shadow-sm">
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-xs font-black text-slate-800 uppercase tracking-tight group-hover/m:text-blue-600 truncate">{{ $member->user->name }}</span>
+                                    <span class="text-[7px] font-black text-slate-400 uppercase tracking-widest">Expertise certifiée</span>
+                                </div>
                             </a>
-                        @endforeach
-                    </div>
+                            
+                            {{-- Skills for this specific user --}}
+                            <div class="flex flex-wrap gap-1 mt-1 pl-1">
+                                @foreach($member->user->achievements->take(4) as $achievement)
+                                    <button wire:click="selectSkill('{{ $achievement->skill->name }}')" class="px-2 py-0.5 bg-white border border-slate-200 text-slate-500 rounded-lg text-[7px] font-black uppercase tracking-tight hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
+                                        {{ $achievement->skill->name }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                    
                     @if($result->activeMembers->count() > 6)
-                        <div class="mt-2 text-center">
-                            <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest pl-1">+{{ $result->activeMembers->count() - 6 }} autres membres</span>
+                        <div class="text-center py-2">
+                            <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">+{{ $result->activeMembers->count() - 6 }} autres membres du réseau</span>
                         </div>
                     @endif
-                </div>
-
-                <div class="mb-4 flex-1">
-                    @php 
-                        $allSkills = $result->activeMembers->flatMap(fn($m) => $m->user->achievements)->map(fn($a) => $a->skill->name)->unique()->take(6);
-                    @endphp
-                    <div class="flex flex-wrap gap-1">
-                        @foreach($allSkills as $skill)
-                            <button wire:click="selectSkill('{{ $skill }}')" class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-tight hover:bg-blue-600 hover:text-white transition-colors">
-                                {{ $skill }}
-                            </button>
-                        @endforeach
-                    </div>
                 </div>
 
                 @if(!empty($result->trustPath))

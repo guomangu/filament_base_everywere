@@ -9,11 +9,11 @@ use App\Models\Circle;
 class Viewer extends Component
 {
     public ?User $user = null;
-    public ?Circle $circle = null;
+    public ?\App\Models\Skill $skill = null;
     public ?\App\Models\Project $project = null;
-    public string $type = 'user'; // 'user', 'circle', or 'project'
+    public string $type = 'user'; // 'user', 'mission', or 'project'
 
-    public function mount($user = null, $circle = null, $project = null)
+    public function mount($user = null, $skill = null, $project = null)
     {
         if ($user) {
             $this->type = 'user';
@@ -24,19 +24,21 @@ class Viewer extends Component
                 'activeJoinedCircles',
                 'validationsReceived'
             ]);
-        } elseif ($circle) {
-            $this->type = 'circle';
-            $this->circle = $circle instanceof Circle ? $circle : Circle::findOrFail($circle);
-            $this->circle->load([
-                'owner',
-                'activeMembers.user'
+        } elseif ($skill) {
+            $this->type = 'mission';
+            $this->skill = $skill instanceof \App\Models\Skill ? $skill : \App\Models\Skill::findOrFail($skill);
+            $this->skill->load([
+                'projects' => fn($q) => $q->with(['owner', 'activeMembers.memberable', 'reviews']),
             ]);
         } elseif ($project) {
             $this->type = 'project';
             $this->project = $project instanceof \App\Models\Project ? $project : \App\Models\Project::findOrFail($project);
             $this->project->load([
                 'owner',
-                'activeMembers.memberable'
+                'activeMembers.memberable',
+                'offers.informations',
+                'informations',
+                'skills'
             ]);
         } else {
             abort(404);

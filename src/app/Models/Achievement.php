@@ -69,7 +69,7 @@ class Achievement extends Model
 
     public function informations()
     {
-        return $this->morphMany(Information::class, 'informable');
+        return $this->morphMany(Information::class, 'informable')->latest();
     }
 
     public function validations()

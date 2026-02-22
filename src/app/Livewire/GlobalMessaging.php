@@ -9,9 +9,11 @@ use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
+use Livewire\WithFileUploads;
 
 class GlobalMessaging extends Component
 {
+    use WithFileUploads;
     public $isOpen = false;
     public $activeTab = 'private'; // 'private', 'forums'
     public $selectedParticipantId = null;
@@ -20,6 +22,11 @@ class GlobalMessaging extends Component
     // For change detection
     public $lastUnreadCount = 0;
     public $lastForumActivity = null;
+
+    // Attachments & Context
+    public $attachment = null;
+    public $upload = null;
+    public $contextItems = []; // Received from page components
 
     #[On('toggleMessaging')]
     public function toggle()
@@ -37,6 +44,26 @@ class GlobalMessaging extends Component
         $this->activeTab = 'private';
         $this->selectedParticipantId = (int) $userId;
         $this->dispatch('messagingOpened');
+    }
+
+    #[On('updateMessagingContext')]
+    public function updateContext($items)
+    {
+        $this->contextItems = $items;
+    }
+
+    public function selectAttachment($type, $id, $name)
+    {
+        $this->attachment = [
+            'type' => $type,
+            'id' => $id,
+            'name' => $name
+        ];
+    }
+
+    public function removeAttachment()
+    {
+        $this->attachment = null;
     }
 
     public function selectTab($tab)
@@ -62,16 +89,35 @@ class GlobalMessaging extends Component
 
     public function sendMessage()
     {
-        $this->validate(['messageText' => 'required|min:1|max:1000']);
+        $this->validate([
+            'messageText' => 'required|min:1|max:1000',
+            'upload' => 'nullable|file|mimes:jpg,jpeg,png,gif,pdf|max:10240', // 10MB limit
+        ]);
+
+        $metadata = $this->attachment ? ['attachment' => $this->attachment] : null;
+
+        if ($this->upload) {
+            $path = $this->upload->store('attachments', 'public');
+            $metadata = $metadata ?? [];
+            $metadata['file'] = [
+                'path' => $path,
+                'name' => $this->upload->getClientOriginalName(),
+                'type' => $this->upload->getMimeType(),
+                'size' => $this->upload->getSize(),
+            ];
+        }
 
         Message::create([
             'sender_id' => Auth::id(),
             'receiver_id' => $this->selectedParticipantId,
             'content' => $this->messageText,
             'type' => 'chat',
+            'metadata' => $metadata,
         ]);
 
         $this->messageText = '';
+        $this->attachment = null;
+        $this->upload = null;
         $this->dispatch('messagingOpened'); // For scrolling
     }
 
@@ -151,6 +197,7 @@ class GlobalMessaging extends Component
             })
             ->with(['sender', 'receiver'])
             ->latest()
+            ->take(50) // Safety fetch for grouping, will limit final list to 20
             ->get();
 
         $conversations = $rawConversations->groupBy(function($msg) use ($user) {
@@ -171,7 +218,8 @@ class GlobalMessaging extends Component
                     'latest_timestamp' => $latest->created_at->timestamp,
                 ];
             })
-            ->sortByDesc('latest_timestamp');
+            ->sortByDesc('latest_timestamp')
+            ->take(20);
 
         // Forums
         $projects = Project::whereHas('members', function($q) use ($user) {
@@ -200,7 +248,7 @@ class GlobalMessaging extends Component
                 return $c;
             });
 
-        $forums = $projects->concat($circles)->sortByDesc('latest_activity_dt');
+        $forums = $projects->concat($circles)->sortByDesc('latest_activity_dt')->take(20);
 
         // Active conversation messages
         $activeMessages = $this->selectedParticipantId 
@@ -208,7 +256,7 @@ class GlobalMessaging extends Component
                     $q->where('sender_id', $user->id)->where('receiver_id', $this->selectedParticipantId);
                 })->orWhere(function($q) use ($user) {
                     $q->where('sender_id', $this->selectedParticipantId)->where('receiver_id', $user->id);
-                })->with('sender')->oldest()->get()
+                })->with('sender')->latest()->take(20)->get()->reverse()
             : collect();
 
         return view('livewire.global-messaging', [

@@ -84,9 +84,28 @@ class Circle extends Model
         return $this->hasMany(Message::class);
     }
 
+    public function isOwner($user): bool
+    {
+        return $user && $this->owner_id === $user->id;
+    }
+
+    public function isMember($user): bool
+    {
+        if (!$user) return false;
+        return $this->members()
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->exists();
+    }
+
+    public function canManage($user): bool
+    {
+        return $this->isOwner($user);
+    }
+
     public function informations()
     {
-        return $this->morphMany(Information::class, 'informable');
+        return $this->morphMany(Information::class, 'informable')->latest();
     }
 
     public function achievements(): HasMany

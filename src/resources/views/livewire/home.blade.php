@@ -96,88 +96,101 @@ class="min-h-screen bg-slate-50/50">
             @endif
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @forelse ($results as $item)
-                @if($item->is_circle)
-                    <div class="relative group h-full">
-                        <div class="flex flex-col relative h-full bg-white border border-slate-100 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] transition-all duration-500 group/card">
-                            <a href="{{ route('circles.show', $item) }}" class="absolute inset-0 z-10"></a>
-
-                            <div class="p-5 md:p-6 flex flex-col h-full relative z-0">
-                                <!-- Header -->
-                                <div class="flex items-start justify-between mb-4">
-                                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover/card:bg-blue-600 group-hover/card:text-white transition-all duration-500 shadow-sm">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div class="text-right">
-                                        @if(isset($item->smart_distance))
-                                            <div @class([
-                                                'inline-block px-2 py-0.5 rounded-full text-[8px] font-black shadow-sm uppercase',
-                                                'bg-blue-50 text-blue-600 shadow-blue-500/5' => !str_contains($item->smart_distance, 'Remote'),
-                                                'bg-slate-900 text-white shadow-slate-900/10' => str_contains($item->smart_distance, 'Remote'),
-                                            ])>{{ $item->smart_distance }}</div>
-                                        @endif
-                                    </div>
-                                </div>
-
-                                <!-- Title -->
-                                <div class="mb-3">
-                                    <h3 class="text-lg md:text-xl font-black text-slate-900 mb-1 leading-tight group-hover/card:text-blue-600 transition-colors uppercase line-clamp-2">
-                                        {{ $item->name }}
-                                    </h3>
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">{{ $item->city }}</span>
-                                    </div>
-                                </div>
-
-                                @if($item->matching_context)
-                                    <div class="mb-3 text-[8px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg inline-block w-fit">
-                                        {{ $item->matching_context }}
-                                    </div>
-                                @endif
-
-                                <p class="text-slate-500 font-medium text-[11px] leading-relaxed line-clamp-3 mb-4 flex-1">
-                                    {{ $item->description }}
-                                </p>
-
-                                <div class="mb-4">
-                                    @php 
-                                        $allSkills = $item->members->flatMap(fn($m) => $m->user ? $m->user->achievements : collect())->map(fn($a) => $a->skill ? $a->skill->name : '')->filter()->unique()->take(6);
-                                    @endphp
-                                    <div class="flex flex-wrap gap-1">
-                                        @foreach($allSkills as $skill)
-                                            <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-tight">
-                                                {{ $skill }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                </div>
-
-                                <!-- Footer -->
-                                <div class="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <img src="{{ $item->owner->avatar }}" class="w-6 h-6 rounded-lg shadow-sm">
-                                        <div class="text-[8px] font-black text-slate-900 uppercase tracking-tight">{{ explode(' ', $item->owner->name)[0] }}</div>
-                                    </div>
-                                    <div class="flex -space-x-2">
-                                        @foreach($item->members->take(3) as $member)
-                                            <img src="{{ $member->user->avatar }}" class="w-4 h-4 rounded-full border border-white ring-1 ring-slate-100">
-                                        @endforeach
-                                    </div>
-                                </div>
+                @php 
+                    $url = route('circles.show', $item);
+                    $avatar = $item->owner->avatar ?? '';
+                    $name = $item->name;
+                    $score = $item->average_trust_score ?? $item->trust_score ?? 0;
+                    $activeMembers = $item->members ? $item->members->take(6) : collect();
+                @endphp
+                <div class="bg-white/80 backdrop-blur-3xl border border-slate-100 rounded-[3rem] p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all group overflow-hidden relative flex flex-col h-full ring-1 ring-white/50">
+                    <div class="flex items-center gap-6 mb-8">
+                        <a href="{{ $url }}" class="relative shrink-0 group/av hover:scale-105 transition-transform duration-300">
+                            <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-3xl flex items-center justify-center text-white shadow-xl group-hover/av:scale-110 transition-transform duration-500 ring-4 ring-white">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
                             </div>
+                            <div class="absolute -bottom-2 -right-2 px-2.5 py-1 bg-slate-900 rounded-xl border-4 border-white shadow-lg">
+                                <span class="text-[10px] font-black text-white leading-none">{{ $score }}%</span>
+                            </div>
+                        </a>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-3 mb-1.5">
+                                <span @class([
+                                    'text-[9px] font-black uppercase px-3 py-1 rounded-full tracking-widest shadow-sm',
+                                    'bg-blue-600 text-white shadow-blue-500/20' => ($item->proximity_level ?? 5) <= 2,
+                                    'bg-slate-100 text-slate-500' => ($item->proximity_level ?? 5) > 2
+                                ])>
+                                    {{ match($item->proximity_type ?? 'global') {
+                                        'direct' => 'Direct',
+                                        'city' => 'Ville',
+                                        'region' => 'Région',
+                                        'global' => 'Pays',
+                                        'earth' => 'Monde',
+                                        default => 'Réseau'
+                                    } }}
+                                </span>
+                                <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Cercle de Confiance</span>
+                            </div>
+                            <a href="{{ $url }}" class="text-2xl font-black text-slate-900 uppercase truncate block hover:text-blue-600 transition-colors tracking-tighter">
+                                {{ $name }}
+                            </a>
+                            <div class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{{ $item->city ?? 'Remote' }}</div>
                         </div>
                     </div>
-                @else
-                    <x-offer-card 
-                        :offer="$item" 
-                        :showProjectLink="true"
-                        :quoteAction="true"
-                        :reviewAction="true"
-                    />
-                @endif
+
+                    <!-- Membres du cercle avec leurs expertises -->
+                    <div class="flex flex-col gap-4 mb-8 flex-1">
+                        @foreach($activeMembers as $member)
+                            <div class="flex flex-col gap-3 p-4 bg-slate-50/50 border border-slate-100 rounded-[2rem] group/m hover:bg-white hover:border-blue-500 transition-all shadow-sm hover:shadow-md">
+                                <a href="{{ route('users.show', $member->user) }}" class="flex items-center gap-4">
+                                    <div class="relative">
+                                        <img src="{{ $member->user->avatar }}" class="w-10 h-10 rounded-2xl object-cover group-hover/m:scale-110 transition-transform shadow-sm ring-2 ring-white">
+                                        @if($member->user->trust_score > 80)
+                                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                                        @endif
+                                    </div>
+                                    <div class="flex flex-col min-w-0">
+                                        <span class="text-[11px] font-black text-slate-800 uppercase tracking-tight group-hover/m:text-blue-600 truncate">{{ $member->user->name }}</span>
+                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Expertise Certifiée</span>
+                                    </div>
+                                </a>
+                                
+                                {{-- Skills for this specific user --}}
+                                <div class="flex flex-wrap gap-1.5 pl-1">
+                                    @foreach($member->user->achievements->take(4) as $achievement)
+                                        <span class="px-2.5 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[8px] font-black uppercase tracking-tight shadow-sm">
+                                            {{ $achievement->skill->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                        
+                        @if($item->members && $item->members->count() > 6)
+                            <div class="text-center py-2 bg-slate-50/30 rounded-2xl border border-dashed border-slate-100">
+                                <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">+{{ $item->members->count() - 6 }} autres membres du réseau</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    @if(!empty($item->trustPath))
+                        <div class="pt-6 border-t border-slate-100 relative z-10">
+                            <div class="mb-3 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Lien de confiance détecté :</div>
+                            <x-user-trust-chain :path="$item->trustPath" class="scale-100 origin-left" />
+                        </div>
+                    @endif
+
+                    <!-- Description overlay/hint on hover -->
+                    <div class="mt-6">
+                        <p class="text-[11px] text-slate-400 font-medium leading-relaxed line-clamp-2 italic">
+                            "{{ $item->description }}"
+                        </p>
+                    </div>
+                </div>
             @empty
                 <div class="col-span-full py-24 text-center">
                     <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">

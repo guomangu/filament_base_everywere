@@ -17,7 +17,7 @@ class Edit extends Component
     protected $rules = [
         'name' => 'required|string|max:255',
         'bio' => 'nullable|string|max:1000',
-        'avatar' => 'nullable|image|max:1024',
+        'avatar' => 'nullable|image|max:10240',
     ];
 
     public function mount()

@@ -21,6 +21,10 @@ class Show extends Component
     // Message form
     public $message = '';
     public $lastMessageCount = 0;
+    public $attachment = null;
+    public $upload = null;
+    public $guestName = '';
+    public $guestContact = '';
 
     // Membership management
     public $userSearch = '';
@@ -46,6 +50,10 @@ class Show extends Component
     public $address = '';
     public $isEditingAddress = false;
 
+    // Réalisation specific
+    public $additionalSkillName = '';
+    public $showSkillTagForm = false;
+
     public function mount(Project $project)
     {
         $this->project = $project;
@@ -54,6 +62,30 @@ class Show extends Component
         $this->refresh();
         $this->selectedSkills = $this->project->skills->pluck('name')->toArray();
         $this->address = $this->project->address;
+
+        $this->dispatchContext();
+    }
+
+    public function dispatchContext()
+    {
+        $items = collect([
+            ['type' => 'project', 'id' => $this->project->id, 'name' => $this->project->title],
+            ['type' => 'user', 'id' => $this->project->owner_id, 'name' => $this->project->owner->name],
+        ]);
+        
+        foreach($this->project->activeMembers as $m) {
+            $items->push(['type' => 'user', 'id' => $m->memberable_id, 'name' => $m->memberable->name]);
+        }
+        
+        foreach($this->project->offers as $o) {
+            $items->push(['type' => 'skill', 'id' => $o->skill_id ?? 0, 'name' => $o->title]);
+        }
+        
+        foreach($this->project->skills as $s) {
+            $items->push(['type' => 'skill', 'id' => $s->id, 'name' => $s->name]);
+        }
+
+        $this->dispatch('updateMessagingContext', items: $items->unique(fn($o) => $o['type'].$o['id'])->values()->toArray())->to(\App\Livewire\GlobalMessaging::class);
     }
 
     public function refresh()
@@ -66,7 +98,7 @@ class Show extends Component
                 'offers' => fn($q) => $q->with(['skills', 'reviews.user', 'reviews.replies.user', 'informations']),
                 'reviews.user',
                 'reviews.replies.user',
-                'messages' => fn($q) => $q->with('sender')->latest()->take(30),
+                'messages' => fn($q) => $q->with('sender')->latest()->take(20),
                 'informations'
             ]);
 
@@ -172,7 +204,7 @@ class Show extends Component
         $this->validate([
             'offerTitle' => 'required|min:3',
             'offerDescription' => 'nullable',
-            'offerImages.*' => 'image|max:2048',
+            'offerImages.*' => 'image|max:10240',
             'offerInfos.*.label' => 'nullable|string|max:50',
             'offerInfos.*.title' => 'nullable|required_with:offerInfos.*.label|string|max:255',
         ]);
@@ -291,7 +323,8 @@ class Show extends Component
                 
                 return $u;
             })
-            ->sortBy('degree');
+            ->sortBy('degree')
+            ->take(20);
     }
 
     public function toggleStatus()
@@ -417,19 +450,143 @@ class Show extends Component
 
     public function sendMessage()
     {
-        $this->validate(['message' => 'required|min:2|max:1000']);
+        $rules = [
+            'message' => 'required|min:2|max:1000',
+            'upload' => 'nullable|file|mimes:jpg,jpeg,png,gif,pdf|max:10240', // 10MB limit
+        ];
+        if (auth()->guest()) {
+            $rules['guestName'] = 'required|min:2|max:50';
+            $rules['guestContact'] = 'required|min:2|max:100';
+        }
+        $this->validate($rules);
+
+        $metadata = $this->attachment ? ['attachment' => $this->attachment] : [];
+        if (auth()->guest()) {
+            $metadata['guest'] = [
+                'name' => $this->guestName,
+                'contact' => $this->guestContact,
+            ];
+        }
+
+        if ($this->upload) {
+            $path = $this->upload->store('attachments', 'public');
+            $metadata['file'] = [
+                'path' => $path,
+                'name' => $this->upload->getClientOriginalName(),
+                'type' => $this->upload->getMimeType(),
+                'size' => $this->upload->getSize(),
+            ];
+        }
 
         \App\Models\Message::create([
             'circle_id' => null,
             'project_id' => $this->project->id,
-            'sender_id' => Auth::id(),
+            'sender_id' => auth()->id(),
             'content' => $this->message,
             'type' => 'chat',
+            'metadata' => !empty($metadata) ? $metadata : null,
         ]);
 
         $this->message = '';
+        $this->attachment = null;
+        $this->upload = null;
+        $this->guestName = '';
+        $this->guestContact = '';
         $this->project->load('messages.sender');
         $this->dispatch('messageSent');
+    }
+
+    public function selectAttachment($type, $id, $name)
+    {
+        $this->attachment = [
+            'type' => $type,
+            'id' => $id,
+            'name' => $name
+        ];
+    }
+
+    public function removeAttachment()
+    {
+        $this->attachment = null;
+    }
+
+    public function addAdditionalSkill()
+    {
+        if (!$this->project->canManage(Auth::user())) return;
+        
+        $this->validate(['additionalSkillName' => 'required|min:2|max:50']);
+        
+        $skill = \App\Models\Skill::firstOrCreate(
+            ['name' => $this->additionalSkillName],
+            ['slug' => \Illuminate\Support\Str::slug($this->additionalSkillName)]
+        );
+        
+        $this->project->skills()->syncWithoutDetaching([$skill->id]);
+        $this->additionalSkillName = '';
+        $this->showSkillTagForm = false;
+        $this->project->refresh();
+        session()->flash('success', 'Compétence ajoutée !');
+    }
+
+    public function lockRealisation()
+    {
+        if (!$this->project->canManage(Auth::user())) return;
+        
+        $this->project->update([
+            'status' => 'verrouillée',
+            'locked_at' => now(),
+        ]);
+        
+        \App\Models\Message::create([
+            'project_id' => $this->project->id,
+            'sender_id' => Auth::id(),
+            'content' => "🔒 La réalisation a été verrouillée. Les termes du contrat sont désormais fixes.",
+            'type' => 'chat',
+        ]);
+        
+        $this->project->refresh();
+        session()->flash('success', 'Réalisation verrouillée !');
+    }
+
+    public function completeRealisation()
+    {
+        if (!$this->project->canManage(Auth::user())) return;
+        
+        $this->project->update([
+            'status' => 'terminée',
+            'realized_at' => now(),
+            'is_open' => false,
+        ]);
+        
+        \App\Models\Message::create([
+            'project_id' => $this->project->id,
+            'sender_id' => Auth::id(),
+            'content' => "✅ La réalisation est officiellement terminée ! Merci à tous les participants.",
+            'type' => 'chat',
+        ]);
+        
+        $this->project->refresh();
+        session()->flash('success', 'Réalisation terminée !');
+    }
+
+    public function cancelRealisation()
+    {
+        if (!$this->project->canManage(Auth::user())) return;
+        
+        $this->project->update([
+            'status' => 'annulée',
+            'is_open' => false,
+        ]);
+        
+        \App\Models\Message::create([
+            'project_id' => $this->project->id,
+            'sender_id' => Auth::id(),
+            'content' => "🚫 La réalisation a été annulée.",
+            'type' => 'chat',
+        ]);
+        
+        $this->project->refresh();
+        session()->flash('success', 'Réalisation annulée.');
     }
 
     public function getSkillSuggestionsProperty()

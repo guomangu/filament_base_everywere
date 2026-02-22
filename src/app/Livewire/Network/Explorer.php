@@ -43,7 +43,7 @@ class Explorer extends Component
         
         // --- 1. FIND CIRCLE CANDIDATES ---
         $queryCircles = Circle::query()
-            ->with(['owner', 'activeMembers.user', 'achievements.skill'])
+            ->with(['owner', 'activeMembers.user.achievements.skill', 'achievements.skill'])
             ->where('id', '!=', ($this->origin instanceof Circle ? $this->origin->id : 0));
 
         if (!empty($this->search)) {

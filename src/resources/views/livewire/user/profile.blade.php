@@ -146,29 +146,28 @@
                             <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
                                 <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                 @if(auth()->id() === $user->id)
-                                    Projets
+                                    Réalisations
                                     <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">{{ $userProjects->count() }}</span>
                                 @else
-                                    Offres de services
-                                    <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">{{ $userOffers->count() }}</span>
+                                    Missions en cours
+                                    <span class="text-[10px] font-black text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">{{ $userProjects->count() }}</span>
                                 @endif
                             </h3>
                             <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
                                 @if(auth()->id() === $user->id)
-                                    Offres & Demandes de services
+                                    Mes participations et contrats
                                 @else
-                                    Ses propositions de collaborations et services
+                                    Ses collaborations actives
                                 @endif
                             </p>
                         </div>
                         @auth
                             @if(auth()->id() === $user->id)
-                                <button wire:click="startCreatingProject('offer')" 
-                                        class="inline-flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
-                                        title="Proposer une Offre">
+                                <a href="{{ route('home') }}" 
+                                        class="inline-flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                    Proposer une Offre
-                                </button>
+                                    Nouvelle Réalisation
+                                </a>
                             @endif
                         @endauth
                     </div>
@@ -203,60 +202,59 @@
                         {{-- Projects Grid for Owner --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($userProjects as $project)
-                                <div class="relative group">
-                                    <a href="{{ route('projects.show', $project) }}" class="block bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
-                                        <div class="flex items-start justify-between mb-4">
+                                <div class="relative group h-full">
+                                    <div class="flex flex-col relative h-full bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
+                                        <a href="{{ route('projects.show', $project) }}" class="absolute inset-0 z-10" title="Voir la réalisation"></a>
+                                        
+                                        <div class="flex items-start justify-between mb-4 relative z-20">
                                             <div class="flex-1 min-w-0">
                                                 <h4 class="text-base font-black text-slate-900 uppercase tracking-tight truncate group-hover:text-blue-600 transition-colors">
                                                     {{ $project->title }}
                                                 </h4>
-                                                @if($project->description)
-                                                    <p class="text-[10px] font-medium text-slate-500 mt-1 line-clamp-2">{{ $project->description }}</p>
+                                                @if($project->skill)
+                                                    <a href="{{ route('mission.show', $project->skill) }}" class="inline-block px-2 py-0.5 bg-slate-900 text-white text-[7px] font-black uppercase rounded-md mb-1 hover:bg-blue-600 transition-colors pointer-events-auto relative z-30">{{ $project->skill->name }}</a>
                                                 @endif
                                             </div>
                                             <div class="ml-3 flex-shrink-0">
-                                                @if($project->is_open)
-                                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-lg">
-                                                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                                                        <span class="text-[8px] font-black text-green-700 uppercase">Ouvert</span>
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg">
-                                                        <span class="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
-                                                        <span class="text-[8px] font-black text-slate-500 uppercase">Fermé</span>
-                                                    </span>
-                                                @endif
+                                                @php
+                                                    $statusColors = [
+                                                        'actuelle' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                                        'verrouillée' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                                        'terminée' => 'bg-green-50 text-green-700 border-green-200',
+                                                        'annulée' => 'bg-red-50 text-red-700 border-red-200',
+                                                    ];
+                                                @endphp
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 {{ $statusColors[$project->status] ?? 'bg-slate-50 text-slate-700' }} border rounded-lg">
+                                                    @if($project->status === 'actuelle')
+                                                        <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
+                                                    @endif
+                                                    <span class="text-[8px] font-black uppercase">{{ $project->status }}</span>
+                                                </span>
                                             </div>
                                         </div>
 
-                                        <div class="grid grid-cols-4 gap-2 mb-4">
+                                        <div class="grid grid-cols-2 gap-2 mb-4 relative z-20">
                                             <div class="bg-white/60 rounded-xl p-2 text-center border border-slate-100">
-                                                <div class="text-xs font-black text-slate-900">{{ $project->activeMembers->count() }}</div>
-                                                <div class="text-[7px] font-black text-slate-400 uppercase">Membres</div>
+                                                <div class="text-xs font-black text-slate-900">{{ $project->activeMembers->count() + 1 }}</div>
+                                                <div class="text-[7px] font-black text-slate-400 uppercase">Participants</div>
                                             </div>
                                             <div class="bg-blue-50/60 rounded-xl p-2 text-center border border-blue-100">
-                                                <div class="text-xs font-black text-blue-600">{{ $project->offers->count() }}</div>
-                                                <div class="text-[7px] font-black text-blue-400 uppercase">Offres</div>
-                                            </div>
-                                            <div class="bg-purple-50/60 rounded-xl p-2 text-center border border-purple-100">
-                                                <div class="text-xs font-black text-purple-600">{{ $project->demands->count() }}</div>
-                                                <div class="text-[7px] font-black text-purple-400 uppercase">Demandes</div>
-                                            </div>
-                                            <div class="bg-green-50/60 rounded-xl p-2 text-center border border-green-100">
-                                                <div class="text-xs font-black text-green-600">+{{ $project->reviews->where('type', 'validate')->count() }}</div>
-                                                <div class="text-[7px] font-black text-green-400 uppercase">Avis</div>
+                                                <div class="text-xs font-black text-blue-600">{{ $project->messages->count() }}</div>
+                                                <div class="text-[7px] font-black text-blue-400 uppercase">Messages</div>
                                             </div>
                                         </div>
 
-                                        <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
-                                            <img src="{{ $project->owner->avatar }}" class="w-6 h-6 rounded-lg object-cover border border-slate-200">
-                                            <div class="flex-1 min-w-0">
-                                                <div class="text-[9px] font-black text-slate-900 uppercase truncate">{{ $project->owner->name }}</div>
-                                                <div class="text-[7px] font-black text-slate-400 uppercase">{{ $project->owner_id === $user->id ? 'Propriétaire' : 'Membre' }}</div>
-                                            </div>
-                                            <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        <div class="flex items-center gap-2 pt-3 border-t border-slate-100 relative z-20 mt-auto">
+                                            <a href="{{ route('users.show', $project->owner) }}" class="flex items-center gap-2 group/owner pointer-events-auto relative z-30">
+                                                <img src="{{ $project->owner->avatar_url }}" class="w-6 h-6 rounded-lg object-cover border border-slate-200 group-hover/owner:border-blue-500 transition-all">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-[9px] font-black text-slate-900 uppercase truncate group-hover/owner:text-blue-600 transition-colors">{{ $project->owner->name }}</div>
+                                                    <div class="text-[7px] font-black text-slate-400 uppercase">Responsable</div>
+                                                </div>
+                                            </a>
+                                            <svg class="w-4 h-4 text-slate-300 ml-auto group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                         </div>
-                                    </a>
+                                    </div>
 
                                     {{-- Toggle button for owner/admin --}}
                                     @auth
@@ -271,55 +269,28 @@
                             @endforeach
                         </div>
                     @else
-                        {{-- Offers Grid for Others --}}
-                        <div class="grid grid-cols-2 gap-3 md:gap-8">
-                            @foreach($userOffers as $offer)
-                                <x-offer-card :offer="$offer" :project="$offer->project" :showProjectLink="true" :quoteAction="true" :reviewAction="true" />
+                        {{-- Nothing to show for others if no open projects, or just list projects --}}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach($userProjects as $project)
+                                <a href="{{ route('projects.show', $project) }}" class="block bg-white border border-slate-100 p-4 rounded-2xl">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm font-bold">{{ $project->title }}</span>
+                                        <span class="text-[8px] font-black uppercase px-2 py-1 bg-blue-50 text-blue-600 rounded-lg">{{ $project->status }}</span>
+                                    </div>
+                                </a>
                             @endforeach
                         </div>
                     @endif
                 </div>
             @elseif(auth()->check() && auth()->id() === $user->id)
                 <div class="bg-white/40 backdrop-blur-3xl border-2 border-dashed border-slate-200 rounded-[3.5rem] p-10 text-center mb-12">
-                    @if($isCreatingProject)
-                        <div class="max-w-md mx-auto">
-                            <div class="flex items-center justify-between mb-4 px-2">
-                                <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                                    {{ $projectType === 'offer' ? 'Nouvelle Offre' : 'Nouveau Besoin' }}
-                                </span>
-                                <button wire:click="cancelProjectCreation" class="text-slate-400 hover:text-red-500 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
-                            </div>
-                            <div class="relative">
-                                <input wire:model="projectTitle" 
-                                       wire:keydown.enter="confirmProjectCreation"
-                                       type="text" 
-                                       placeholder="Titre de votre {{ $projectType === 'offer' ? 'offre' : 'besoin' }}..." 
-                                       autofocus
-                                       class="w-full bg-white border-2 border-blue-500 focus:ring-0 rounded-2xl p-4 text-lg font-black tracking-tight placeholder:text-slate-300 shadow-2xl">
-                                <button wire:click="confirmProjectCreation" class="absolute right-2 top-2 bottom-2 px-6 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all">
-                                    Lancer
-                                </button>
-                            </div>
-                            @error('projectTitle') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block pl-4">{{ $message }}</span> @enderror
-                        </div>
-                    @else
-                        <div class="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        </div>
-                        <p class="text-slate-400 font-black uppercase tracking-[0.3em] text-xs mb-4">Aucun projet encore lancé</p>
-                        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <button wire:click="startCreatingProject('offer')" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                Proposer une Offre
-                            </button>
-                            <button wire:click="startCreatingProject('demand')" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                                Exprimer un Besoin
-                            </button>
-                        </div>
-                    @endif
+                    <div class="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <p class="text-slate-400 font-black uppercase tracking-[0.3em] text-xs mb-4">Aucune réalisation en cours</p>
+                    <a href="{{ route('home') }}" class="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                        Explorer les Missions
+                    </a>
                 </div>
             @endif
             <div class="flex items-center justify-between mb-10">
@@ -337,12 +308,30 @@
                     <div class="relative">
                         <!-- Skill Header -->
                         <div class="flex flex-wrap items-center gap-4 md:gap-6 mb-8">
-                            <div class="w-12 h-12 md:w-16 md:h-16 bg-slate-900 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center text-white shadow-xl rotate-3 shrink-0">
-                                <span class="text-lg md:text-xl font-black uppercase">{{ substr($skillName, 0, 1) }}</span>
-                            </div>
+                            @php
+                                $skill = \App\Models\Skill::where('name', $skillName)->first();
+                            @endphp
+                            @if($skill)
+                                <a href="{{ route('mission.show', $skill) }}" class="w-12 h-12 md:w-16 md:h-16 bg-slate-900 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center text-white shadow-xl rotate-3 shrink-0 hover:bg-blue-600 transition-all hover:rotate-6">
+                                    <span class="text-lg md:text-xl font-black uppercase">{{ substr($skillName, 0, 1) }}</span>
+                                </a>
+                            @else
+                                <div class="w-12 h-12 md:w-16 md:h-16 bg-slate-900 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center text-white shadow-xl rotate-3 shrink-0">
+                                    <span class="text-lg md:text-xl font-black uppercase">{{ substr($skillName, 0, 1) }}</span>
+                                </div>
+                            @endif
                             <div class="flex-grow min-w-0">
+                                @php
+                                    $skill = \App\Models\Skill::where('name', $skillName)->first();
+                                @endphp
                                 <div class="flex items-center gap-3 md:gap-4 mb-1 md:mb-2">
-                                    <h3 class="text-xl md:text-2xl font-black text-slate-900 leading-none uppercase tracking-tight truncate">{{ $skillName }}</h3>
+                                    @if($skill)
+                                        <a href="{{ route('mission.show', $skill) }}" class="group/title">
+                                            <h3 class="text-xl md:text-2xl font-black text-slate-900 leading-none uppercase tracking-tight truncate group-hover/title:text-blue-600 transition-colors">{{ $skillName }}</h3>
+                                        </a>
+                                    @else
+                                        <h3 class="text-xl md:text-2xl font-black text-slate-900 leading-none uppercase tracking-tight truncate">{{ $skillName }}</h3>
+                                    @endif
                                     @auth
                                         @if($canEdit)
                                             @php 
@@ -452,7 +441,11 @@
                                             <div class="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                                             </div>
-                                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">{{ $achievement->circle?->name ?? 'External Proof' }}</span>
+                                            @if($achievement->circle)
+                                                <a href="{{ route('circles.show', $achievement->circle) }}" class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate hover:text-blue-600 transition-colors">{{ $achievement->circle->name }}</a>
+                                            @else
+                                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">External Proof</span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -742,7 +735,7 @@
                     </div>
                     <div class="p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100/50 flex flex-col items-center justify-center text-center group-hover:bg-indigo-100/50 transition-all duration-500">
                         <div class="text-4xl font-black text-indigo-600 leading-none mb-3">{{ $ownedOffersCount }}</div>
-                        <div class="text-[10px] font-black text-indigo-600/60 uppercase tracking-widest">Offres</div>
+                        <div class="text-[10px] font-black text-indigo-600/60 uppercase tracking-widest">Missions</div>
                     </div>
                     <div class="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex flex-col items-center justify-center text-center group-hover:bg-blue-50 transition-all duration-500">
                         <div class="text-4xl font-black text-slate-900 leading-none mb-3">{{ $user->joinedCircles->count() }}</div>

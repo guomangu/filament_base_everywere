@@ -145,7 +145,9 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsToMany(Circle::class, 'circle_members')
             ->wherePivot('status', 'active')
             ->withPivot(['role', 'status', 'vouched_by_id', 'joined_at'])
-            ->withTimestamps();
+            ->withTimestamps()
+            ->latest()
+            ->take(20);
     }
 
     public function activeProject(): ?Project
@@ -169,7 +171,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function informations()
     {
-        return $this->morphMany(Information::class, 'informable');
+        return $this->morphMany(Information::class, 'informable')->latest();
     }
 
     // Proches relationships

@@ -3,21 +3,32 @@
 namespace App\Livewire\Circle;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Profile extends Component
 {
+    use WithFileUploads;
     use \App\Traits\HandlesOfferActions;
     public \App\Models\Circle $circle;
     public string $message = '';
     public $showInformationManager = false;
     public $showMemberManager = false;
+    public $guestName = '';
+    public $guestContact = '';
 
-    protected $rules = [
-        'message' => 'required|min:2|max:1000',
-    ];
+    protected function rules()
+    {
+        return [
+            'message' => 'required|min:2|max:1000',
+            'guestName' => auth()->guest() ? 'required|min:2|max:50' : 'nullable',
+            'guestContact' => auth()->guest() ? 'required|min:2|max:100' : 'nullable',
+        ];
+    }
 
     public $lastMessageCount = 0;
     public $lastPendingCount = 0;
+    public $attachment = null; // ['type' => 'user', 'id' => 1, 'name' => '...']
+    public $upload = null;
 
     public function mount(\App\Models\Circle $circle)
     {
@@ -26,6 +37,26 @@ class Profile extends Component
 
         $this->lastMessageCount = $this->circle->messages->count();
         $this->lastPendingCount = $this->circle->members()->where('status', 'pending')->count();
+        
+        $this->dispatchContext();
+    }
+
+    public function dispatchContext()
+    {
+        $items = collect([
+            ['type' => 'circle', 'id' => $this->circle->id, 'name' => $this->circle->name],
+            ['type' => 'user', 'id' => $this->circle->owner_id, 'name' => $this->circle->owner->name],
+        ]);
+        
+        foreach($this->circle->activeMembers as $m) {
+            $items->push(['type' => 'user', 'id' => $m->user_id, 'name' => $m->user->name]);
+        }
+        
+        foreach($this->circle->achievements as $a) {
+            $items->push(['type' => 'skill', 'id' => $a->skill_id, 'name' => $a->skill->name]);
+        }
+
+        $this->dispatch('updateMessagingContext', items: $items->unique(fn($o) => $o['type'].$o['id'])->values()->toArray())->to(\App\Livewire\GlobalMessaging::class);
     }
 
     public function joinCircle()
@@ -84,18 +115,64 @@ class Profile extends Component
 
     public function sendMessage()
     {
-        $this->validate();
+        $rules = [
+            'message' => 'required|min:2|max:1000',
+            'upload' => 'nullable|file|mimes:jpg,jpeg,png,gif,pdf|max:10240', // 10MB limit
+        ];
+        if (auth()->guest()) {
+            $rules['guestName'] = 'required|min:2|max:50';
+            $rules['guestContact'] = 'required|min:2|max:100';
+        }
+        $this->validate($rules);
+        
+        $metadata = $this->attachment ? ['attachment' => $this->attachment] : [];
+        
+        if (auth()->guest()) {
+            $metadata['guest'] = [
+                'name' => $this->guestName,
+                'contact' => $this->guestContact,
+            ];
+        }
+
+        if ($this->upload) {
+            $path = $this->upload->store('attachments', 'public');
+            $metadata['file'] = [
+                'path' => $path,
+                'name' => $this->upload->getClientOriginalName(),
+                'type' => $this->upload->getMimeType(),
+                'size' => $this->upload->getSize(),
+            ];
+        }
 
         \App\Models\Message::create([
             'circle_id' => $this->circle->id,
             'sender_id' => auth()->id(),
             'content' => $this->message,
             'type' => 'chat',
+            'metadata' => !empty($metadata) ? $metadata : null,
         ]);
 
         $this->message = '';
+        $this->attachment = null;
+        $this->upload = null;
+        $this->guestName = '';
+        $this->guestContact = '';
         $this->circle->load('messages.sender');
         $this->dispatch('messageSent');
+    }
+
+    public function selectAttachment($type, $id, $name)
+    {
+        $this->attachment = [
+            'type' => $type,
+            'id' => $id,
+            'name' => $name
+        ];
+    }
+
+    public function removeAttachment()
+    {
+        $this->attachment = null;
     }
 
     public function render()
@@ -116,12 +193,14 @@ class Profile extends Component
             ->where('is_open', true)
             ->with(['owner', 'activeMembers'])
             ->latest()
+            ->take(20)
             ->get();
 
             // 3. Aggregate all offers & demands from these projects
             $memberOffers = \App\Models\ProjectOffer::whereIn('project_id', $memberProjects->pluck('id'))
                 ->with(['project', 'informations'])
                 ->latest()
+                ->take(20)
                 ->get()
                 ->sortByDesc(fn($o) => $o->type === 'offer');
         } catch (\Exception $e) {

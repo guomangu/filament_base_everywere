@@ -65,16 +65,7 @@ class Home extends Component
             }
         });
 
-        // 2. Fetch Offers
-        $offerQuery = \App\Models\ProjectOffer::where('type', 'offer')
-            ->join('projects', 'project_offers.project_id', '=', 'projects.id')
-            ->select('project_offers.*', 'projects.coordinates', 'projects.address', 'projects.owner_id')
-            ->with(['project.owner', 'project.activeMembers', 'informations', 'reviews']);
-
-        // Offer Accessibility (Link to open projects)
-        $offerQuery->where('projects.is_open', true);
-
-        // 3. Search Logic (Universal Smart Search)
+        // 2. Search Logic
         if (!empty($this->search)) {
             $searchTerm = '%' . mb_strtolower($this->search) . '%';
             
@@ -90,62 +81,62 @@ class Home extends Component
                   ->orWhereHas('members.user.achievements.skill', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
                   ->orWhereHas('achievements.skill', fn($sq) => $sq->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
             });
-
-            // Filter Offers
-            $offerQuery->where(function($q) use ($searchTerm) {
-                $q->whereRaw('LOWER(project_offers.title) LIKE ?', [$searchTerm])
-                  ->orWhereRaw('LOWER(project_offers.description) LIKE ?', [$searchTerm])
-                  ->orWhereRaw('LOWER(projects.title) LIKE ?', [$searchTerm])
-                  ->orWhereRaw('LOWER(projects.address) LIKE ?', [$searchTerm]);
-            });
         }
 
-        // 4. Proximity Logic
-        if ($this->lat && $this->lng) {
-            $distanceRaw = "(6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(projects.coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(projects.coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(projects.coordinates, '$.lat')))))";
-            $circleDistanceRaw = "(6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coordinates, '$.lat'))) * cos(radians(JSON_EXTRACT(coordinates, '$.lng')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coordinates, '$.lat')))))";
-            
-            $circleQuery->selectRaw("*, $circleDistanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
-            $offerQuery->selectRaw("$distanceRaw AS distance", [$this->lat, $this->lng, $this->lat]);
-        }
+        $allResults = $circleQuery->get();
 
-        // 5. Execute and Merge
-        $circles = $circleQuery->get();
-        $offers = $offerQuery->get();
+        // 4. Proximity & Trust Logic
+        $viewer = auth()->user();
+        $myCircleIds = $viewer ? $viewer->activeJoinedCircles->pluck('id') : collect();
 
-        $allResults = $circles->concat($offers);
-
-        // 6. Proximity Sorting
-        if ($this->lat && $this->lng) {
-            $allResults = $allResults->sortBy('distance');
-        } else {
-            $allResults = $allResults->sortByDesc('created_at');
-        }
-
-        // 7. Limit and Format
-        $formattedResults = $allResults->take(32)->map(function($entity) {
-            // Determine type
+        $formattedResults = $allResults->map(function($entity) use ($myCircleIds, $viewer) {
             $entity->is_circle = $entity instanceof \App\Models\Circle;
-            $entity->is_offer = $entity instanceof \App\Models\ProjectOffer;
+            $entity->is_mission = $entity instanceof \App\Models\Skill;
 
-            // Smart Distance Label
+            if ($entity->is_circle) {
+                $entity->proximity_type = 'global';
+                $entity->proximity_level = 5;
+
+                if ($myCircleIds->contains($entity->id)) {
+                    $entity->proximity_type = 'direct';
+                    $entity->proximity_level = 1;
+                } elseif ($viewer) {
+                    $myCities = $viewer->activeJoinedCircles->pluck('city')->filter()->unique();
+                    if ($myCities->contains($entity->city)) {
+                        $entity->proximity_type = 'city';
+                        $entity->proximity_level = 3;
+                    }
+                }
+
+                $entity->trustPath = $viewer ? $viewer->getTrustPathTo($entity) : [];
+            } else {
+                // Missions don't have proximity levels in the same way
+                $entity->proximity_type = 'mission';
+                $entity->proximity_level = 10;
+                $entity->trustPath = [];
+            }
+
+            // Smart Distance Label (Fallback or primary if no trust)
             if (!empty($entity->coordinates) && (isset($entity->coordinates['lat']) && $entity->coordinates['lat'] != 0)) {
                 if (isset($entity->distance)) {
                     $dist = $entity->distance;
                     if ($dist < 1) {
                         $entity->smart_distance = "À " . round($dist * 1000) . "m";
                     } elseif ($dist < 2) {
-                        $entity->smart_distance = "Tout proche";
+                        $entity->smart_distance = "Proche";
                     } else {
                         $entity->smart_distance = round($dist, 1) . " km";
                     }
-                    
-                    if ($this->locationName && stripos(mb_strtolower($entity->address), mb_strtolower(explode(',', $this->locationName)[0])) !== false) {
-                        $entity->smart_distance = "Même ville • " . $entity->smart_distance;
-                    }
                 }
             } else {
-                $entity->smart_distance = "Remote / Dématérialisé";
+                $entity->smart_distance = "Remote";
+            }
+
+            // Trust over distance logic:
+            if ($entity->trust_label) {
+                $entity->matching_context = $entity->trust_label;
+            } else {
+                $entity->matching_context = $entity->smart_distance;
             }
 
             // Matching Context (Simplified for high speed merge)
@@ -153,11 +144,13 @@ class Home extends Component
                 $search = mb_strtolower($this->search);
                 if ($entity->is_circle) {
                     if (stripos(mb_strtolower($entity->name), $search) !== false) $entity->matching_context = "Cercle trouvé";
-                    else $entity->matching_context = "Expertise associée";
+                    else $entity->matching_context = "Expertise • " . ($entity->matching_context ?? $entity->smart_distance);
                 } else {
-                    if (stripos(mb_strtolower($entity->title), $search) !== false) $entity->matching_context = "Offre trouvée";
-                    else $entity->matching_context = "Projet associé";
+                    if (stripos(mb_strtolower($entity->name), $search) !== false) $entity->matching_context = "Mission trouvée";
+                    else $entity->matching_context = "Domaine • " . ($entity->matching_context ?? $entity->smart_distance);
                 }
+            } elseif (!$entity->matching_context) {
+                $entity->matching_context = $entity->smart_distance;
             }
 
             return $entity;

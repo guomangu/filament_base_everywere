@@ -59,6 +59,8 @@ class Profile extends Component
             'validationsReceived'
         ]);
 
+        $this->dispatchContext();
+
         $this->valCount = $this->user->validationsReceived->where('type', 'validate')->count();
         $this->rejCount = $this->user->validationsReceived->where('type', 'reject')->count();
 
@@ -77,6 +79,23 @@ class Profile extends Component
                 'location' => $name
             ]);
         }
+    }
+
+    public function dispatchContext()
+    {
+        $items = collect([
+            ['type' => 'user', 'id' => $this->user->id, 'name' => $this->user->name],
+        ]);
+        
+        foreach($this->user->activeJoinedCircles as $c) {
+            $items->push(['type' => 'circle', 'id' => $c->id, 'name' => $c->name]);
+        }
+        
+        foreach($this->user->achievements as $a) {
+            $items->push(['type' => 'skill', 'id' => $a->skill_id, 'name' => $a->skill->name]);
+        }
+
+        $this->dispatch('updateMessagingContext', items: $items->unique(fn($o) => $o['type'].$o['id'])->values()->toArray())->to(\App\Livewire\GlobalMessaging::class);
     }
 
 
@@ -306,45 +325,7 @@ class Profile extends Component
         ]);
     }
 
-    public function startCreatingProject(string $type)
-    {
-        if (auth()->id() !== $this->user->id) return;
-        $this->projectType = $type;
-        $this->projectTitle = $this->user->name;
-        $this->isCreatingProject = true;
-    }
-
-    public function cancelProjectCreation()
-    {
-        $this->isCreatingProject = false;
-        $this->projectType = '';
-        $this->projectTitle = '';
-    }
-
-    public function confirmProjectCreation()
-    {
-        if (auth()->id() !== $this->user->id) return;
-        
-        $this->validate([
-            'projectTitle' => 'required|min:3|max:255',
-        ]);
-
-        $project = Project::create([
-            'title' => $this->projectTitle,
-            'description' => $this->projectType === 'offer' ? 'Nouvelle offre de service' : 'Nouveau besoin exprimé',
-            'owner_id' => auth()->id(),
-            'is_open' => true,
-        ]);
-
-        // Create the initial offer/demand
-        $project->allOffers()->create([
-            'title' => $this->projectTitle,
-            'description' => 'Détails à personnaliser...',
-            'type' => $this->projectType,
-        ]);
-
-        return redirect()->route('projects.show', $project);
-    }
+    // Project creation logic is now handled in Home -> Mission -> Realisation flow
 
     public function render()
     {
@@ -361,7 +342,7 @@ class Profile extends Component
             ->get()
             ->filter(fn($u) => $u->achievements->count() > 0)
             ->sortByDesc('trust_score')
-            ->take(30);
+            ->take(20);
 
         // 3. Proches Achievements for networking
         $prochesAchievements = \App\Models\Achievement::whereIn('proche_id', $this->user->proches->pluck('id'))
@@ -380,8 +361,9 @@ class Profile extends Component
 
             $userProjects = Project::where('owner_id', $this->user->id)
                 ->orWhereIn('id', $memberProjectIds)
-                ->with(['owner', 'activeMembers', 'offers', 'demands', 'reviews'])
+                ->with(['owner', 'activeMembers', 'skill', 'messages'])
                 ->latest()
+                ->take(20)
                 ->get();
         } catch (\Exception $e) {
             $userProjects = collect([]);
@@ -391,6 +373,7 @@ class Profile extends Component
             ->where('type', 'offer')
             ->with(['project', 'informations', 'reviews'])
             ->latest()
+            ->take(20)
             ->get();
 
         $ownedProjectsCount = $this->user->ownedProjects()->count();
@@ -418,7 +401,13 @@ class Profile extends Component
     public function startConversation()
     {
         if (!auth()->check()) return;
-        $this->dispatch('openConversationWith', userId: $this->user->id);
+        
+        $items = collect([
+            ['type' => 'user', 'id' => $this->user->id, 'name' => $this->user->name]
+        ]);
+        $this->dispatch('updateMessagingContext', items: $items->unique(fn($o) => $o['type'].$o['id'])->values()->toArray())->to(\App\Livewire\GlobalMessaging::class);
+        
+        $this->dispatch('openConversationWith', userId: $this->user->id)->to(\App\Livewire\GlobalMessaging::class);
     }
 
     public function toggleProjectStatus(int $projectId)
