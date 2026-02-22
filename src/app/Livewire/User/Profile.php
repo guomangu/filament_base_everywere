@@ -6,9 +6,13 @@ use App\Models\Project;
 use App\Models\ProjectMember;
 use Livewire\Component;
 
+use Livewire\WithFileUploads;
+
 class Profile extends Component
 {
     use \App\Traits\HandlesOfferActions;
+    use WithFileUploads;
+
     public \App\Models\User $user;
     // Proches and Skills management
     public bool $showProcheModal = false;
@@ -18,12 +22,11 @@ class Profile extends Component
     public string $skillName = '';
     public string $proofTitle = '';
     public string $proofDescription = '';
+    public ?int $selectedSkillId = null;
     public string $proofState = 'actuelle';
     public ?int $selectedProcheId = null;
     public $realizedAt = '';
-    public string $infoLabel = '';
-    public string $infoUrl = '';
-    public string $infoImageUrl = '';
+    public ?\App\Models\Achievement $draftAchievement = null;
     public int $valCount = 0;
     public int $rejCount = 0;
 
@@ -46,9 +49,6 @@ class Profile extends Component
         'procheName' => 'required_if:showProcheModal,true|min:2',
         'proofState' => 'required_if:step,2|in:actuelle,verrouillée,terminée',
         'realizedAt' => 'required_if:proofState,terminée|nullable|date',
-        'infoLabel' => 'nullable|string|max:255',
-        'infoUrl' => 'nullable|url|max:500',
-        'infoImageUrl' => 'nullable|url|max:500',
     ];
 
     public function mount(\App\Models\User $user)
@@ -123,7 +123,7 @@ class Profile extends Component
     public function openCreateModal($procheId = null)
     {
         if (!$this->canEdit()) return;
-        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'infoLabel', 'infoUrl']);
+        $this->cancelCreate();
         $this->selectedProcheId = $procheId;
         $this->showCreateModal = true;
     }
@@ -131,7 +131,8 @@ class Profile extends Component
     public function addProofForSkill($skillName, $procheId = null)
     {
         if (!$this->canEdit()) return;
-        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'infoLabel', 'infoUrl', 'infoImageUrl', 'proofState', 'realizedAt']);
+        $this->cancelCreate(); // Ensure any previous drafts are cleaned up
+
         $this->skillName = $skillName;
         $this->selectedProcheId = $procheId;
         
@@ -144,8 +145,27 @@ class Profile extends Component
         }
         
         $this->selectedSkillId = $skill->id;
+
+        // Create a draft achievement so InformationManager can attach to it immediately
+        $this->draftAchievement = \App\Models\Achievement::create([
+            'user_id' => $this->selectedProcheId ? null : $this->user->id,
+            'proche_id' => $this->selectedProcheId,
+            'skill_id' => $this->selectedSkillId,
+            'title' => 'Brouillon...',
+            'description' => '',
+            'is_verified' => false,
+        ]);
+
         $this->step = 2; // Direct to Proof step
         $this->showCreateModal = true;
+    }
+
+    public function cancelCreate()
+    {
+        if ($this->draftAchievement) {
+            $this->draftAchievement->delete();
+        }
+        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'proofState', 'realizedAt', 'draftAchievement', 'showCreateModal']);
     }
 
     public function submitSkillOnly()
@@ -182,37 +202,28 @@ class Profile extends Component
         if (!$this->canEdit()) return;
         $this->validate();
 
-        // Create Achievement
-        $achievement = \App\Models\Achievement::create([
-            'user_id' => $this->selectedProcheId ? null : $this->user->id,
-            'proche_id' => $this->selectedProcheId,
-            'skill_id' => $this->selectedSkillId,
-            'circle_id' => null, 
-            'title' => $this->proofTitle,
-            'description' => $this->proofDescription,
-            'realized_at' => $this->proofState === 'terminée' ? $this->realizedAt : null,
-            'is_verified' => false, 
-            'metadata' => ['status' => $this->proofState],
-        ]);
-
-        if (!empty($this->infoLabel) && !empty($this->infoUrl)) {
-            $achievement->informations()->create([
-                'type' => 'website',
-                'label' => $this->infoLabel,
-                'content' => $this->infoUrl,
-                'is_verified' => false,
+        if ($this->draftAchievement) {
+            $this->draftAchievement->update([
+                'title' => $this->proofTitle,
+                'description' => $this->proofDescription,
+                'realized_at' => $this->proofState === 'terminée' ? $this->realizedAt : null,
+                'metadata' => ['status' => $this->proofState],
             ]);
-        }
-        
-        if (!empty($this->infoImageUrl)) {
-            $achievement->informations()->create([
-                'type' => 'link',
-                'label' => 'Image attachée',
-                'content' => $this->infoImageUrl,
-                'is_verified' => false,
+        } else {
+            \App\Models\Achievement::create([
+                'user_id' => $this->selectedProcheId ? null : $this->user->id,
+                'proche_id' => $this->selectedProcheId,
+                'skill_id' => $this->selectedSkillId,
+                'circle_id' => null, 
+                'title' => $this->proofTitle,
+                'description' => $this->proofDescription,
+                'realized_at' => $this->proofState === 'terminée' ? $this->realizedAt : null,
+                'is_verified' => false, 
+                'metadata' => ['status' => $this->proofState],
             ]);
         }
 
+        $this->reset('draftAchievement');
         $this->showCreateModal = false;
         $this->user->recalculateTrustScore(); // Might change if we had base points for adding proofs
         $this->user->load('achievements.skill', 'achievements.circle', 'proches.achievements.skill', 'achievements.informations');

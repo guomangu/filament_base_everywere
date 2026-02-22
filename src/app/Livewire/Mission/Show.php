@@ -3,6 +3,7 @@
 namespace App\Livewire\Mission;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Models\Skill;
 use App\Models\Project;
 use App\Models\Message;
@@ -15,55 +16,73 @@ class Show extends Component
     public $description = '';
     public string $status = 'actuelle';
     public $realizedAt = '';
-    public string $infoLabel = '';
-    public string $infoUrl = '';
-    public string $infoImageUrl = '';
+    public ?Project $draftProject = null;
 
     public function mount(Skill $skill)
     {
         $this->skill = $skill;
     }
 
+    public function initDraft()
+    {
+        if (!Auth::check()) return;
+
+        $this->cancelDraft(); // Clean any previous draft
+
+        $this->draftProject = Project::create([
+            'title' => 'Brouillon...',
+            'description' => '',
+            'owner_id' => Auth::id(),
+            'skill_id' => $this->skill->id,
+            'status' => 'actuelle',
+            'metadata' => ['status' => 'actuelle'],
+        ]);
+        
+        // As a draft, maybe don't add member yet or add him so he can see it if he refreshes (but we will delete on cancel)
+        $this->draftProject->addMember(Auth::user(), 'admin');
+    }
+
+    public function cancelDraft()
+    {
+        if ($this->draftProject) {
+            $this->draftProject->delete();
+            $this->reset('draftProject');
+        }
+        $this->reset(['title', 'description', 'status', 'realizedAt']);
+    }
+
     public function createRealisation()
     {
+        if (!Auth::check()) return;
+
         $this->validate([
             'title' => 'required|min:3|max:255',
             'description' => 'nullable|max:1000',
             'status' => 'required|in:actuelle,verrouillée,terminée',
             'realizedAt' => 'required_if:status,terminée|nullable|date',
-            'infoLabel' => 'nullable|string|max:255',
-            'infoUrl' => 'nullable|url|max:500',
-            'infoImageUrl' => 'nullable|url|max:500',
         ]);
 
-        $project = Project::create([
-            'title' => $this->title,
-            'description' => $this->description,
-            'owner_id' => Auth::id(),
-            'skill_id' => $this->skill->id,
-            'status' => $this->status,
-            'realized_at' => $this->status === 'terminée' ? $this->realizedAt : null,
-            'metadata' => ['status' => $this->status],
-        ]);
-
-        $project->addMember(Auth::user(), 'admin');
-
-        if (!empty($this->infoLabel) && !empty($this->infoUrl)) {
-            $project->informations()->create([
-                'type' => 'website',
-                'label' => $this->infoLabel,
-                'content' => $this->infoUrl,
-                'is_verified' => false,
+        if ($this->draftProject) {
+            $this->draftProject->update([
+                'title' => $this->title,
+                'description' => $this->description,
+                'status' => $this->status,
+                'realized_at' => $this->status === 'terminée' ? $this->realizedAt : null,
+                'metadata' => ['status' => $this->status],
             ]);
-        }
-        
-        if (!empty($this->infoImageUrl)) {
-            $project->informations()->create([
-                'type' => 'link',
-                'label' => 'Image attachée',
-                'content' => $this->infoImageUrl,
-                'is_verified' => false,
+            $project = $this->draftProject;
+        } else {
+            $project = Project::create([
+                'title' => $this->title,
+                'description' => $this->description,
+                'owner_id' => Auth::id(),
+                'skill_id' => $this->skill->id,
+                'status' => $this->status,
+                'realized_at' => $this->status === 'terminée' ? $this->realizedAt : null,
+                'metadata' => ['status' => $this->status],
             ]);
+
+            $project->addMember(Auth::user(), 'admin');
         }
 
         // Automatic creation of private conversation/first message

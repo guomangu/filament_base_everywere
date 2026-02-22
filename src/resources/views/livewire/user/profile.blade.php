@@ -477,13 +477,13 @@
 
     <!-- Create Success Modal (Two-Step) -->
     @if($showCreateModal)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center">
-            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" wire:click="$set('showCreateModal', false)"></div>
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" wire:click="cancelCreate"></div>
             
-            <div class="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-300">
+            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[90vh] flex flex-col">
                 <!-- Progress Header -->
-                <div class="bg-slate-900 p-6 md:p-8 text-white relative overflow-hidden sticky top-0 z-20">
-                    <button wire:click="$set('showCreateModal', false)" class="absolute top-4 right-4 z-30 text-white/50 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2">
+                <div class="bg-blue-600 p-8 md:p-10 text-white relative shrink-0">
+                    <button wire:click="cancelCreate" class="absolute top-8 right-8 text-white/70 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                     <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-blue-600/20 to-transparent"></div>
@@ -506,7 +506,7 @@
                     </div>
                 </div>
 
-                <div class="p-6 md:p-8">
+                <div class="p-6 md:p-8 overflow-y-auto">
                     @if($step === 1)
                         <!-- Step 1 Form -->
                         <div class="space-y-8">
@@ -547,11 +547,20 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">État actuel</label>
-                                    <select wire:model.live="proofState" class="w-full bg-slate-50 border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold">
-                                        <option value="actuelle">⏳ Actuelle (En cours)</option>
-                                        <option value="verrouillée">🔒 Verrouillée (Suspendue)</option>
-                                        <option value="terminée">✅ Terminée (Achevée)</option>
-                                    </select>
+                                    <div class="flex flex-col space-y-2">
+                                        <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all" :class="$wire.proofState === 'actuelle' ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-200 hover:border-blue-300'">
+                                            <input type="radio" wire:model.live="proofState" value="actuelle" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                            <span class="text-xs font-bold text-slate-700">⏳ Actuelle (En cours)</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all" :class="$wire.proofState === 'verrouillée' ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-200 hover:border-blue-300'">
+                                            <input type="radio" wire:model.live="proofState" value="verrouillée" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                            <span class="text-xs font-bold text-slate-700">🔒 Verrouillée (Suspendue)</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all" :class="$wire.proofState === 'terminée' ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-200 hover:border-blue-300'">
+                                            <input type="radio" wire:model.live="proofState" value="terminée" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                            <span class="text-xs font-bold text-slate-700">✅ Terminée (Achevée)</span>
+                                        </label>
+                                    </div>
                                     @error('proofState') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
                                 </div>
 
@@ -577,33 +586,22 @@
                             </div>
                             @endif
 
-                            <div x-data="{ open: false }" class="mt-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
-                                <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left">
-                                    <span class="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                                        Ajouter un lien / information (Optionnel)
-                                    </span>
-                                    <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                                
-                                <div x-show="open" x-collapse class="pt-4 mt-4 border-t border-slate-200/60 space-y-4">
-                                    <div class="space-y-4">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <input wire:model="infoLabel" type="text" placeholder="Lien: Titre (ex: Portfolio)" class="w-full bg-white border-slate-100 focus:border-blue-500 rounded-xl p-3 text-xs font-bold">
-                                            </div>
-                                            <div>
-                                                <input wire:model="infoUrl" type="url" placeholder="URL (https://...)" class="w-full bg-white border-slate-100 focus:border-blue-500 rounded-xl p-3 text-xs font-bold">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <input wire:model="infoImageUrl" type="url" placeholder="Lien direct vers une Image (https://...)" class="w-full bg-white border-slate-100 focus:border-blue-500 rounded-xl p-3 text-xs font-bold">
-                                            @error('infoImageUrl') <span class="text-red-500 text-[10px] font-black uppercase mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
-                                    </div>
-                                    <p class="text-[9px] text-slate-400 italic font-medium">Les liens ou images seront ajoutés en tant qu'Information pour cette réussite.</p>
+                            @if($draftAchievement)
+                                <div class="mt-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Informations & Médias (Optionnel)</span>
+                                    <livewire:information.manager :model="$draftAchievement" :key="'info-manager-draft-'.$draftAchievement->id" />
                                 </div>
-                            </div>
+                            @endif
+
+                            @if ($errors->any())
+                                <div class="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold mb-4">
+                                    <ul class="list-disc pl-5">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
 
                             <button wire:click="submitProof" class="w-full py-6 bg-blue-600 text-white rounded-[2.5rem] font-black text-sm tracking-[0.3em] uppercase hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/20 mt-6">
                                 Certifier cette preuve

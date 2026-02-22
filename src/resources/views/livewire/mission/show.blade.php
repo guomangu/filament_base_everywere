@@ -136,73 +136,89 @@
                     <h2 class="text-xl font-black uppercase tracking-tighter mb-6">Nouvelle Réalisation</h2>
                     
                     @auth
-                        <form wire:submit.prevent="createRealisation" class="space-y-6">
-                            <div>
-                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Titre du contrat / projet</label>
-                                <input type="text" wire:model="title" 
-                                       class="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                       placeholder="ex: Vidéo de mariage, Refonte site...">
-                                @error('title') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
-                            </div>
+                    <div x-data="{ isCreating: false }">
+                        <button @click="if(!isCreating) { $wire.initDraft() }; isCreating = !isCreating" 
+                                class="w-full py-4 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-500 font-bold text-xs uppercase tracking-widest hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 group">
+                            <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Ajouter une réalisation
+                        </button>
 
-                            <div>
-                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Description rapide</label>
-                                <textarea wire:model="description" rows="4"
-                                          class="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                          placeholder="Quels sont les objectifs ?"></textarea>
-                                @error('description') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
-                            <div>
-                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">État actuel</label>
-                                <select wire:model.live="status" class="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all">
-                                    <option value="actuelle">⏳ Actuelle (En cours)</option>
-                                    <option value="verrouillée">🔒 Verrouillée (Suspendue)</option>
-                                    <option value="terminée">✅ Terminée (Achevée)</option>
-                                </select>
-                                @error('status') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
-                            </div>
-
-                            @if($status === 'terminée')
-                            <div>
-                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Date de réalisation</label>
-                                <input type="date" wire:model="realizedAt" 
-                                       class="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all uppercase tracking-widest">
-                                @error('realizedAt') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
-                            </div>
-                            @endif
-
-                            <div x-data="{ open: false }" class="mt-2 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
-                                <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left">
-                                    <span class="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                        Ajouter Média / Lien (Optionnel)
-                                    </span>
-                                    <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        <div x-show="isCreating" x-collapse>
+                            <div class="mt-4 p-5 bg-white rounded-[2rem] border-2 border-slate-100 relative">
+                                <button @click="isCreating = false; $wire.cancelDraft()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-20">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                 </button>
                                 
-                                <div x-show="open" x-collapse class="pt-4 mt-4 border-t border-slate-200/60 space-y-4">
-                                    <div class="space-y-4">
-                                        <div>
-                                            <input wire:model="infoImageUrl" type="url" placeholder="Lien direct vers une Image (https://...)" class="w-full bg-white border-none focus:ring-2 focus:ring-blue-500/20 rounded-xl p-3 text-xs font-bold text-slate-900">
-                                            @error('infoImageUrl') <span class="text-[10px] text-red-500 font-bold uppercase mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <input wire:model="infoLabel" type="text" placeholder="Titre du lien (ex: Site web)" class="w-full bg-white border-none focus:ring-2 focus:ring-blue-500/20 rounded-xl p-3 text-xs font-bold text-slate-900">
-                                            </div>
-                                            <div>
-                                                <input wire:model="infoUrl" type="url" placeholder="URL externe (https://...)" class="w-full bg-white border-none focus:ring-2 focus:ring-blue-500/20 rounded-xl p-3 text-xs font-bold text-slate-900">
-                                            </div>
-                                        </div>
+                                <form wire:submit.prevent="createRealisation" class="space-y-6 pt-4">
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Titre du contrat / projet</label>
+                                        <input type="text" wire:model="title" 
+                                            class="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            placeholder="ex: Vidéo de mariage, Refonte site...">
+                                        @error('title') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
                                     </div>
-                                    <p class="text-[9px] text-slate-400 italic font-medium">Sera rattaché en tant qu'Information au dossier.</p>
-                                </div>
-                            </div>
 
-                            <button type="submit" 
-                                    class="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all active:scale-95 shadow-lg">
-                                Ouvrir le dossier
-                            </button>
-                        </form>
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Description rapide</label>
+                                        <textarea wire:model="description" rows="4"
+                                                class="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                                placeholder="Quels sont les objectifs ?"></textarea>
+                                        @error('description') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">État actuel</label>
+                                        <div class="flex flex-col space-y-2">
+                                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all" :class="$wire.status === 'actuelle' ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-transparent hover:border-blue-300'">
+                                                <input type="radio" wire:model.live="status" value="actuelle" class="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-white">
+                                                <span class="text-xs font-bold text-slate-700">⏳ Actuelle (En cours)</span>
+                                            </label>
+                                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all" :class="$wire.status === 'verrouillée' ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-transparent hover:border-blue-300'">
+                                                <input type="radio" wire:model.live="status" value="verrouillée" class="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-white">
+                                                <span class="text-xs font-bold text-slate-700">🔒 Verrouillée (Suspendue)</span>
+                                            </label>
+                                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all" :class="$wire.status === 'terminée' ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-transparent hover:border-blue-300'">
+                                                <input type="radio" wire:model.live="status" value="terminée" class="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-white">
+                                                <span class="text-xs font-bold text-slate-700">✅ Terminée (Achevée)</span>
+                                            </label>
+                                        </div>
+                                        @error('status') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
+                                    </div>
+
+                                    @if($status === 'terminée')
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Date de réalisation</label>
+                                        <input type="date" wire:model="realizedAt" 
+                                            class="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all uppercase tracking-widest">
+                                        @error('realizedAt') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
+                                    </div>
+                                    @endif
+
+                                    @if($draftProject)
+                                        <div class="mt-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+                                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Informations & Médias (Optionnel)</span>
+                                            <livewire:information.manager :model="$draftProject" :key="'info-manager-draft-mission-'.$draftProject->id" />
+                                        </div>
+                                    @endif
+
+                                    @if ($errors->any())
+                                        <div class="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold mt-4 mb-2 shadow-sm border border-red-100">
+                                            <ul class="list-disc pl-5">
+                                                @foreach ($errors->all() as $error)
+                                                    <li>{{ $error }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+
+                                    <button type="submit" 
+                                            class="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all active:scale-95 shadow-lg mt-4">
+                                        Ouvrir le dossier
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     @else
                         <div class="text-center py-6">
                             <p class="text-slate-500 font-medium mb-4">Vous devez être connecté pour proposer une réalisation.</p>
