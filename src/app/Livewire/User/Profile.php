@@ -18,9 +18,12 @@ class Profile extends Component
     public string $skillName = '';
     public string $proofTitle = '';
     public string $proofDescription = '';
-    public ?int $selectedSkillId = null;
+    public string $proofState = 'actuelle';
     public ?int $selectedProcheId = null;
     public $realizedAt = '';
+    public string $infoLabel = '';
+    public string $infoUrl = '';
+    public string $infoImageUrl = '';
     public int $valCount = 0;
     public int $rejCount = 0;
 
@@ -41,7 +44,11 @@ class Profile extends Component
         'proofTitle' => 'required_if:step,2|min:3',
         'proofDescription' => 'required_if:step,2|min:10',
         'procheName' => 'required_if:showProcheModal,true|min:2',
-        'realizedAt' => 'required_if:showCreateModal,true|date',
+        'proofState' => 'required_if:step,2|in:actuelle,verrouillée,terminée',
+        'realizedAt' => 'required_if:proofState,terminée|nullable|date',
+        'infoLabel' => 'nullable|string|max:255',
+        'infoUrl' => 'nullable|url|max:500',
+        'infoImageUrl' => 'nullable|url|max:500',
     ];
 
     public function mount(\App\Models\User $user)
@@ -116,7 +123,7 @@ class Profile extends Component
     public function openCreateModal($procheId = null)
     {
         if (!$this->canEdit()) return;
-        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription']);
+        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'infoLabel', 'infoUrl']);
         $this->selectedProcheId = $procheId;
         $this->showCreateModal = true;
     }
@@ -124,7 +131,7 @@ class Profile extends Component
     public function addProofForSkill($skillName, $procheId = null)
     {
         if (!$this->canEdit()) return;
-        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription']);
+        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'infoLabel', 'infoUrl', 'infoImageUrl', 'proofState', 'realizedAt']);
         $this->skillName = $skillName;
         $this->selectedProcheId = $procheId;
         
@@ -176,20 +183,39 @@ class Profile extends Component
         $this->validate();
 
         // Create Achievement
-        \App\Models\Achievement::create([
+        $achievement = \App\Models\Achievement::create([
             'user_id' => $this->selectedProcheId ? null : $this->user->id,
             'proche_id' => $this->selectedProcheId,
             'skill_id' => $this->selectedSkillId,
             'circle_id' => null, 
             'title' => $this->proofTitle,
             'description' => $this->proofDescription,
-            'realized_at' => $this->realizedAt,
+            'realized_at' => $this->proofState === 'terminée' ? $this->realizedAt : null,
             'is_verified' => false, 
+            'metadata' => ['status' => $this->proofState],
         ]);
+
+        if (!empty($this->infoLabel) && !empty($this->infoUrl)) {
+            $achievement->informations()->create([
+                'type' => 'website',
+                'label' => $this->infoLabel,
+                'content' => $this->infoUrl,
+                'is_verified' => false,
+            ]);
+        }
+        
+        if (!empty($this->infoImageUrl)) {
+            $achievement->informations()->create([
+                'type' => 'link',
+                'label' => 'Image attachée',
+                'content' => $this->infoImageUrl,
+                'is_verified' => false,
+            ]);
+        }
 
         $this->showCreateModal = false;
         $this->user->recalculateTrustScore(); // Might change if we had base points for adding proofs
-        $this->user->load('achievements.skill', 'achievements.circle', 'proches.achievements.skill');
+        $this->user->load('achievements.skill', 'achievements.circle', 'proches.achievements.skill', 'achievements.informations');
         
         $this->dispatch('notify', [
             'message' => 'Preuve ajoutée avec succès !',

@@ -151,6 +151,51 @@
                                           class="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all"
                                           placeholder="Quels sont les objectifs ?"></textarea>
                                 @error('description') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
+                            <div>
+                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">État actuel</label>
+                                <select wire:model.live="status" class="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all">
+                                    <option value="actuelle">⏳ Actuelle (En cours)</option>
+                                    <option value="verrouillée">🔒 Verrouillée (Suspendue)</option>
+                                    <option value="terminée">✅ Terminée (Achevée)</option>
+                                </select>
+                                @error('status') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            @if($status === 'terminée')
+                            <div>
+                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Date de réalisation</label>
+                                <input type="date" wire:model="realizedAt" 
+                                       class="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all uppercase tracking-widest">
+                                @error('realizedAt') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
+                            </div>
+                            @endif
+
+                            <div x-data="{ open: false }" class="mt-2 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+                                <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left">
+                                    <span class="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        Ajouter Média / Lien (Optionnel)
+                                    </span>
+                                    <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                
+                                <div x-show="open" x-collapse class="pt-4 mt-4 border-t border-slate-200/60 space-y-4">
+                                    <div class="space-y-4">
+                                        <div>
+                                            <input wire:model="infoImageUrl" type="url" placeholder="Lien direct vers une Image (https://...)" class="w-full bg-white border-none focus:ring-2 focus:ring-blue-500/20 rounded-xl p-3 text-xs font-bold text-slate-900">
+                                            @error('infoImageUrl') <span class="text-[10px] text-red-500 font-bold uppercase mt-1 block">{{ $message }}</span> @enderror
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <input wire:model="infoLabel" type="text" placeholder="Titre du lien (ex: Site web)" class="w-full bg-white border-none focus:ring-2 focus:ring-blue-500/20 rounded-xl p-3 text-xs font-bold text-slate-900">
+                                            </div>
+                                            <div>
+                                                <input wire:model="infoUrl" type="url" placeholder="URL externe (https://...)" class="w-full bg-white border-none focus:ring-2 focus:ring-blue-500/20 rounded-xl p-3 text-xs font-bold text-slate-900">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 italic font-medium">Sera rattaché en tant qu'Information au dossier.</p>
+                                </div>
                             </div>
 
                             <button type="submit" 

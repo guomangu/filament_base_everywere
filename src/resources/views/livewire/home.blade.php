@@ -162,9 +162,9 @@ class="min-h-screen bg-slate-50/50">
                                 {{-- Skills for this specific user --}}
                                 <div class="flex flex-wrap gap-1.5 pl-1">
                                     @foreach($member->user->achievements->take(4) as $achievement)
-                                        <span class="px-2.5 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[8px] font-black uppercase tracking-tight shadow-sm">
+                                        <a href="{{ route('mission.show', $achievement->skill) }}" class="px-2.5 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[8px] font-black uppercase tracking-tight shadow-sm hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
                                             {{ $achievement->skill->name }}
-                                        </span>
+                                        </a>
                                     @endforeach
                                 </div>
                             </div>

@@ -70,13 +70,13 @@
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
         <!-- Sidebar -->
-        <div class="lg:col-span-4 space-y-8">
+        <div class="lg:col-span-6 space-y-8">
 
 
             <!-- Reseaux (Discovery) -->
             @auth
                 @if(auth()->id() === $user->id)
-                    <div class="mt-10 space-y-6">
+                    <div class="space-y-6">
                         <livewire:network.explorer :origin="$user" />
                     </div>
                 @endif
@@ -136,7 +136,7 @@
         </div>
 
         <!-- Portfolio: Skill-Centric View -->
-        <div class="lg:col-span-8 space-y-12">
+        <div class="lg:col-span-6 space-y-12">
             
             {{-- ===== MES PROJETS / OFFRES ===== --}}
             @if(($userProjects->count() > 0 && auth()->id() === $user->id) || ($userOffers->count() > 0 && auth()->id() !== $user->id))
@@ -203,10 +203,10 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($userProjects as $project)
                                 <div class="relative group h-full">
-                                    <div class="flex flex-col relative h-full bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
-                                        <a href="{{ route('projects.show', $project) }}" class="absolute inset-0 z-10" title="Voir la réalisation"></a>
+                                        <div class="flex flex-col relative h-full bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
+                                        <a href="{{ route('projects.show', $project) }}" class="absolute inset-0 z-20 rounded-3xl" title="Voir la réalisation"></a>
                                         
-                                        <div class="flex items-start justify-between mb-4 relative z-20">
+                                        <div class="flex items-start justify-between mb-4 relative z-10 pointer-events-none">
                                             <div class="flex-1 min-w-0">
                                                 <h4 class="text-base font-black text-slate-900 uppercase tracking-tight truncate group-hover:text-blue-600 transition-colors">
                                                     {{ $project->title }}
@@ -233,7 +233,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="grid grid-cols-2 gap-2 mb-4 relative z-20">
+                                        <div class="grid grid-cols-2 gap-2 mb-4 relative z-10 pointer-events-none">
                                             <div class="bg-white/60 rounded-xl p-2 text-center border border-slate-100">
                                                 <div class="text-xs font-black text-slate-900">{{ $project->activeMembers->count() + 1 }}</div>
                                                 <div class="text-[7px] font-black text-slate-400 uppercase">Participants</div>
@@ -244,7 +244,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="flex items-center gap-2 pt-3 border-t border-slate-100 relative z-20 mt-auto">
+                                        <div class="flex items-center gap-2 pt-3 border-t border-slate-100 relative z-10 mt-auto pointer-events-none">
                                             <a href="{{ route('users.show', $project->owner) }}" class="flex items-center gap-2 group/owner pointer-events-auto relative z-30">
                                                 <img src="{{ $project->owner->avatar_url }}" class="w-6 h-6 rounded-lg object-cover border border-slate-200 group-hover/owner:border-blue-500 transition-all">
                                                 <div class="flex-1 min-w-0">
@@ -260,7 +260,7 @@
                                     @auth
                                         @if($project->canManage(auth()->user()))
                                             <button wire:click="toggleProjectStatus({{ $project->id }})" 
-                                                    class="absolute top-4 right-4 z-10 w-8 h-8 rounded-xl bg-white shadow-xl flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100">
+                                                    class="absolute top-4 right-4 z-30 w-8 h-8 rounded-xl bg-white shadow-xl flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100 pointer-events-auto">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
                                             </button>
                                         @endif
@@ -339,7 +339,7 @@
                                                 $firstAch = $achievements->first(); 
                                                 $procheIdForBtn = $firstAch->proche_id;
                                             @endphp
-                                            <button wire:click="addProofForSkill('{{ $skillName }}', {{ $procheIdForBtn ?? 'null' }})" class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-blue-500/20 group/btn shrink-0">
+                                            <button wire:click="addProofForSkill('{{ addslashes($skillName) }}', {{ $procheIdForBtn ?? 'null' }})" class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-blue-500/20 group/btn shrink-0">
                                                 <svg class="w-4 h-4 md:w-5 h-5 group-hover/btn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
                                             </button>
                                         @endif
@@ -480,30 +480,33 @@
         <div class="fixed inset-0 z-[100] flex items-center justify-center">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" wire:click="$set('showCreateModal', false)"></div>
             
-            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-300">
                 <!-- Progress Header -->
-                <div class="bg-slate-900 p-12 text-white relative overflow-hidden">
+                <div class="bg-slate-900 p-6 md:p-8 text-white relative overflow-hidden sticky top-0 z-20">
+                    <button wire:click="$set('showCreateModal', false)" class="absolute top-4 right-4 z-30 text-white/50 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                     <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-blue-600/20 to-transparent"></div>
                     <div class="relative z-10">
-                        <div class="flex items-center gap-4 mb-8">
-                            <span class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-xl font-black">{{ $step }}</span>
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-lg font-black">{{ $step }}</span>
                             <div>
-                                <h3 class="text-2xl font-black tracking-tight leading-none uppercase">
+                                <h3 class="text-xl md:text-2xl font-black tracking-tight leading-none uppercase pr-10">
                                     {{ $step === 1 ? 'Quelle est votre expertise ?' : 'Certifier cette expertise' }}
                                 </h3>
-                                <p class="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">
+                                <p class="text-slate-400 text-[10px] font-bold mt-1 uppercase tracking-widest">
                                     {{ $step === 1 ? 'Ajout d\'une nouvelle compétence' : 'Dépôt de preuve factuelle' }}
                                 </p>
                             </div>
                         </div>
                         <!-- Progress bar -->
-                        <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                             <div class="h-full bg-blue-500 rounded-full transition-all duration-500" style="width: {{ $step === 1 ? '50%' : '100%' }}"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="p-12">
+                <div class="p-6 md:p-8">
                     @if($step === 1)
                         <!-- Step 1 Form -->
                         <div class="space-y-8">
@@ -541,14 +544,68 @@
                                 @error('proofDescription') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
                             </div>
 
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">État actuel</label>
+                                    <select wire:model.live="proofState" class="w-full bg-slate-50 border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold">
+                                        <option value="actuelle">⏳ Actuelle (En cours)</option>
+                                        <option value="verrouillée">🔒 Verrouillée (Suspendue)</option>
+                                        <option value="terminée">✅ Terminée (Achevée)</option>
+                                    </select>
+                                    @error('proofState') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
+                                </div>
+
+                                @if($proofState === 'terminée')
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Date de réalisation</label>
+                                    <input wire:model="realizedAt" type="date"
+                                        class="w-full bg-slate-50 border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold uppercase tracking-widest">
+                                    @error('realizedAt') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
+                                </div>
+                                @endif
+                            </div>
+                            
+                            @if($user->proches->count() > 0)
                             <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Date de réalisation</label>
-                                <input wire:model="realizedAt" type="date"
-                                    class="w-full bg-slate-50 border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold uppercase tracking-widest">
-                                @error('realizedAt') <span class="text-red-500 text-[10px] font-black uppercase mt-2 block">{{ $message }}</span> @enderror
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Lié à un proche ? (Optionnel)</label>
+                                <select wire:model="selectedProcheId" class="w-full bg-slate-50 border-white focus:ring-blue-500 rounded-2xl p-4 text-sm font-bold">
+                                    <option value="">-- Mon propre profil --</option>
+                                    @foreach($user->proches as $proche)
+                                        <option value="{{ $proche->id }}">{{ $proche->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+
+                            <div x-data="{ open: false }" class="mt-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+                                <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left">
+                                    <span class="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                        Ajouter un lien / information (Optionnel)
+                                    </span>
+                                    <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                
+                                <div x-show="open" x-collapse class="pt-4 mt-4 border-t border-slate-200/60 space-y-4">
+                                    <div class="space-y-4">
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <input wire:model="infoLabel" type="text" placeholder="Lien: Titre (ex: Portfolio)" class="w-full bg-white border-slate-100 focus:border-blue-500 rounded-xl p-3 text-xs font-bold">
+                                            </div>
+                                            <div>
+                                                <input wire:model="infoUrl" type="url" placeholder="URL (https://...)" class="w-full bg-white border-slate-100 focus:border-blue-500 rounded-xl p-3 text-xs font-bold">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <input wire:model="infoImageUrl" type="url" placeholder="Lien direct vers une Image (https://...)" class="w-full bg-white border-slate-100 focus:border-blue-500 rounded-xl p-3 text-xs font-bold">
+                                            @error('infoImageUrl') <span class="text-red-500 text-[10px] font-black uppercase mt-1 block">{{ $message }}</span> @enderror
+                                        </div>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 italic font-medium">Les liens ou images seront ajoutés en tant qu'Information pour cette réussite.</p>
+                                </div>
                             </div>
 
-                            <button wire:click="submitProof" class="w-full py-6 bg-blue-600 text-white rounded-[2.5rem] font-black text-sm tracking-[0.3em] uppercase hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/20">
+                            <button wire:click="submitProof" class="w-full py-6 bg-blue-600 text-white rounded-[2.5rem] font-black text-sm tracking-[0.3em] uppercase hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/20 mt-6">
                                 Certifier cette preuve
                             </button>
                         </div>
