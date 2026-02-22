@@ -69,8 +69,18 @@
                                             <span class="px-2 py-0.5 bg-green-500/10 text-green-600 text-[8px] font-black uppercase rounded-full">En cours</span>
                                             <span class="text-slate-400 text-[8px] font-bold">{{ $realisation->created_at->diffForHumans() }}</span>
                                         </div>
-                                        <h3 class="text-xl font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase leading-[0.9] mb-2">{{ $realisation->title }}</h3>
-                                        <p class="text-slate-500 text-sm line-clamp-2">{{ Str::limit($realisation->description, 150) }}</p>
+                                        <h3 class="text-xl font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase leading-[0.9] mb-4">{{ $realisation->title }}</h3>
+                                        @if($realisation->skills && $realisation->skills->count() > 0)
+                                            <div class="flex flex-wrap gap-1 mb-4">
+                                                @php $mainSkillId = $skill->id; @endphp
+                                                @foreach($realisation->skills as $s)
+                                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-black uppercase rounded-lg border border-slate-200/50">
+                                                        {{ $s->name }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                        <p class="text-slate-500 text-sm line-clamp-2 italic">{{ Str::limit($realisation->description, 150) }}</p>
                                     </div>
                                     <div class="flex -space-x-2">
                                         <img src="{{ $realisation->owner->avatar_url }}" class="w-10 h-10 rounded-full border-2 border-white shadow-sm" title="{{ $realisation->owner->name }}">
@@ -106,7 +116,16 @@
                                             <span class="px-2 py-0.5 bg-slate-500/10 text-slate-600 text-[8px] font-black uppercase rounded-full">Terminée</span>
                                             <span class="text-slate-400 text-[8px] font-bold">{{ $realisation->realized_at?->translatedFormat('M Y') }}</span>
                                         </div>
-                                        <h3 class="text-xl font-black text-slate-900 uppercase leading-[0.9] mb-2">{{ $realisation->title }}</h3>
+                                        <h3 class="text-xl font-black text-slate-900 uppercase leading-[0.9] mb-4">{{ $realisation->title }}</h3>
+                                        @if($realisation->skills && $realisation->skills->count() > 0)
+                                            <div class="flex flex-wrap gap-1 mb-4">
+                                                @foreach($realisation->skills as $s)
+                                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-black uppercase rounded-lg border border-slate-200/50">
+                                                        {{ $s->name }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                         <div class="flex items-center gap-4">
                                             <div class="flex items-center gap-1.5">
                                                 <div class="flex text-amber-400">
@@ -131,6 +150,27 @@
 
         {{-- Sidebar Form --}}
         <div class="space-y-8" id="create-realisation">
+            @if($topExpert)
+                <div class="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150"></div>
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-3">
+                        <span class="w-1.5 h-4 bg-blue-500 rounded-full"></span>
+                        Expert Référent
+                    </h3>
+                    
+                    <a href="{{ route('users.show', $topExpert) }}" class="flex items-start gap-4 p-4 rounded-3xl bg-slate-50 border border-transparent hover:border-blue-200 hover:bg-white transition-all group/card">
+                        <img src="{{ $topExpert->avatar }}" class="w-16 h-16 rounded-2xl object-cover shadow-lg border-2 border-white">
+                        <div class="flex-grow pt-1">
+                            <h4 class="text-sm font-black uppercase tracking-tight text-slate-900 mb-1 group-hover/card:text-blue-600">{{ $topExpert->name }}</h4>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{{ $topExpert->trust_score }}% Trust</span>
+                            </div>
+                            <x-user-skills-tags :user="$topExpert" limit="3" class="scale-75 origin-left" />
+                        </div>
+                    </a>
+                </div>
+            @endif
+
             <div class="sticky top-24">
                 <div class="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] p-8 shadow-2xl">
                     <h2 class="text-xl font-black uppercase tracking-tighter mb-6">Nouvelle Réalisation</h2>
@@ -193,6 +233,24 @@
                                         @error('realizedAt') <span class="text-[10px] text-red-500 font-bold uppercase mt-1">{{ $message }}</span> @enderror
                                     </div>
                                     @endif
+
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Compétences techniques additionnelles (Tags)</label>
+                                        <div class="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 min-h-[80px]">
+                                            @foreach($availableSkills as $as)
+                                                <label class="cursor-pointer">
+                                                    <input type="checkbox" wire:model.live="selectedSkillIds" value="{{ $as->id }}" class="hidden">
+                                                    <span @class([
+                                                        'px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tight border transition-all',
+                                                        'bg-slate-900 border-slate-900 text-white shadow-lg' => in_array($as->id, $selectedSkillIds),
+                                                        'bg-white border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-600' => !in_array($as->id, $selectedSkillIds)
+                                                    ])>
+                                                        {{ $as->name }}
+                                                    </span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    </div>
 
                                     @if($draftProject)
                                         <div class="mt-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">

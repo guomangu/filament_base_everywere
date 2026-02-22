@@ -188,32 +188,78 @@
             <!-- Main Panel -->
             <main class="flex-grow p-10 space-y-10">
                 @if($type === 'user')
-                    <!-- User Achievements -->
+                    <!-- User Realisations (Achievements + Projects) -->
                     <section>
                         <h2 class="text-lg font-black text-slate-900 border-b-2 border-slate-900 pb-2 mb-6 uppercase tracking-tight">Timeline des Réalisations</h2>
                         <div class="space-y-8">
-                            @foreach($user->achievements->sortByDesc('realized_at') as $ach)
+                            @php
+                                $combined = collect();
+                                foreach($user->achievements as $ach) {
+                                    $combined->push([
+                                        'type' => 'achievement',
+                                        'model' => $ach,
+                                        'date' => $ach->realized_at ?? $ach->created_at,
+                                    ]);
+                                }
+                                foreach($allUserProjects as $proj) {
+                                    $combined->push([
+                                        'type' => 'project',
+                                        'model' => $proj,
+                                        'date' => $proj->realized_at ?? $proj->created_at,
+                                    ]);
+                                }
+                                $combined = $combined->sortByDesc('date');
+                            @endphp
+
+                            @foreach($combined as $item)
+                                @php 
+                                    $type = $item['type'];
+                                    $model = $item['model'];
+                                @endphp
                                 <div class="relative pl-8 border-l-2 border-slate-100 pb-2">
                                     <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-900 border-4 border-white"></div>
                                     <div class="flex justify-between items-start mb-1">
-                                        <h4 class="font-black text-slate-900 uppercase tracking-tight">{{ $ach->title }}</h4>
-                                        <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded italic">{{ $ach->realized_at ? $ach->realized_at->format('M Y') : 'N/A' }}</span>
+                                        <div class="flex items-center gap-3">
+                                            <h4 class="font-black text-slate-900 uppercase tracking-tight">{{ $model->title }}</h4>
+                                            @if($type === 'project')
+                                                <span class="text-[8px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded uppercase tracking-tighter">Mission</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded italic">
+                                            {{ $model->realized_at ? (\Illuminate\Support\Carbon::parse($model->realized_at)->format('M Y')) : $model->created_at->format('M Y') }}
+                                        </span>
                                     </div>
-                                    <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">{{ $ach->skill->name }}</div>
-                                    <p class="text-xs text-slate-600 leading-relaxed font-medium mb-4">{{ $ach->description }}</p>
                                     
-                                    <!-- Validations with comments -->
-                                    <div class="grid grid-cols-2 gap-3">
-                                        @foreach($ach->validations->where('type', 'validate')->whereNotNull('comment')->take(2) as $val)
-                                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                                                <div class="flex items-center gap-2 mb-1.5">
-                                                    <img src="{{ $val->user->avatar }}" class="w-4 h-4 rounded-full border border-white">
-                                                    <span class="text-[8px] font-black text-slate-900 uppercase">{{ $val->user->name }}</span>
-                                                </div>
-                                                <p class="text-[9px] text-slate-500 font-medium italic leading-snug">"{{ $val->comment }}"</p>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest">{{ $model->skill->name }}</div>
+                                        @if($type === 'project')
+                                            <div class="flex -space-x-1.5">
+                                                <img src="{{ $model->owner->avatar }}" class="w-5 h-5 rounded-full border border-white shadow-sm" title="Responsable">
+                                                @foreach($model->activeMembers->take(3) as $m)
+                                                    @if($m->memberable_id !== $model->owner_id)
+                                                        <img src="{{ $m->memberable->avatar }}" class="w-5 h-5 rounded-full border border-white shadow-sm">
+                                                    @endif
+                                                @endforeach
                                             </div>
-                                        @endforeach
+                                        @endif
                                     </div>
+
+                                    <p class="text-xs text-slate-600 leading-relaxed font-medium mb-4">{{ $model->description }}</p>
+                                    
+                                    @if($type === 'achievement')
+                                        <!-- Validations with comments -->
+                                        <div class="grid grid-cols-2 gap-3">
+                                            @foreach($model->validations->where('type', 'validate')->whereNotNull('comment')->take(2) as $val)
+                                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                                    <div class="flex items-center gap-2 mb-1.5">
+                                                        <img src="{{ $val->user->avatar }}" class="w-4 h-4 rounded-full border border-white">
+                                                        <span class="text-[8px] font-black text-slate-900 uppercase">{{ $val->user->name }}</span>
+                                                    </div>
+                                                    <p class="text-[9px] text-slate-500 font-medium italic leading-snug">"{{ $val->comment }}"</p>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

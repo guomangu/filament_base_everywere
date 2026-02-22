@@ -29,6 +29,13 @@ class Profile extends Component
     public ?\App\Models\Achievement $draftAchievement = null;
     public int $valCount = 0;
     public int $rejCount = 0;
+    public array $selectedSkillIds = [];
+    public $availableSkills = [];
+
+    // Direct Tagging UX
+    public ?int $taggingRealisationId = null;
+    public ?string $taggingRealisationType = null;
+    public string $searchSkill = '';
 
     // Validation Details
     public bool $showValidationModal = false;
@@ -76,6 +83,8 @@ class Profile extends Component
             $this->lng = auth()->user()->coordinates['lng'];
             $this->locationName = auth()->user()->location;
         }
+
+        $this->availableSkills = \App\Models\Skill::orderBy('name')->get();
     }
 
     public function setLocation($lat, $lng, $name)
@@ -165,7 +174,7 @@ class Profile extends Component
         if ($this->draftAchievement) {
             $this->draftAchievement->delete();
         }
-        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'proofState', 'realizedAt', 'draftAchievement', 'showCreateModal']);
+        $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'proofState', 'realizedAt', 'draftAchievement', 'showCreateModal', 'selectedSkillIds']);
     }
 
     public function submitSkillOnly()
@@ -210,7 +219,7 @@ class Profile extends Component
                 'metadata' => ['status' => $this->proofState],
             ]);
         } else {
-            \App\Models\Achievement::create([
+            $achievement = \App\Models\Achievement::create([
                 'user_id' => $this->selectedProcheId ? null : $this->user->id,
                 'proche_id' => $this->selectedProcheId,
                 'skill_id' => $this->selectedSkillId,
@@ -221,6 +230,12 @@ class Profile extends Component
                 'is_verified' => false, 
                 'metadata' => ['status' => $this->proofState],
             ]);
+        }
+
+        if ($this->draftAchievement) {
+            $this->draftAchievement->skills()->sync($this->selectedSkillIds);
+        } else {
+            $achievement->skills()->sync($this->selectedSkillIds);
         }
 
         $this->reset('draftAchievement');
@@ -383,11 +398,8 @@ class Profile extends Component
 
         // 3. Proches Achievements for networking
         $prochesAchievements = \App\Models\Achievement::whereIn('proche_id', $this->user->proches->pluck('id'))
-            ->with(['skill', 'proche'])
+            ->with(['skill', 'proche', 'informations', 'validations.user'])
             ->get();
-
-        // Combine local and proches achievements
-        $allAchievements = $this->user->achievements->merge($prochesAchievements);
 
         // 4. User Projects (owned or active member)
         try {
@@ -396,15 +408,55 @@ class Profile extends Component
                 ->where('status', 'active')
                 ->pluck('project_id');
 
-            $userProjects = Project::where('owner_id', $this->user->id)
-                ->orWhereIn('id', $memberProjectIds)
-                ->with(['owner', 'activeMembers', 'skill', 'messages'])
+            $allUserProjects = Project::where(function($q) use ($memberProjectIds) {
+                    $q->where('owner_id', $this->user->id)
+                      ->orWhereIn('id', $memberProjectIds);
+                })
+                ->whereNotNull('skill_id')
+                ->with(['owner', 'activeMembers.memberable', 'skill', 'messages', 'informations', 'skills'])
                 ->latest()
-                ->take(20)
                 ->get();
+            
+            $userProjects = $allUserProjects->take(20);
         } catch (\Exception $e) {
+            $allUserProjects = collect([]);
             $userProjects = collect([]);
         }
+
+        // Combine local and proches achievements
+        $allAchievements = $this->user->achievements->merge($prochesAchievements);
+
+        // Group everything by Skill Name
+        $combinedGrouped = collect();
+
+        // Add Achievements
+        foreach ($allAchievements as $ach) {
+            if (!$combinedGrouped->has($ach->skill->name)) {
+                $combinedGrouped->put($ach->skill->name, collect());
+            }
+            $combinedGrouped->get($ach->skill->name)->push([
+                'type' => 'achievement',
+                'model' => $ach,
+                'date' => $ach->realized_at ?? $ach->created_at,
+            ]);
+        }
+
+        // Add Projects
+        foreach ($allUserProjects as $proj) {
+            if (!$combinedGrouped->has($proj->skill->name)) {
+                $combinedGrouped->put($proj->skill->name, collect());
+            }
+            $combinedGrouped->get($proj->skill->name)->push([
+                'type' => 'project',
+                'model' => $proj,
+                'date' => $proj->realized_at ?? $proj->created_at,
+            ]);
+        }
+
+        // Sort each group by date desc
+        $combinedGrouped = $combinedGrouped->map(function($items) {
+            return $items->sortByDesc('date');
+        });
 
         $userOffers = \App\Models\ProjectOffer::whereIn('project_id', $userProjects->pluck('id'))
             ->where('type', 'offer')
@@ -419,7 +471,7 @@ class Profile extends Component
         })->where('type', 'offer')->count();
 
         return view('livewire.user.profile', [
-            'groupedAchievements' => $allAchievements->groupBy(fn($ach) => $ach->skill->name),
+            'groupedAchievements' => $combinedGrouped,
             'networkExperts' => $networkExperts,
             'canEdit' => $this->canEdit(),
             'userProjects' => $userProjects,
@@ -452,5 +504,29 @@ class Profile extends Component
         $project = Project::findOrFail($projectId);
         if (!$project->canManage(auth()->user())) return;
         $project->toggleStatus();
+    }
+
+    public function addSkillToRealisation($skillName, $realisationId, $realisationType)
+    {
+        $skill = \App\Models\Skill::firstOrCreate(
+            ['name' => $skillName],
+            ['slug' => \Illuminate\Support\Str::slug($skillName)]
+        );
+
+        if ($realisationType === 'achievement') {
+            $ach = \App\Models\Achievement::findOrFail($realisationId);
+            // Allow if owner or parent of proche
+            if ($ach->user_id === auth()->id() || ($ach->proche && $ach->proche->parent_id === auth()->id())) {
+                $ach->skills()->syncWithoutDetaching([$skill->id]);
+            }
+        } else {
+            $proj = \App\Models\Project::findOrFail($realisationId);
+            if ($proj->canManage(auth()->user())) {
+                $proj->skills()->syncWithoutDetaching([$skill->id]);
+            }
+        }
+
+        $this->reset(['taggingRealisationId', 'taggingRealisationType', 'searchSkill']);
+        $this->dispatch('notify', ['message' => 'Compétence ajoutée !', 'type' => 'success']);
     }
 }

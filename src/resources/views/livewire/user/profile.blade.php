@@ -272,8 +272,8 @@
                                         @if($canEdit)
                                             @php 
                                                 // Check if any achievement in this group belongs to a Proche we can edit
-                                                $firstAch = $achievements->first(); 
-                                                $procheIdForBtn = $firstAch->proche_id;
+                                                $firstItem = $achievements->where('type', 'achievement')->first(); 
+                                                $procheIdForBtn = $firstItem ? $firstItem['model']->proche_id : null;
                                             @endphp
                                             <button wire:click="addProofForSkill('{{ addslashes($skillName) }}', {{ $procheIdForBtn ?? 'null' }})" class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-blue-500/20 group/btn shrink-0">
                                                 <svg class="w-4 h-4 md:w-5 h-5 group-hover/btn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
@@ -282,14 +282,14 @@
                                     @endauth
                                 </div>
                                 @php
-                                    $realizedDates = $achievements->reject(fn($a) => $a->title === '__SKELETON__')->pluck('realized_at')->filter();
+                                    $realizedDates = $achievements->filter(fn($i) => $i['type'] === 'achievement' && $i['model']->title !== '__SKELETON__')->map(fn($i) => $i['model']->realized_at)->filter();
                                     $minYear = $realizedDates->count() ? $realizedDates->min()->format('Y') : null;
                                     $maxYear = $realizedDates->count() ? $realizedDates->max()->format('Y') : null;
                                 @endphp
                                 <div class="flex items-center gap-2">
                                     <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
                                     <span class="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
-                                        {{ $achievements->reject(fn($a) => $a->title === '__SKELETON__')->count() }} Preuve(s)
+                                        {{ $achievements->filter(fn($i) => $i['type'] === 'achievement' && $i['model']->title !== '__SKELETON__')->count() }} Preuve(s)
                                         @if($minYear && $maxYear)
                                             • {{ $minYear === $maxYear ? $minYear : "{$minYear} - {$maxYear}" }}
                                         @endif
@@ -302,76 +302,164 @@
                         <div class="grid grid-cols-1 md:grid-cols-1 gap-6 md:gap-8 pl-6 md:pl-20 relative">
                             <!-- Timeline Connector -->
                             <div class="absolute left-4 md:left-[4.5rem] top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-100 to-transparent"></div>
-                            
-                            @foreach($achievements->reject(fn($a) => $a->title === '__SKELETON__') as $achievement)
+                                                       @foreach($achievements as $item)
+                                @php 
+                                    $type = $item['type'];
+                                    $model = $item['model'];
+                                    if ($type === 'achievement' && $model->title === '__SKELETON__') continue;
+                                @endphp
                                 <div class="group relative">
-                                    <!-- Point -->
-                                    <!-- <div class="absolute -left-[2.75rem] md:-left-[5rem] top-8 w-3 h-3 md:w-4 md:h-4 rounded-full bg-white border-[3px] md:border-4 border-slate-900 shadow-lg z-10 group-hover:bg-blue-600 group-hover:border-blue-200 transition-all duration-500"></div> -->
-
-                                    <div class="relative bg-white/60 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] hover:bg-white transition-all duration-500 group-hover:shadow-[0_40px_80px_-15px_rgba(59,130,246,0.08)]">
+                                    <div @class([
+                                        'relative bg-white/60 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] hover:bg-white transition-all duration-500 group-hover:shadow-[0_40px_80px_-15px_rgba(59,130,246,0.08)] cursor-pointer',
+                                    ]) 
+                                    @if($type === 'project') onclick="window.location.href='{{ route('projects.show', $model) }}'" @endif>
+                                        
                                         <div class="flex items-start justify-between mb-6">
                                             <div class="flex flex-col gap-1">
                                                 <span class="text-[9px] font-black uppercase text-slate-300 tracking-widest">
-                                                    {{ $achievement->realized_at ? $achievement->realized_at->format('M Y') : $achievement->created_at->format('M Y') }}
+                                                    {{ $model->realized_at ? (\Illuminate\Support\Carbon::parse($model->realized_at)->format('M Y')) : $model->created_at->format('M Y') }}
                                                 </span>
-                                                @if($achievement->proche_id)
-                                                    <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-tighter">Proche : {{ $achievement->proche->name }}</span>
+                                                @if($type === 'achievement' && $model->proche_id)
+                                                    <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-tighter">Proche : {{ $model->proche->name }}</span>
+                                                @elseif($type === 'project')
+                                                    <span class="text-[8px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md uppercase tracking-tighter">Réalisation Mission</span>
                                                 @endif
                                             </div>
                                             
-                                            <div class="flex items-center gap-2">
-                                                @auth
-                                                    @if(auth()->id() !== $user->id)
+                                            <div class="flex items-center gap-2" @click.stop="">
+                                                @if($type === 'achievement')
+                                                    @auth
+                                                        @if(auth()->id() !== $user->id)
+                                                            @php 
+                                                                $myValidation = $model->validations->where('user_id', auth()->id())->first();
+                                                            @endphp
+                                                            <div class="flex bg-slate-100 rounded-xl p-1 gap-1">
+                                                                <button wire:click="initiateValidation({{ $model->id }}, 'validate')" @class([
+                                                                    'p-1.5 rounded-lg transition-all',
+                                                                    'bg-white text-green-600 shadow-sm' => $myValidation && $myValidation->type === 'validate',
+                                                                    'text-slate-400 hover:text-green-600' => !$myValidation || $myValidation->type !== 'validate'
+                                                                ]) title="Valider">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                                </button>
+                                                                <button wire:click="initiateValidation({{ $model->id }}, 'reject')" @class([
+                                                                    'p-1.5 rounded-lg transition-all',
+                                                                    'bg-white text-red-600 shadow-sm' => $myValidation && $myValidation->type === 'reject',
+                                                                    'text-slate-400 hover:text-red-600' => !$myValidation || $myValidation->type !== 'reject'
+                                                                ]) title="Rejeter">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                                </button>
+                                                            </div>
+                                                        @endif
+                                                    @endauth
+                                                    
+                                                    <button wire:click="openValidationModal({{ $model->id }})" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-100 rounded-xl hover:border-blue-200 transition-all group/vcount">
                                                         @php 
-                                                            $myValidation = $achievement->validations->where('user_id', auth()->id())->first();
+                                                            $valCount = $model->validations->where('type', 'validate')->count();
+                                                            $rejCount = $model->validations->where('type', 'reject')->count();
+                                                            $score = $valCount - $rejCount;
                                                         @endphp
-                                                        <div class="flex bg-slate-100 rounded-xl p-1 gap-1">
-                                                            <button wire:click="initiateValidation({{ $achievement->id }}, 'validate')" @class([
-                                                                'p-1.5 rounded-lg transition-all',
-                                                                'bg-white text-green-600 shadow-sm' => $myValidation && $myValidation->type === 'validate',
-                                                                'text-slate-400 hover:text-green-600' => !$myValidation || $myValidation->type !== 'validate'
-                                                            ]) title="Valider">
-                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                                            </button>
-                                                            <button wire:click="initiateValidation({{ $achievement->id }}, 'reject')" @class([
-                                                                'p-1.5 rounded-lg transition-all',
-                                                                'bg-white text-red-600 shadow-sm' => $myValidation && $myValidation->type === 'reject',
-                                                                'text-slate-400 hover:text-red-600' => !$myValidation || $myValidation->type !== 'reject'
-                                                            ]) title="Rejeter">
-                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                            </button>
+                                                        <span @class([
+                                                            'text-[10px] font-black',
+                                                            'text-green-600' => $score > 0,
+                                                            'text-red-600' => $score < 0,
+                                                            'text-slate-400' => $score === 0
+                                                        ])>{{ $score > 0 ? '+' : '' }}{{ $score }}</span>
+                                                        <div class="flex -space-x-2">
+                                                            @foreach($model->validations->take(3) as $v)
+                                                                <div class="hover:z-20 transition-transform hover:scale-125 pointer-events-auto">
+                                                                    <img src="{{ $v->user->avatar }}" class="w-4 h-4 rounded-full border border-white shadow-sm">
+                                                                </div>
+                                                            @endforeach
                                                         </div>
-                                                    @endif
-                                                @endauth
-                                                
-                                                <button wire:click="openValidationModal({{ $achievement->id }})" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-100 rounded-xl hover:border-blue-200 transition-all group/vcount">
-                                                    @php 
-                                                        $valCount = $achievement->validations->where('type', 'validate')->count();
-                                                        $rejCount = $achievement->validations->where('type', 'reject')->count();
-                                                        $score = $valCount - $rejCount;
-                                                    @endphp
-                                                    <span @class([
-                                                        'text-[10px] font-black',
-                                                        'text-green-600' => $score > 0,
-                                                        'text-red-600' => $score < 0,
-                                                        'text-slate-400' => $score === 0
-                                                    ])>{{ $score > 0 ? '+' : '' }}{{ $score }}</span>
-                                                    <div class="flex -space-x-2">
-                                                        @foreach($achievement->validations->take(3) as $v)
-                                                            <a href="{{ route('users.show', $v->user) }}" class="hover:z-20 transition-transform hover:scale-125">
-                                                                <img src="{{ $v->user->avatar }}" class="w-4 h-4 rounded-full border border-white shadow-sm">
-                                                            </a>
-                                                        @endforeach
+                                                    </button>
+                                                @else
+                                                    {{-- Project Participants --}}
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="flex -space-x-2">
+                                                            <div class="relative z-10 pointer-events-auto">
+                                                                <img src="{{ $model->owner->avatar }}" class="w-8 h-8 rounded-xl border-2 border-white shadow-sm" title="Responsable: {{ $model->owner->name }}">
+                                                            </div>
+                                                            @foreach($model->activeMembers->take(4) as $member)
+                                                                @php $mUser = $member->memberable; @endphp
+                                                                @if($mUser && $mUser->id !== $model->owner_id)
+                                                                    <div class="relative pointer-events-auto">
+                                                                        <img src="{{ $mUser->avatar }}" class="w-8 h-8 rounded-xl border-2 border-white shadow-sm" title="{{ $mUser->name }}">
+                                                                    </div>
+                                                                @endif
+                                                            @endforeach
+                                                        </div>
+                                                        @if($model->activeMembers->count() > 5)
+                                                            <span class="text-[9px] font-black text-slate-400">+{{ $model->activeMembers->count() - 5 }}</span>
+                                                        @endif
                                                     </div>
-                                                </button>
+                                                @endif
                                             </div>
                                         </div>
                                         
-                                        <div class="flex items-center gap-3 mb-4">
-                                            <h4 class="text-xl font-black text-slate-900 tracking-tight leading-tight italic">"{{ $achievement->title }}"</h4>
-                                            <livewire:information.manager :model="$achievement" :key="'ach-info-'.$achievement->id" />
+                                        <div class="flex items-center justify-between gap-3 mb-4">
+                                            <div class="flex items-center gap-3">
+                                                <h4 class="text-xl font-black text-slate-900 tracking-tight leading-tight italic">"{{ $model->title }}"</h4>
+                                                <div @click.stop="">
+                                                    <livewire:information.manager :model="$model" :key="'info-'.$type.'-'.$model->id" />
+                                                </div>
+                                            </div>
+                                            
+                                            @php
+                                                $status = $type === 'project' ? $model->status : ($model->metadata['status'] ?? 'terminée');
+                                                $statusColors = [
+                                                    'actuelle' => 'bg-blue-50 text-blue-600 border-blue-100',
+                                                    'verrouillée' => 'bg-slate-100 text-slate-500 border-slate-200',
+                                                    'terminée' => 'bg-green-50 text-green-600 border-green-100',
+                                                    'annulée' => 'bg-red-50 text-red-600 border-red-100',
+                                                ];
+                                            @endphp
+                                            <span @class([
+                                                'px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border shrink-0',
+                                                $statusColors[$status] ?? 'bg-slate-50 text-slate-400 border-slate-100'
+                                            ])>
+                                                {{ $status }}
+                                            </span>
                                         </div>
-                                        <p class="text-slate-500 text-sm font-medium mb-8 leading-relaxed line-clamp-2 italic">{{ $achievement->description }}</p>
+                                        <p class="text-slate-500 text-sm font-medium mb-4 leading-relaxed line-clamp-2 italic">{{ $model->description }}</p>
+
+                                        {{-- Secondary Skills Tags --}}
+                                        <div class="flex flex-wrap items-center gap-1.5 mt-4" @click.stop="">
+                                            @if($model->skills && $model->skills->count() > 0)
+                                                @foreach($model->skills as $s)
+                                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-black uppercase rounded-lg border border-slate-200/50">
+                                                        {{ $s->name }}
+                                                    </span>
+                                                @endforeach
+                                            @endif
+
+                                            @if($this->canEdit() || ($type === 'project' && $model->canManage(auth()->user())))
+                                                <div x-data="{ open: false, search: '' }" class="relative">
+                                                    <button @click="open = !open; if(open) $nextTick(() => $refs.skillSearch.focus())" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg border border-blue-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Ajouter une compétence">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                                    </button>
+
+                                                    <div x-show="open" x-cloak @click.away="open = false" 
+                                                        x-transition:enter="transition ease-out duration-200"
+                                                        x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                                                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                                        class="absolute z-[100] left-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200">
+                                                        <input x-ref="skillSearch" x-model="search" type="text" placeholder="Taguer une compétence..." 
+                                                            class="w-full bg-slate-50 border-none rounded-xl p-2 text-[10px] font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            @keydown.enter="$wire.addSkillToRealisation(search, {{ $model->id }}, '{{ $type }}'); open = false; search = ''">
+                                                        
+                                                        <div class="mt-2 max-h-32 overflow-y-auto custom-scrollbar">
+                                                            @foreach($availableSkills->take(15) as $skill)
+                                                                <button x-show="!search || '{{ strtolower($skill->name) }}'.includes(search.toLowerCase())"
+                                                                    @click="$wire.addSkillToRealisation('{{ $skill->name }}', {{ $model->id }}, '{{ $type }}'); open = false; search = ''"
+                                                                    class="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-600 transition-colors">
+                                                                    {{ $skill->name }}
+                                                                </button>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
@@ -576,6 +664,25 @@
                                 </select>
                             </div>
                             @endif
+
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Compétences techniques additionnelles (Tags)</label>
+                                <div class="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-white min-h-[100px]">
+                                    @foreach($availableSkills as $skill)
+                                        <label class="cursor-pointer group">
+                                            <input type="checkbox" wire:model.live="selectedSkillIds" value="{{ $skill->id }}" class="hidden">
+                                            <span @class([
+                                                'px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight border transition-all',
+                                                'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20' => in_array($skill->id, $selectedSkillIds),
+                                                'bg-white border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-500' => !in_array($skill->id, $selectedSkillIds)
+                                            ])>
+                                                {{ $skill->name }}
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <p class="text-[9px] text-slate-400 font-medium italic mt-2">Sélectionnez les compétences techniques liées à cette réalisation.</p>
+                            </div>
 
                             @if($draftAchievement)
                                 <div class="mt-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">

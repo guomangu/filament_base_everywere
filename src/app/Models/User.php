@@ -419,4 +419,12 @@ class User extends Authenticatable implements FilamentUser
 
         return [];
     }
+
+    public function getAllProjectsAttribute()
+    {
+        $ownedIds = $this->ownedProjects()->pluck('id');
+        $memberIds = $this->activeProjectMemberships()->pluck('project_id');
+        
+        return \App\Models\Project::whereIn('id', $ownedIds->merge($memberIds))->get();
+    }
 }

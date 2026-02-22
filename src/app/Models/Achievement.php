@@ -76,4 +76,9 @@ class Achievement extends Model
     {
         return $this->hasMany(AchievementValidation::class);
     }
+
+    public function skills()
+    {
+        return $this->belongsToMany(Skill::class, 'achievement_skill');
+    }
 }

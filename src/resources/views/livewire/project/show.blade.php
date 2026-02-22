@@ -604,11 +604,6 @@
                     </p>
                 </div>
             @endif
-            @else
-                <div class="relative z-10 shrink-0 text-center p-6 bg-white/5 border border-dashed border-white/10 rounded-[2rem] mb-4">
-                    <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Connectez-vous pour participer</p>
-                </div>
-            @endauth
         </div>
 
     </div>

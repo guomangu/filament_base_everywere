@@ -21,7 +21,16 @@
             'type' => 'proche'
         ]);
 
-    $allSkills = $directSkills->merge($procheSkills)->unique('name')->take($limit);
+    // Get skills from projects (missions)
+    $projectSkills = $user->allProjects->flatMap->skills
+        ->unique('id')
+        ->map(fn($s) => [
+            'id' => $s->id,
+            'name' => $s->name,
+            'type' => 'direct'
+        ]);
+
+    $allSkills = $directSkills->merge($projectSkills)->merge($procheSkills)->unique('name')->take($limit);
 @endphp
 
 <div {{ $attributes->merge(['class' => 'flex flex-wrap gap-1.5']) }}>

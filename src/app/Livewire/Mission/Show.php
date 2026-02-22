@@ -17,10 +17,13 @@ class Show extends Component
     public string $status = 'actuelle';
     public $realizedAt = '';
     public ?Project $draftProject = null;
+    public array $selectedSkillIds = [];
+    public $availableSkills = [];
 
     public function mount(Skill $skill)
     {
         $this->skill = $skill;
+        $this->availableSkills = Skill::where('id', '!=', $skill->id)->orderBy('name')->get();
     }
 
     public function initDraft()
@@ -48,7 +51,7 @@ class Show extends Component
             $this->draftProject->delete();
             $this->reset('draftProject');
         }
-        $this->reset(['title', 'description', 'status', 'realizedAt']);
+        $this->reset(['title', 'description', 'status', 'realizedAt', 'selectedSkillIds']);
     }
 
     public function createRealisation()
@@ -85,6 +88,8 @@ class Show extends Component
             $project->addMember(Auth::user(), 'admin');
         }
 
+        $project->skills()->sync($this->selectedSkillIds);
+
         // Automatic creation of private conversation/first message
         Message::create([
             'project_id' => $project->id,
@@ -107,13 +112,22 @@ class Show extends Component
 
         $finishedRealisations = $this->skill->projects()
             ->where('status', 'terminée')
-            ->with(['owner', 'activeMembers.memberable', 'reviews'])
+            ->with(['owner', 'activeMembers.memberable', 'reviews', 'skills'])
             ->latest()
             ->get();
+
+        $topExpert = \App\Models\User::whereHas('achievements', function($q) {
+                $q->where('skill_id', $this->skill->id)
+                  ->where('title', '!=', '__SKELETON__');
+            })
+            ->with(['achievements.skill', 'informations'])
+            ->orderByDesc('trust_score')
+            ->first();
 
         return view('livewire.mission.show', [
             'currentRealisations' => $currentRealisations,
             'finishedRealisations' => $finishedRealisations,
+            'topExpert' => $topExpert,
         ])->layoutData([
             'title' => 'Mission : ' . $this->skill->name . ' | TrustCircle',
         ]);
