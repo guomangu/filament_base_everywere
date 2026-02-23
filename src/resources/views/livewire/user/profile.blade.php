@@ -668,7 +668,7 @@
     @endif
 
     <!-- Métriques de Confiance (Unified Footer) -->
-    <div class="max-w-7xl col-span-12 mx-auto px-6 mt-20 mb-12">
+    <div class="max-w-7xl lg:col-span-12 mx-auto px-6 mt-20 mb-12">
         <div class="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[3.5rem] p-10 md:p-16 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
             <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-blue-400/5 to-transparent"></div>
             
