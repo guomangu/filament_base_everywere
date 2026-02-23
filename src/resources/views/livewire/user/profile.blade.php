@@ -97,20 +97,11 @@
                                 @endif
                             </p>
                         </div>
-                        @auth
-                            @if(auth()->id() === $user->id)
-                                <button wire:click="initProjectCreation" 
-                                        class="inline-flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                                    Nouvelle Réalisation
-                                </button>
-                            @endif
-                        @endauth
                     </div>
 
                     @if($isCreatingProject)
                         {{-- Project Creation Form --}}
-                        <div class="mb-8 bg-white/80 backdrop-blur-xl border-2 border-blue-500 p-8 rounded-[3.5rem] shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+                        <div class="mb-8 bg-white/80 backdrop-blur-xl border-2 border-blue-500 p-6 rounded-[3.5rem] shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
                             <div class="flex items-center justify-between mb-4 px-2">
                                 <span class="text-[12px] font-black text-blue-600 uppercase tracking-widest">
                                     Proposer une Offre
@@ -128,7 +119,7 @@
                                        class="w-full bg-white border-2 border-slate-100 focus:border-blue-500 focus:ring-0 rounded-3xl p-6 text-xl font-black tracking-tight placeholder:text-slate-300 shadow-inner">
                                 <button wire:click="confirmProjectCreation" 
                                         wire:loading.attr="disabled"
-                                        class="absolute right-3 top-3 bottom-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
+                                        class="absolute right-3 top-3 bottom-3 px-2 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
                                     <span wire:loading.remove wire:target="confirmProjectCreation">Lancer le Projet</span>
                                     <span wire:loading wire:target="confirmProjectCreation">Lancement...</span>
                                 </button>
@@ -143,12 +134,11 @@
                             </div>
                         @endif
                     @endif
-                
 
                     {{-- Projects Grid --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @foreach($userProjects as $project)
-                            <div class="relative group h-full">
+                            <div class="relative group h-full" wire:key="user-project-{{ $project->id }}">
                                 <div class="flex flex-col relative h-full bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/60 p-5 rounded-3xl hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] transition-all duration-300">
                                     <a href="{{ route('projects.show', $project) }}" class="absolute inset-0 z-10 rounded-3xl" title="Voir la réalisation"></a>
                                     
@@ -268,16 +258,16 @@
             <div class="flex items-center justify-between mb-10">
                 <h2 class="text-4xl font-black text-slate-900 tracking-tighter">Expertises & Réalisations</h2>
                 @if($user->id === auth()->id())
-                    <button wire:click="openCreateModal" class="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-3">
+                    <button type="button" wire:click="openCreateModal" class="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-3">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                        Ajouter une compétence
+                        Créer une mission
                     </button>
                 @endif
             </div>
             
             <div class="space-y-16">
                 @forelse($groupedAchievements as $skillName => $achievements)
-                    <div class="relative">
+                    <div class="relative" wire:key="skill-group-{{ \Illuminate\Support\Str::slug($skillName) }}">
                         <!-- Skill Header -->
                         <div class="flex flex-wrap items-center gap-4 md:gap-6 mb-8">
                             @php
@@ -311,8 +301,9 @@
                                                 $firstItem = $achievements->where('type', 'achievement')->first(); 
                                                 $procheIdForBtn = $firstItem ? $firstItem['model']->proche_id : null;
                                             @endphp
-                                            <button wire:click="addProofForSkill('{{ addslashes($skillName) }}', {{ $procheIdForBtn ?? 'null' }})" class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-blue-500/20 group/btn shrink-0">
-                                                <svg class="w-4 h-4 md:w-5 h-5 group-hover/btn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                            <button type="button" wire:click="addProofForSkill('{{ addslashes($skillName) }}', {{ $procheIdForBtn ?? 'null' }})" class="px-3 py-1.5 md:px-4 md:py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 shrink-0">
+                                                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                                                Réalisation
                                             </button>
                                         @endif
                                     @endauth
@@ -338,13 +329,13 @@
                         <div class="grid grid-cols-1 md:grid-cols-1 gap-6 md:gap-8 pl-6 md:pl-20 relative">
                             <!-- Timeline Connector -->
                             <div class="absolute left-4 md:left-[4.5rem] top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-100 to-transparent"></div>
-                                                       @foreach($achievements as $item)
+                            @foreach($achievements as $item)
                                 @php 
                                     $type = $item['type'];
                                     $model = $item['model'];
                                     if ($type === 'achievement' && $model->title === '__SKELETON__') continue;
                                 @endphp
-                                <div class="group relative">
+                                <div class="group relative" wire:key="achievement-card-{{ $type }}-{{ $model->id }}">
                                     <div @class([
                                         'relative bg-white/60 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] hover:bg-white transition-all duration-500 group-hover:shadow-[0_40px_80px_-15px_rgba(59,130,246,0.08)] group/card overflow-hidden',
                                     ])>
@@ -496,42 +487,51 @@
                                         </div>
                                         <p class="text-slate-500 text-sm font-medium mb-4 leading-relaxed line-clamp-2 italic">{{ $model->description }}</p>
 
-                                        {{-- Secondary Skills Tags --}}
-                                        <div class="flex flex-wrap items-center gap-1.5 mt-4 pointer-events-auto relative z-30">
-                                            @if($model->skills && $model->skills->count() > 0)
-                                                @foreach($model->skills as $s)
-                                                    <a href="{{ route('mission.show', $s) }}" class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-black uppercase rounded-lg border border-slate-200/50 hover:bg-blue-600 hover:text-white transition-colors">
-                                                        {{ $s->name }}
-                                                    </a>
-                                                @endforeach
-                                            @endif
+                                        {{-- Secondary Skills Tags & Actions --}}
+                                        <div class="flex items-center justify-between w-full mt-4 pointer-events-auto relative z-30 gap-4">
+                                            <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                                                @if($model->skills && $model->skills->count() > 0)
+                                                    @foreach($model->skills as $s)
+                                                        <a href="{{ route('mission.show', $s) }}" class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-black uppercase rounded-lg border border-slate-200/50 hover:bg-blue-600 hover:text-white transition-colors truncate">
+                                                            {{ $s->name }}
+                                                        </a>
+                                                    @endforeach
+                                                @endif
 
-                                            @if($this->canEdit() || ($type === 'project' && $model->canManage(auth()->user())))
-                                                <div x-data="{ open: false, search: '' }" class="relative">
-                                                    <button @click="open = !open; if(open) $nextTick(() => $refs.skillSearch.focus())" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg border border-blue-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Ajouter une compétence">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                                                    </button>
+                                                @if($this->canEdit() || ($type === 'project' && $model->canManage(auth()->user())))
+                                                    <div x-data="{ open: false, search: '' }" class="relative shrink-0">
+                                                        <button @click="open = !open; if(open) $nextTick(() => $refs.skillSearch.focus())" class="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg border border-blue-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Ajouter une compétence">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                                        </button>
 
-                                                    <div x-show="open" x-cloak @click.away="open = false" 
-                                                        x-transition:enter="transition ease-out duration-200"
-                                                        x-transition:enter-start="opacity-0 scale-95 translate-y-2"
-                                                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                                        class="absolute z-[100] left-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200">
-                                                        <input x-ref="skillSearch" x-model="search" type="text" placeholder="Taguer une compétence..." 
-                                                            class="w-full bg-slate-50 border-none rounded-xl p-2 text-[10px] font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            @keydown.enter="$wire.addSkillToRealisation(search, {{ $model->id }}, '{{ $type }}'); open = false; search = ''">
-                                                        
-                                                        <div class="mt-2 max-h-32 overflow-y-auto custom-scrollbar pointer-events-auto">
-                                                            @foreach($availableSkills->take(15) as $skill)
-                                                                <button x-show="!search || '{{ strtolower($skill->name) }}'.includes(search.toLowerCase())"
-                                                                    @click="$wire.addSkillToRealisation('{{ $skill->name }}', {{ $model->id }}, '{{ $type }}'); open = false; search = ''"
-                                                                    class="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-600 transition-colors">
-                                                                    {{ $skill->name }}
-                                                                </button>
-                                                            @endforeach
+                                                        <div x-show="open" x-cloak @click.away="open = false" 
+                                                            x-transition:enter="transition ease-out duration-200"
+                                                            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                                                            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                                            class="absolute z-[100] left-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200">
+                                                            <input x-ref="skillSearch" x-model="search" type="text" placeholder="Taguer une compétence..." 
+                                                                class="w-full bg-slate-50 border-none rounded-xl p-2 text-[10px] font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                @keydown.enter="$wire.addSkillToRealisation(search, {{ $model->id }}, '{{ $type }}'); open = false; search = ''">
+                                                            
+                                                            <div class="mt-2 max-h-32 overflow-y-auto custom-scrollbar pointer-events-auto">
+                                                                @foreach($availableSkills->take(15) as $skill)
+                                                                    <button x-show="!search || '{{ strtolower($skill->name) }}'.includes(search.toLowerCase())"
+                                                                        @click="$wire.addSkillToRealisation('{{ $skill->name }}', {{ $model->id }}, '{{ $type }}'); open = false; search = ''"
+                                                                        class="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-600 transition-colors">
+                                                                        {{ $skill->name }}
+                                                                    </button>
+                                                                @endforeach
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                @endif
+                                            </div>
+
+                                            @if($type === 'project')
+                                                <a href="{{ route('projects.show', $model) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white hover:bg-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shrink-0">
+                                                    Voir la page
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                </a>
                                             @endif
                                         </div>
                                         </div>
@@ -586,7 +586,7 @@
                     </div>
                     <div class="space-y-4 relative z-10">
                         @foreach($user->proches as $proche)
-                            <div class="p-5 bg-white/10 border border-white/10 rounded-3xl hover:bg-white/20 transition-all group/p">
+                            <div class="p-5 bg-white/10 border border-white/10 rounded-3xl hover:bg-white/20 transition-all group/p" wire:key="proche-item-{{ $proche->id }}">
                                 <div class="flex items-center justify-between gap-4">
                                     <div class="flex items-center gap-4 flex-grow min-w-0">
                                         <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center font-black text-xl border-2 border-white/20">
@@ -598,7 +598,7 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button wire:click="openCreateModal({{ $proche->id }})" class="p-3 bg-white/10 hover:bg-white text-white hover:text-blue-600 rounded-2xl transition-all shadow-sm" title="Ajouter une compétence">
+                                        <button wire:click.stop="openCreateModal({{ $proche->id }})" class="p-3 bg-white/10 hover:bg-white text-white hover:text-blue-600 rounded-2xl transition-all shadow-sm" title="Créer une mission">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
                                         </button>
                                         
@@ -627,20 +627,21 @@
                 </div>
             @endif
         </div>
-    </div>
+
 
     <!-- Create Success Modal (Two-Step) -->
     @if($showCreateModal)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" wire:click="cancelCreate"></div>
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-red-500/10">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" wire:click.self="cancelCreate"></div>
+            <div class="absolute top-4 left-4 bg-red-600 text-white px-2 py-1 text-[8px] font-bold z-[110]">DEBUG: CREATE MODAL ACTIVE</div>
             
-            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <!-- Progress Header -->
                 <div class="bg-blue-600 p-8 md:p-10 text-white relative shrink-0">
-                    <button wire:click="cancelCreate" class="absolute top-8 right-8 text-white/70 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2">
+                    <button wire:click="cancelCreate" class="absolute top-8 right-8 text-white/70 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2 z-50">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
-                    <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-blue-600/20 to-transparent"></div>
+                    <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-blue-600/20 to-transparent pointer-events-none z-0"></div>
                     <div class="relative z-10">
                         <div class="flex items-center gap-4 mb-6">
                             <span class="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-lg font-black">{{ $step }}</span>
@@ -759,12 +760,7 @@
                                 <p class="text-[9px] text-slate-400 font-medium italic mt-2">Sélectionnez les compétences techniques liées à cette réalisation.</p>
                             </div>
 
-                            @if($draftAchievement)
-                                <div class="mt-4 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Informations & Médias (Optionnel)</span>
-                                    <livewire:information.manager :model="$draftAchievement" :key="'info-manager-draft-'.$draftAchievement->id" />
-                                </div>
-                            @endif
+                            {{-- Removed Information & Medias section from Create to avoid Ghost drafts. Users can add media by Editing the achievement later. --}}
 
                             @if ($errors->any())
                                 <div class="bg-red-50 text-red-500 p-4 rounded-xl text-xs font-bold mb-4">
@@ -790,7 +786,7 @@
         <div class="fixed inset-0 z-[100] flex items-center justify-center px-6">
             <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" wire:click="$set('showProcheModal', false)"></div>
             
-            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-lg overflow-hidden">
                 <div class="bg-slate-900 p-10 text-white">
                     <h3 class="text-2xl font-black uppercase tracking-tight">Nouveau Proche</h3>
                     <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Créez un réseau pour votre entourage</p>
@@ -821,7 +817,7 @@
         <div class="fixed inset-0 z-[110] flex items-center justify-center px-6">
             <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" wire:click="$set('showValidationModal', false)"></div>
             
-            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-xl overflow-hidden">
                 <div class="bg-slate-900 p-10 text-white flex items-center justify-between">
                     <div>
                         <h3 class="text-2xl font-black uppercase tracking-tight italic">"{{ $selectedAchievement->title }}"</h3>
@@ -918,7 +914,6 @@
                     </div>
                 </div>
             </div>
-        </div>
     @endif
 
     <!-- Métriques de Confiance (Unified Footer) -->
@@ -976,8 +971,8 @@
 
     {{-- Edit Modal --}}
     @if($showEditModal)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
-            <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white p-8 animate-in zoom-in-95 duration-300">
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+            <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white p-8">
                 <div class="flex items-center justify-between mb-8">
                     <h3 class="text-2xl font-black text-slate-900 tracking-tight italic">
                         Modifier {{ $editingType === 'project' ? 'la réalisation' : 'l\'expertise' }}
@@ -1010,8 +1005,8 @@
                         <button wire:click="cancelEdit" class="flex-1 py-4 bg-slate-50 text-slate-400 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-all">
                             Annuler
                         </button>
-                        <button wire:click="saveEdit" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
-                            Enregistrer les modifications
+                        <button type="button" wire:click="saveEdit" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                            Enregistrer
                         </button>
                     </div>
                 </div>

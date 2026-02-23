@@ -150,5 +150,5 @@
         <livewire:global-messaging />
         @livewireScripts
         @filamentScripts
-    </body>
+    <script>window.addEventListener("livewire:exception", (e) => alert(e.detail.message));</script></body>
 </html>

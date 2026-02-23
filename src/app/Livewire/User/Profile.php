@@ -140,7 +140,11 @@ class Profile extends Component
 
     public function openCreateModal($procheId = null)
     {
-        if (!$this->canEdit()) return;
+        \Log::info('openCreateModal triggered for proche: ' . ($procheId ?? 'null') . ' by user: ' . auth()->id());
+        if (!$this->canEdit()) {
+            \Log::warning('openCreateModal denied for user: ' . auth()->id());
+            return;
+        }
         $this->cancelCreate();
         $this->selectedProcheId = $procheId;
         $this->showCreateModal = true;
@@ -164,15 +168,8 @@ class Profile extends Component
         
         $this->selectedSkillId = $skill->id;
 
-        // Create a draft achievement so InformationManager can attach to it immediately
-        $this->draftAchievement = \App\Models\Achievement::create([
-            'user_id' => $this->selectedProcheId ? null : $this->user->id,
-            'proche_id' => $this->selectedProcheId,
-            'skill_id' => $this->selectedSkillId,
-            'title' => 'Brouillon...',
-            'description' => '',
-            'is_verified' => false,
-        ]);
+        // Ensure we don't hold a legacy draft ID from a previous cancelled form
+        $this->draftAchievement = null;
 
         $this->step = 2; // Direct to Proof step
         $this->showCreateModal = true;
@@ -180,7 +177,7 @@ class Profile extends Component
 
     public function cancelCreate()
     {
-        if ($this->draftAchievement) {
+        if ($this->draftAchievement && $this->draftAchievement->id) {
             $this->draftAchievement->delete();
         }
         $this->reset(['step', 'skillName', 'selectedSkillId', 'selectedProcheId', 'proofTitle', 'proofDescription', 'proofState', 'realizedAt', 'draftAchievement', 'showCreateModal', 'selectedSkillIds']);
@@ -390,6 +387,7 @@ class Profile extends Component
 
     public function render()
     {
+        \Log::info('Profile render: showCreateModal=' . ($this->showCreateModal ? 'true' : 'false'));
         // 1. Members of my ACTIVE circles (excluding myself)
         $circleMemberIds = \App\Models\CircleMember::whereIn('circle_id', $this->user->activeJoinedCircles->pluck('id'))
             ->where('status', 'active')
