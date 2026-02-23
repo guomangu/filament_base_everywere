@@ -292,6 +292,37 @@
 
 
     {{-- ===== LE FORUM DU PROJET (Nouveau Layout Chat) ===== --}}
+    {{-- ===== VALIDATIONS & AVIS DES PAIRS (Participants) ===== --}}
+    <div class="max-w-7xl mx-auto px-6 mt-24">
+        <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-8 uppercase flex items-center gap-4">
+            <span class="w-1.5 h-10 bg-blue-600 rounded-full"></span>
+            Validations & Avis des Pairs
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @php
+                $participants = $project->activeMembers->reject(fn($m) => $m->role === 'admin' || $m->memberable_id === $project->owner_id);
+            @endphp
+            
+            @forelse($participants as $member)
+                <div class="bg-white/40 backdrop-blur-xl border border-white/60 rounded-3xl p-6 shadow-xl flex items-center gap-6 group hover:border-blue-500/30 transition-all">
+                    <img src="{{ $member->memberable->avatar_url }}" class="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
+                    <div class="min-w-0">
+                        <div class="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-1">Participant Actif</div>
+                        <h4 class="text-lg font-black text-slate-900 truncate uppercase">{{ $member->memberable->name }}</h4>
+                        <div class="flex items-center gap-1 mt-1">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Score de confiance : {{ $member->memberable->trust_score }}%</span>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-span-full py-12 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
+                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">En attente de validations par les pairs</p>
+                </div>
+            @endforelse
+        </div>
+    </div>
+
     <div class="max-w-7xl mx-auto px-6 mt-12 pt-12 border-t border-slate-100">
         <div class="bg-slate-900 rounded-[3.5rem] p-8 md:p-12 shadow-2xl shadow-slate-900/40 text-white relative flex flex-col h-[700px] overflow-hidden group/board mt-8">
             <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent pointer-events-none"></div>

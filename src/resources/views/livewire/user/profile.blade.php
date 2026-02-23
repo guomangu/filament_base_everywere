@@ -286,7 +286,7 @@
                                 @php
                                     $skill = \App\Models\Skill::where('name', $skillName)->first();
                                 @endphp
-                                <div class="flex items-center gap-3 md:gap-4 mb-1 md:mb-2">
+                                <div class="items-center gap-3 md:gap-4 mb-1 md:mb-2">
                                     @if($skill)
                                         <a href="{{ route('mission.show', $skill) }}" class="group/title">
                                             <h3 class="text-xl md:text-2xl font-black text-slate-900 leading-none uppercase tracking-tight truncate group-hover/title:text-blue-600 transition-colors">{{ $skillName }}</h3>
@@ -343,7 +343,7 @@
                                         @if($type === 'project')
                                             <a href="{{ route('projects.show', $model) }}" class="absolute inset-0 z-10" title="Voir la réalisation"></a>
                                         @else
-                                            <button wire:click="openValidationModal({{ $model->id }})" class="absolute inset-0 z-10 w-full h-full text-left" title="Voir les détails"></button>
+                                            <a href="{{ route('achievements.show', $model) }}" class="absolute inset-0 z-10" title="Voir les détails"></a>
                                         @endif
 
                                         <div class="absolute inset-0 bg-gradient-to-br {{ $type === 'project' ? 'from-purple-600/5' : 'from-blue-600/5' }} to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>

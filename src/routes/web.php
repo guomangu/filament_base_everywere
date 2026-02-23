@@ -21,8 +21,15 @@ Route::middleware('auth')->group(function () {
 // Public Show pages
 Route::get('/mission/{skill}', \App\Livewire\Mission\Show::class)->name('mission.show');
 Route::get('/réalisation/{project}', \App\Livewire\Project\Show::class)->name('projects.show');
-Route::get('/realisation/{project}', function ($project) {
-    return redirect()->route('projects.show', $project);
+Route::get('/realisation-preuve/{achievement}', \App\Livewire\Achievement\Show::class)->name('achievements.show');
+Route::get('/realisation/{id}', function ($id) {
+    $project = \App\Models\Project::find($id);
+    if ($project) return redirect()->route('projects.show', $project);
+    
+    $achievement = \App\Models\Achievement::find($id);
+    if ($achievement) return redirect()->route('achievements.show', $achievement);
+    
+    abort(404);
 });
 
 Route::get('/proches/claim/{token}', \App\Livewire\User\Claim::class)->name('proches.claim');

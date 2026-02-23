@@ -214,37 +214,53 @@
                 @else
                     <div class="grid gap-6">
                         @foreach($currentRealisations as $realisation)
+                            @php
+                                $rType = is_array($realisation) ? $realisation['type'] : 'project';
+                                $rModel = is_array($realisation) ? $realisation['model'] : $realisation;
+                            @endphp
                             <div class="group relative bg-white/60 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] p-6 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 hover:shadow-2xl hover:border-blue-200/50 overflow-hidden">
                                 {{-- Big Link Overlay --}}
-                                <a href="{{ route('projects.show', $realisation) }}" class="absolute inset-0 z-10" title="Voir la réalisation"></a>
+                                @if($rType === 'project')
+                                    <a href="{{ url('/realisation/'.$rModel->id) }}" class="absolute inset-0 z-10" title="Voir la réalisation"></a>
+                                @else
+                                    <a href="{{ url('/realisation/'.$rModel->id) }}" class="absolute inset-0 z-10" title="Voir les détails"></a>
+                                @endif
                                 
                                 <div class="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <div class="flex items-start justify-between relative z-20">
                                     <div>
                                         <div class="flex items-center gap-2 mb-2">
-                                            <span class="px-2 py-0.5 bg-blue-500/10 text-blue-600 text-[8px] font-black uppercase rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">Actuelle</span>
-                                            <span class="text-slate-400 text-[8px] font-bold uppercase tracking-widest">{{ $realisation->created_at->diffForHumans() }}</span>
+                                            <span @class([
+                                                'px-2 py-0.5 text-[8px] font-black uppercase rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors',
+                                                'bg-blue-500/10 text-blue-600' => $rType === 'project',
+                                                'bg-purple-500/10 text-purple-600' => $rType === 'achievement'
+                                            ])>{{ $rType === 'project' ? ($rModel->status === 'actuelle' ? 'Actuelle' : ucfirst($rModel->status)) : 'Archive' }}</span>
+                                            <span class="text-slate-400 text-[8px] font-bold uppercase tracking-widest">{{ $rModel->created_at->diffForHumans() }}</span>
                                         </div>
-                                        <h3 class="text-xl font-black text-slate-930 group-hover:text-blue-600 transition-colors uppercase leading-[0.9] mb-4 italic truncate max-w-[400px]">"{{ $realisation->title }}"</h3>
-                                        @if($realisation->skills && $realisation->skills->count() > 0)
+                                        <h3 class="text-xl font-black text-slate-930 group-hover:text-blue-600 transition-colors uppercase leading-[0.9] mb-4 italic truncate max-w-[400px]">"{{ $rModel->title }}"</h3>
+                                        @if($rModel->skills && $rModel->skills->count() > 0)
                                             <div class="flex flex-wrap gap-1 mb-4 relative z-30">
-                                                @foreach($realisation->skills as $s)
+                                                @foreach($rModel->skills as $s)
                                                     <a href="{{ route('mission.show', $s) }}" class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-black uppercase rounded-lg border border-slate-200/50 hover:bg-blue-600 hover:text-white transition-colors relative z-30">
                                                         {{ $s->name }}
                                                     </a>
                                                 @endforeach
                                             </div>
                                         @endif
-                                        <p class="text-slate-500 text-sm line-clamp-2 italic font-medium max-w-lg leading-relaxed">{{ Str::limit($realisation->description, 150) }}</p>
+                                        <p class="text-slate-500 text-sm line-clamp-2 italic font-medium max-w-lg leading-relaxed">{{ Str::limit($rModel->description, 150) }}</p>
                                     </div>
                                     <div class="flex -space-x-3 pointer-events-none">
+                                        @php 
+                                            $owner = $rType === 'project' ? $rModel->owner : $rModel->user;
+                                            $activeMembers = $rType === 'project' ? $rModel->activeMembers : collect();
+                                        @endphp
                                         <div class="relative group/avatar">
-                                            <img src="{{ $realisation->owner->avatar }}" class="w-12 h-12 rounded-[1.2rem] border-2 border-white shadow-xl object-cover relative z-10">
+                                            <img src="{{ $owner->avatar }}" class="w-12 h-12 rounded-[1.2rem] border-2 border-white shadow-xl object-cover relative z-10">
                                             <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white z-20 flex items-center justify-center">
                                                 <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
                                             </div>
                                         </div>
-                                        @foreach($realisation->activeMembers->take(3) as $member)
+                                        @foreach($activeMembers->take(3) as $member)
                                             <img src="{{ $member->memberable->avatar }}" class="w-12 h-12 rounded-[1.2rem] border-2 border-white shadow-lg object-cover opacity-80 group-hover:opacity-100 transition-opacity">
                                         @endforeach
                                     </div>
@@ -271,23 +287,34 @@
                         @foreach($finishedRealisations as $realisation)
                             <div class="group relative bg-slate-50/50 backdrop-blur-2xl border border-slate-200/50 rounded-[2.5rem] p-8 hover:bg-white hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden">
                                 {{-- Big Link Overlay --}}
-                                <a href="{{ route('projects.show', $realisation) }}" class="absolute inset-0 z-10" title="Voir la réalisation"></a>
+                                @if($realisation['type'] === 'project')
+                                    <a href="{{ url('/realisation/'.$realisation['model']->id) }}" class="absolute inset-0 z-10" title="Voir la réalisation"></a>
+                                @else
+                                    <a href="{{ url('/realisation/'.$realisation['model']->id) }}" class="absolute inset-0 z-10" title="Voir les détails"></a>
+                                @endif
                                 
                                 <div class="flex items-start justify-between relative z-20">
                                     <div class="space-y-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-600">
+                                            <div @class([
+                                                'w-10 h-10 rounded-2xl flex items-center justify-center',
+                                                'bg-green-500/10 text-green-600' => $realisation['type'] === 'project',
+                                                'bg-blue-500/10 text-blue-600' => $realisation['type'] === 'achievement'
+                                            ])>
                                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                                             </div>
                                             <div>
-                                                <h3 class="text-2xl font-black text-slate-930 group-hover:text-green-600 transition-colors uppercase leading-none tracking-tight">"{{ $realisation->title }}"</h3>
-                                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Classé {{ $realisation->realized_at?->translatedFormat('F Y') }}</p>
+                                                <div class="flex items-center gap-2 mb-1">
+                                                     <h3 class="text-2xl font-black text-slate-930 group-hover:text-green-600 transition-colors uppercase leading-none tracking-tight">"{{ $realisation['title'] }}"</h3>
+                                                     <span class="px-2 py-0.5 bg-green-500/10 text-green-600 text-[8px] font-black uppercase rounded-full">Terminée</span>
+                                                </div>
+                                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Classé {{ $realisation['date']?->translatedFormat('F Y') }}</p>
                                             </div>
                                         </div>
 
-                                        @if($realisation->skills && $realisation->skills->count() > 0)
+                                        @if($realisation['skills'] && $realisation['skills']->count() > 0)
                                             <div class="flex flex-wrap gap-2 relative z-30">
-                                                @foreach($realisation->skills as $s)
+                                                @foreach($realisation['skills'] as $s)
                                                     <a href="{{ route('mission.show', $s) }}" class="px-3 py-1 bg-slate-100 text-slate-500 text-[9px] font-black uppercase rounded-lg border border-slate-200/50 hover:bg-blue-600 hover:text-white transition-all relative z-30">
                                                         #{{ $s->name }}
                                                     </a>
@@ -295,28 +322,30 @@
                                             </div>
                                         @endif
                                         
-                                        <p class="text-slate-500 text-sm font-medium italic leading-relaxed max-w-xl line-clamp-2">{{ Str::limit($realisation->description, 200) }}</p>
+                                        <p class="text-slate-500 text-sm font-medium italic leading-relaxed max-w-xl line-clamp-2">{{ Str::limit($realisation['description'], 200) }}</p>
                                         
                                         <div class="flex items-center gap-6 pt-2">
                                             <div class="flex items-center gap-2">
                                                 <div class="flex text-amber-500">
                                                     @for($i=0; $i<5; $i++)
-                                                        <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                                                        <svg @class(['w-4 h-4 fill-current', 'opacity-20' => $realisation['type'] === 'achievement' && $i >= 3]) viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                                                     @endfor
                                                 </div>
-                                                <span class="text-xs font-black text-slate-930">Top Score</span>
+                                                <span class="text-xs font-black text-slate-930">{{ $realisation['type'] === 'project' ? 'Top Score' : 'Expertise Certifiée' }}</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex flex-col items-end gap-6 px-2 pointer-events-none">
                                         <div class="flex -space-x-3">
-                                            <img src="{{ $realisation->owner->avatar }}" class="w-14 h-14 rounded-2xl border-4 border-white shadow-2xl object-cover relative z-10">
-                                            @foreach($realisation->activeMembers->take(2) as $member)
+                                            <img src="{{ $realisation['owner']->avatar }}" class="w-14 h-14 rounded-2xl border-4 border-white shadow-2xl object-cover relative z-10">
+                                            @foreach($realisation['activeMembers']->take(2) as $member)
                                                 <img src="{{ $member->memberable->avatar }}" class="w-14 h-14 rounded-2xl border-4 border-white shadow-xl object-cover opacity-60">
                                             @endforeach
                                         </div>
-                                        @if($realisation->reviews->count() > 0)
+                                        @if($realisation['type'] === 'project' && $realisation['model']->reviews->count() > 0)
                                             <span class="px-4 py-2 bg-white rounded-2xl border border-slate-100 text-[10px] font-black text-slate-900 uppercase tracking-widest shadow-xl">Certifié par Peers</span>
+                                        @elseif($realisation['type'] === 'achievement' && $realisation['model']->validations->count() > 0)
+                                            <span class="px-4 py-2 bg-white rounded-2xl border border-slate-100 text-[10px] font-black text-slate-900 uppercase tracking-widest shadow-xl">Validé par Peers</span>
                                         @endif
                                     </div>
                                 </div>

@@ -143,6 +143,13 @@
 
         <main class="py-12 print:p-0">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 print:max-w-none print:p-0">
+                <x-breadcrumb 
+                    :circle="$breadcrumbCircle ?? null"
+                    :user="$breadcrumbUser ?? null"
+                    :skill="$breadcrumbSkill ?? null"
+                    :project="$breadcrumbProject ?? null"
+                    :achievement="$breadcrumbAchievement ?? null"
+                />
                 {{ $slot }}
             </div>
         </main>

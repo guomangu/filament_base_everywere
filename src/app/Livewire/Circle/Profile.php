@@ -219,6 +219,7 @@ class Profile extends Component
             'title' => 'Cercle ' . $this->circle->name . $location . ' | Expertise & Confiance (' . $trustScore . '%)',
             'description' => \Illuminate\Support\Str::limit('Rejoignez le cercle ' . $this->circle->name . $location . '. Une communauté locale de confiance avec un score de fiabilité de ' . $trustScore . '%. ' . strip_tags($this->circle->description), 160, '...'),
             'og_image' => $this->circle->owner->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->circle->owner->name),
+            'breadcrumbCircle' => $this->circle,
         ]);
     }
 }

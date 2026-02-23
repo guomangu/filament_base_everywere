@@ -130,11 +130,39 @@ class Show extends Component
             ->latest()
             ->get();
 
-        $finishedRealisations = $this->skill->projects()
+        $projects = $this->skill->projects()
             ->where('status', 'terminée')
             ->with(['owner', 'activeMembers.memberable', 'reviews', 'skills'])
             ->latest()
             ->get();
+
+        $achievements = \App\Models\Achievement::where('skill_id', $this->skill->id)
+            ->where('title', '!=', '__SKELETON__')
+            ->with(['user', 'proche', 'validations', 'informations', 'skill'])
+            ->latest()
+            ->get();
+
+        $finishedRealisations = $projects->map(fn($p) => [
+            'type' => 'project',
+            'model' => $p,
+            'date' => $p->realized_at ?? $p->created_at,
+            'title' => $p->title,
+            'description' => $p->description,
+            'owner' => $p->owner,
+            'activeMembers' => $p->activeMembers,
+            'skills' => $p->skills,
+            'id' => $p->id,
+        ])->concat($achievements->map(fn($a) => [
+            'type' => 'achievement',
+            'model' => $a,
+            'date' => $a->realized_at ?? $a->created_at,
+            'title' => $a->title,
+            'description' => $a->description,
+            'owner' => $a->user,
+            'activeMembers' => collect(), // Or map some members if needed
+            'skills' => collect([$this->skill]),
+            'id' => $a->id,
+        ]))->sortByDesc('date');
 
         $topExpert = \App\Models\User::whereHas('achievements', function($q) {
                 $q->where('skill_id', $this->skill->id)
@@ -150,6 +178,7 @@ class Show extends Component
             'topExpert' => $topExpert,
         ])->layoutData([
             'title' => 'Mission : ' . $this->skill->name . ' | TrustCircle',
+            'breadcrumbSkill' => $this->skill,
         ]);
     }
 }

@@ -125,7 +125,7 @@
                                         <div class="text-[11px] font-black truncate">{{ $circle->owner->name }}</div>
                                         <div class="flex flex-wrap gap-1.5 mt-1">
                                             @foreach($circle->owner->achievements->pluck('skill')->unique('id')->take(2) as $skill)
-                                                <span class="text-[8px] font-black text-blue-400 uppercase tracking-tight">{{ $skill->name }}</span>
+                                                <a href="{{ route('mission.show', $skill) }}" class="text-[8px] font-black text-blue-400 uppercase tracking-tight hover:text-white transition-colors">{{ $skill->name }}</a>
                                             @endforeach
                                         </div>
                                     </div>
@@ -142,7 +142,7 @@
                                                 <div class="text-[11px] font-black text-slate-900 truncate group-hover/m:text-blue-600 transition-colors">{{ $member->user->name }}</div>
                                                 <div class="flex flex-wrap gap-1.5 mt-1">
                                                     @foreach($member->user->achievements->pluck('skill')->unique('id')->take(2) as $skill)
-                                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-tight">{{ $skill->name }}</span>
+                                                        <a href="{{ route('mission.show', $skill) }}" class="text-[8px] font-black text-slate-400 uppercase tracking-tight hover:text-blue-600 transition-colors">{{ $skill->name }}</a>
                                                     @endforeach
                                                 </div>
                                             </div>
