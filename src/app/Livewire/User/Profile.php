@@ -491,7 +491,6 @@ class Profile extends Component
             'title' => $this->user->name . ' | Expertises & Confiance (' . $this->user->trust_score . '%) | TrustCircle',
             'description' => \Illuminate\Support\Str::limit('Consultez le profil de ' . $this->user->name . ' : ' . $allAchievements->count() . ' compétences validées par la communauté. Score de confiance : ' . $this->user->trust_score . '%. Expertises principales : ' . $allAchievements->pluck('skill.name')->unique()->take(5)->implode(', '), 160, '...'),
             'og_image' => $this->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->user->name),
-            'breadcrumbCircle' => $this->user->activeJoinedCircles->first(),
             'breadcrumbUser' => $this->user,
         ]);
     }

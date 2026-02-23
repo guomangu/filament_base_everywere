@@ -623,9 +623,6 @@ class Show extends Component
             'title' => 'Projet : ' . $this->project->title . $location . $offersText . ' | TrustCircle',
             'description' => \Illuminate\Support\Str::limit('Découvrez le projet "' . $this->project->title . '"' . $location . '. ' . ($offerCount > 0 ? 'Consultez nos ' . $offerCount . ' offres de services. ' : '') . strip_tags($this->project->description), 160, '...'),
             'og_image' => $this->project->owner->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->project->owner->name),
-            'breadcrumbCircle' => $this->project->owner->activeJoinedCircles->first(),
-            'breadcrumbUser' => $this->project->owner,
-            'breadcrumbSkill' => $this->project->skill,
             'breadcrumbProject' => $this->project,
         ]);
     }

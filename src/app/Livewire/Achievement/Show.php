@@ -33,14 +33,9 @@ class Show extends Component
 
     public function render()
     {
-        $breadcrumbUser = $this->achievement->user ?? ($this->achievement->proche ? $this->achievement->proche->parent : null);
-
         return view('livewire.achievement.show')->layoutData([
             'title' => 'Preuve : ' . $this->achievement->title . ' | TrustCircle',
             'description' => \Illuminate\Support\Str::limit($this->achievement->description, 160),
-            'breadcrumbCircle' => $breadcrumbUser ? $breadcrumbUser->activeJoinedCircles->first() : null,
-            'breadcrumbUser' => $breadcrumbUser,
-            'breadcrumbSkill' => $this->achievement->skill,
             'breadcrumbAchievement' => $this->achievement,
         ]);
     }

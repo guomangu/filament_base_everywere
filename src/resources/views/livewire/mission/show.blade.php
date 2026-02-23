@@ -227,7 +227,7 @@
                                 @endif
                                 
                                 <div class="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                <div class="flex items-start justify-between relative z-20">
+                                <div class="flex items-start justify-between relative">
                                     <div>
                                         <div class="flex items-center gap-2 mb-2">
                                             <span @class([
@@ -293,7 +293,7 @@
                                     <a href="{{ url('/realisation/'.$realisation['model']->id) }}" class="absolute inset-0 z-10" title="Voir les détails"></a>
                                 @endif
                                 
-                                <div class="flex items-start justify-between relative z-20">
+                                <div class="flex items-start justify-between relative">
                                     <div class="space-y-4">
                                         <div class="flex items-center gap-3">
                                             <div @class([
