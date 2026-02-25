@@ -124,9 +124,27 @@ public function render() {
 
 ---
 
-## 🎨 Protocoles UX & Interaction
+## �️ Bonnes Pratiques de Développement & UX
 
-### 1. La Règle du "Petit à Petit" (Progressive UX)
+### 1. Développement Modulaire et Atomique
+**Principe** : Découper l'interface en petits composants réutilisables (Blade ou Livewire).
+- Éviter les vues monolithiques de +500 lignes.
+- Extraire les parties répétitives (cartes, boutons, modales) dans `resources/views/components/`.
+- Chaque composant doit avoir une responsabilité unique et claire.
+
+### 2. Normage et Convention de Nommage
+**Principe** : Garder une arborescence propre et prévisible.
+- **Vues** : Nommer les fichiers en minuscules avec des tirets (kebab-case) : `user-profile.blade.php`.
+- **Composants Livewire** : Utiliser le PascalCase pour la classe (`UserProfile`) et kebab-case pour la vue (`livewire.user-profile`).
+- **Composants Blade** : Préfixer les appels avec `x-` et utiliser le kebab-case (ex: `<x-project-card />`).
+
+### 3. Respect des Standards du Dev
+**Principe** : Coder proprement et défensivement.
+- **Typage Strict** : Utiliser les types de retour PHP et le typage des propriétés.
+- **Gestion d'Erreurs** : Anticiper les retours nuls depuis la BDD ou les erreurs d'API.
+- **Performance** : Limiter les requêtes N+1 avec `with()` dans Eloquent.
+
+### 4. Penser l'Experience Utilisateur (UX) par le "Petit à Petit" (Progressive UX)
 **Principe** : Ne jamais forcer l'utilisateur à remplir un formulaire massif au démarrage.
 - **Création Express** : Permettre la création d'une entité (Projet, Cercle) avec le strict minimum (Titre).
 - **Enrichissement In-Place** : L'utilisateur doit pouvoir ajouter des briques (Offres, Demandes, Preuves) directement depuis la page de consultation ("Je crée, je vois, je crée, je vois").
