@@ -242,6 +242,13 @@ export PATH="$BIN_DIR/.core:$PATH"
 
 # 3. Application Setup
 echo -e "${YELLOW}[4/6] Setting up application...${NC}"
+
+if [ ! -d "$SRC_DIR" ] || [ -z "$(ls -A "$SRC_DIR" 2>/dev/null)" ]; then
+    echo -e "${YELLOW}Source directory is missing or empty. Creating a fresh Laravel project...${NC}"
+    rm -rf "$SRC_DIR" 2>/dev/null || true
+    "$BIN_DIR/composer" create-project laravel/laravel "$SRC_DIR" --prefer-dist
+fi
+
 cd "$SRC_DIR"
 
 if [ ! -f .env ]; then
@@ -253,12 +260,19 @@ fi
 # Handle potential commented lines in .env.example
 SOCK_PATH=$(readlink -f "$DATA_DIR/mysql/mysql.sock")
 sed -i "s|^#\? *DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
-sed -i "s|^#\? *DB_SOCKET=.*|DB_SOCKET=$SOCK_PATH|" .env
 sed -i "s|^#\? *DB_HOST=.*|DB_HOST=localhost|" .env
 sed -i "s|^#\? *DB_PORT=.*|DB_PORT=|" .env
 sed -i "s|^#\? *DB_DATABASE=.*|DB_DATABASE=laravel|" .env
 sed -i "s|^#\? *DB_USERNAME=.*|DB_USERNAME=$(whoami)|" .env
 sed -i "s|^#\? *DB_PASSWORD=.*|DB_PASSWORD=|" .env
+
+# DB_SOCKET might not exist in standard Laravel 11 .env
+if grep -q "DB_SOCKET=" .env; then
+    sed -i "s|^#\? *DB_SOCKET=.*|DB_SOCKET=$(echo "$SOCK_PATH" | sed 's/[\/&]/\\&/g')|" .env
+else
+    # Insert it right after DB_CONNECTION
+    sed -i "/^DB_CONNECTION=/a DB_SOCKET=$(echo "$SOCK_PATH" | sed 's/[\/&]/\\&/g')" .env
+fi
 
 # Add only core binaries to PATH during install to avoid artisan wrapper conflicts
 ln -sf "$BIN_DIR/node/bin/node" "$BIN_DIR/.core/node"
@@ -283,6 +297,18 @@ if ! grep -q '"innoge/laravel-mcp"' "$SRC_DIR/composer.json"; then
     echo -e "${YELLOW}-> Agent MCP (innoge/laravel-mcp) not found in composer.json. Installing...${NC}"
     "$BIN_DIR/composer" require innoge/laravel-mcp --dev
     echo -e "${GREEN}-> MCP Provider installed successfully.${NC}"
+fi
+
+if ! grep -q '"laravel-shift/blueprint"' "$SRC_DIR/composer.json"; then
+    echo -e "${YELLOW}-> Blueprint not found in composer.json. Installing...${NC}"
+    "$BIN_DIR/composer" require laravel-shift/blueprint --dev
+    echo -e "${GREEN}-> Blueprint installed successfully.${NC}"
+fi
+
+if ! grep -q '"calebporzio/sushi"' "$SRC_DIR/composer.json"; then
+    echo -e "${YELLOW}-> Sushi not found in composer.json. Installing...${NC}"
+    "$BIN_DIR/composer" require calebporzio/sushi
+    echo -e "${GREEN}-> Sushi installed successfully.${NC}"
 fi
 
 # App Key
