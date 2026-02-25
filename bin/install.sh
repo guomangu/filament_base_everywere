@@ -269,6 +269,22 @@ export PHP="$BIN_DIR/php"
 # PHP Dependencies
 "$BIN_DIR/composer" install --no-interaction --prefer-dist
 
+# Check for crucial packages and install if missing
+echo -e "${YELLOW}Checking crucial God Stack packages...${NC}"
+if ! grep -q '"filament/filament"' "$SRC_DIR/composer.json"; then
+    echo -e "${YELLOW}-> Filament not found in composer.json. Installing...${NC}"
+    # Use direct frankenphp wrapper to ensure path/environment context
+    "$BIN_DIR/composer" require filament/filament -W
+    "$BIN_DIR/php" "$SRC_DIR/artisan" filament:install --panels --no-interaction >> "$LOG_DIR/install.log" 2>&1
+    echo -e "${GREEN}-> Filament installed successfully.${NC}"
+fi
+
+if ! grep -q '"innoge/laravel-mcp"' "$SRC_DIR/composer.json"; then
+    echo -e "${YELLOW}-> Agent MCP (innoge/laravel-mcp) not found in composer.json. Installing...${NC}"
+    "$BIN_DIR/composer" require innoge/laravel-mcp --dev
+    echo -e "${GREEN}-> MCP Provider installed successfully.${NC}"
+fi
+
 # App Key
 # App Key
 if ! grep -q "^APP_KEY=base64:" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d'=' -f2)" ]; then
@@ -351,6 +367,11 @@ echo -e "${GREEN}Syncing database schema...${NC}"
 "$BIN_DIR/php" "$SRC_DIR/artisan" config:clear >> "$LOG_DIR/install.log" 2>&1
 if ! "$BIN_DIR/php" "$SRC_DIR/artisan" migrate --force; then
     echo -e "${RED}Error: Database migrations failed! Check the output above.${NC}"
+else
+    echo -e "${GREEN}Seeding database (admin user & demo data)...${NC}"
+    if ! "$BIN_DIR/php" "$SRC_DIR/artisan" db:seed --force >> "$LOG_DIR/install.log" 2>&1; then
+        echo -e "${RED}Warning: Database seeding failed! Check install.log.${NC}"
+    fi
 fi
 
 # Verify table existence (diagnostic)
@@ -382,6 +403,38 @@ fi
 chmod -R 775 storage bootstrap/cache "$DATA_DIR"
 # Use frankenphp directly to avoid any wrapper issues with argument passing
 "$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" config:clear
+
+# Create Storage Link for Filament
+echo -e "${YELLOW}Creating storage link for Filament...${NC}"
+"$BIN_DIR/frankenphp" php-cli "$SRC_DIR/artisan" storage:link >> "$LOG_DIR/install.log" 2>&1 || true
+
+# Generate MCP Configuration
+echo -e "${YELLOW}Configuring Agent IA MCP Servers...${NC}"
+MCP_DIR="/home/$(whoami)/.gemini/antigravity"
+mkdir -p "$MCP_DIR"
+cat <<EOF > "$MCP_DIR/mcp_config.json"
+{
+    "mcpServers": {
+        "mariadb-portable": {
+            "command": "$BASE_DIR/bin/php",
+            "args": [
+                "$BASE_DIR/bin/mcp/mariadb.php"
+            ],
+            "env": {
+                "APP_BASE_PATH": "$BASE_DIR/src"
+            }
+        },
+        "laravel-context": {
+            "command": "$BASE_DIR/bin/artisan",
+            "args": [
+                "mcp:serve"
+            ],
+            "description": "Analyse vivante des Routes, Modèles, et Composants Livewire/Filament."
+        }
+    }
+}
+EOF
+echo "Agent IA MCP generated at $MCP_DIR/mcp_config.json"
 
 echo -e "${GREEN}====================================================${NC}"
 echo -e "${GREEN}   Installation Complete! Use ./bin/start.sh       ${NC}"
