@@ -1,9 +1,26 @@
 #!/bin/bash
-export LD_LIBRARY_PATH="/home/guuu/Documents/filament1/bin/lib:$LD_LIBRARY_PATH"
-# Strip common flags that frankenphp php-cli doesn't handle natively
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+BASE_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+export LD_LIBRARY_PATH="$BASE_DIR/bin/lib:$LD_LIBRARY_PATH"
+# Strip -d and its arguments that frankenphp php-cli might not handle correctly
 ARGS=()
+skip_next=0
 for arg in "$@"; do
-    if [[ "$arg" == "-d" ]] || [[ "$arg" == "allow_url_fopen=1" ]]; then continue; fi
+    if [ $skip_next -eq 1 ]; then
+        skip_next=0
+        continue
+    fi
+    if [[ "$arg" == "-d" ]]; then
+        skip_next=1
+        continue
+    fi
+    if [[ "$arg" == -d* ]]; then
+        continue
+    fi
+    # Also strip allow_url_fopen if composer passes it standalone
+    if [[ "$arg" == "allow_url_fopen=1" ]]; then
+        continue
+    fi
     ARGS+=("$arg")
 done
-exec "/home/guuu/Documents/filament1/bin/frankenphp" php-cli "${ARGS[@]}"
+exec "$BASE_DIR/bin/frankenphp" php-cli "${ARGS[@]}"

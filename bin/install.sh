@@ -198,38 +198,60 @@ fi
 # 2. Wrapper Creation
 echo -e "${YELLOW}[3/6] Creating wrappers...${NC}"
 
-# Absolute base path for internal use in wrappers
+# Absolute base path for internal use in wrappers and configurations
 BASE_DIR=$(readlink -f "$PROJECT_ROOT")
 
-# PHP Wrapper (Direct frankenphp call, very simple)
-cat <<EOF > "$BIN_DIR/php"
+# Wrapper Creation (Portable & Dynamic)
+# PHP Wrapper
+cat <<'EOF' > "$BIN_DIR/php"
 #!/bin/bash
-export LD_LIBRARY_PATH="$BASE_DIR/bin/lib:\$LD_LIBRARY_PATH"
-# Strip common flags that frankenphp php-cli doesn't handle natively
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+BASE_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+export LD_LIBRARY_PATH="$BASE_DIR/bin/lib:$LD_LIBRARY_PATH"
+# Strip -d and its arguments that frankenphp php-cli might not handle correctly
 ARGS=()
-for arg in "\$@"; do
-    if [[ "\$arg" == "-d" ]] || [[ "\$arg" == "allow_url_fopen=1" ]]; then continue; fi
-    ARGS+=("\$arg")
+skip_next=0
+for arg in "$@"; do
+    if [ $skip_next -eq 1 ]; then
+        skip_next=0
+        continue
+    fi
+    if [[ "$arg" == "-d" ]]; then
+        skip_next=1
+        continue
+    fi
+    if [[ "$arg" == -d* ]]; then
+        continue
+    fi
+    # Also strip allow_url_fopen if composer passes it standalone
+    if [[ "$arg" == "allow_url_fopen=1" ]]; then
+        continue
+    fi
+    ARGS+=("$arg")
 done
-exec "$BASE_DIR/bin/frankenphp" php-cli "\${ARGS[@]}"
+exec "$BASE_DIR/bin/frankenphp" php-cli "${ARGS[@]}"
 EOF
 chmod +x "$BIN_DIR/php"
 
-# Artisan Wrapper (Absolute Path)
-cat <<EOF > "$BIN_DIR/artisan"
+# Artisan Wrapper
+cat <<'EOF' > "$BIN_DIR/artisan"
 #!/bin/bash
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+BASE_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
 cd "$BASE_DIR/src"
-exec "$BIN_DIR/php" artisan "\$@"
+exec "$BASE_DIR/bin/php" artisan "$@"
 EOF
 chmod +x "$BIN_DIR/artisan"
 
 # Composer Wrapper
-cat <<EOF > "$BIN_DIR/composer"
+cat <<'EOF' > "$BIN_DIR/composer"
 #!/bin/bash
-PROJECT_ROOT="$BASE_DIR"
-export LD_LIBRARY_PATH="\$PROJECT_ROOT/bin/lib:\$LD_LIBRARY_PATH"
-# Call frankenphp directly to avoid double-processing in php wrapper
-exec "\$PROJECT_ROOT/bin/frankenphp" php-cli "\$PROJECT_ROOT/bin/composer.phar" "\$@"
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+BASE_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+export LD_LIBRARY_PATH="$BASE_DIR/bin/lib:$LD_LIBRARY_PATH"
+export PHP_BINARY="$BASE_DIR/bin/php"
+# Use the php wrapper so Composer's @php alias works correctly
+exec "$BASE_DIR/bin/php" "$BASE_DIR/bin/composer.phar" "$@"
 EOF
 chmod +x "$BIN_DIR/composer"
 
@@ -362,6 +384,13 @@ if [ "$(id -u)" = "0" ]; then DB_USER_FLAG="--user=root"; fi
 "$MARIADB_DIR/bin/mariadbd" --no-defaults --datadir="$MYSQL_DATA" --socket="$MYSQL_SOCKET" --pid-file="$MYSQL_PID" --skip-networking --skip-grant-tables --default-storage-engine=InnoDB $DB_USER_FLAG >> "$LOG_DIR/mariadb.log" 2>&1 &
 TEMP_PID=$!
 
+cleanup_db() {
+    echo "Ensuring temporary MariaDB (PID $TEMP_PID) is shut down..."
+    kill $TEMP_PID 2>/dev/null || true
+    wait $TEMP_PID 2>/dev/null || true
+}
+trap cleanup_db EXIT
+
 # Wait for it to start
 for i in {1..30}; do
     if [ -S "$MYSQL_SOCKET" ]; then break; fi
@@ -408,7 +437,8 @@ if ! export LD_LIBRARY_PATH="$BIN_DIR/lib" && "$MARIADB_DIR/bin/mariadb" --socke
     export LD_LIBRARY_PATH="$BIN_DIR/lib" && "$MARIADB_DIR/bin/mariadb" --socket="$MYSQL_SOCKET" -u root -e "USE laravel; SHOW TABLES;"
 fi
 
-# Shutdown temp DB
+# Shutdown temp DB cleanly and remove trap
+trap - EXIT
 kill $TEMP_PID
 wait $TEMP_PID 2>/dev/null || true
 
